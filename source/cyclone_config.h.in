@@ -1,0 +1,70 @@
+/*
+Copyright(C) thecodeway.com
+*/
+#ifndef _CYCLONE_CONFIG_H_
+#define _CYCLONE_CONFIG_H_
+
+#cmakedefine CY_HAVE_UNISTD_H 1
+#cmakedefine CY_HAVE_INTTYPES_H 1
+#cmakedefine CY_SYS_LINUX 1
+#cmakedefine CY_SYS_WINDOWS 1
+#cmakedefine CY_SYS_MACOS 1
+
+#cmakedefine CY_HAVE_EPOLL 1
+#cmakedefine CY_HAVE_SELECT 1
+
+#cmakedefine CY_ENABLE_LOG 1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+#ifdef CY_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef CY_HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
+#ifdef CY_HAVE_SYS_TYPES
+#include <sys/types.h>
+#endif
+
+#include <string>
+#include <vector>
+#include <list>
+#include <map>
+#include <set>
+
+#ifdef CY_SYS_WINDOWS
+#include <WinSock2.h>
+#include <Ws2tcpip.h>
+#include <Windows.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#endif
+
+#ifdef CY_SYS_WINDOWS
+typedef SOCKET	socket_t;
+typedef int32_t	ssize_t;
+typedef uint32_t pid_t;
+#else
+typedef int		socket_t;
+#endif
+
+typedef char 			utf8_t;
+typedef std::string 	string_t;			//string without codec or local codec
+typedef std::string 	utf8_string_t;
+typedef std::wstring 	utf16_string_t;
+
+#ifdef CY_SYS_WINDOWS
+#define snprintf _snprintf 
+#endif
+
+#endif
+
