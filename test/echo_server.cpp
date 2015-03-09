@@ -2,6 +2,8 @@
 #include <cy_event.h>
 #include <cy_network.h>
 
+#include <ctype.h>
+
 using namespace cyclone;
 
 //-------------------------------------------------------------------------------------

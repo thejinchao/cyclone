@@ -16,15 +16,16 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 struct DiskLogFile
 {
-	std::string file_name;
+#ifndef _MAX_PATH
+#define _MAX_PATH (260)
+#endif
+
+	char file_name[_MAX_PATH];
 	thread_api::mutex_t lock;
 	const char* level_name[NUM_LOG_LEVELS];
 
 	DiskLogFile() 
 	{
-		//construct file
-		char temp[1024] = { 0 };
-
 #ifdef CY_SYS_WINDOWS
 		//get process name
 		char process_path_name[256] = { 0 };
@@ -42,12 +43,10 @@ struct DiskLogFile
 		//get process id
 		DWORD process_id = ::GetCurrentProcessId();
 
-		snprintf(temp, 1024, "%s.%04d%02d%02d-%02d%02d%02d.%s.%d.log",
+		snprintf(file_name, _MAX_PATH, "%s.%04d%02d%02d-%02d%02d%02d.%s.%d.log",
 			process_name, 
 			time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond,
 			host_name, process_id);
-
-		file_name = temp;
 #else
 		//get process name
 		char process_path_name[256] = { 0 };
@@ -70,10 +69,9 @@ struct DiskLogFile
 		//get process id
 		pid_t process_id = ::getpid();
 
-		snprintf(temp, 1024, "%s.%s.%s.%d.log",
+		snprintf(file_name, _MAX_PATH, "%s.%s.%s.%d.log",
 			process_name, timebuf, host_name, process_id);
 
-		file_name = temp;
 #endif
 		//create lock
 		lock = thread_api::mutex_create();
@@ -87,7 +85,7 @@ struct DiskLogFile
 		level_name[L_FATAL] = "FATAL";
 
 		//create the log file first
-		FILE* fp = fopen(temp, "w");
+		FILE* fp = fopen(file_name, "w");
 		fclose(fp);
 	}
 };
@@ -108,7 +106,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	DiskLogFile& thefile = _get_disk_log();
 	thread_api::auto_mutex guard(thefile.lock);
 
-	FILE* fp = fopen(thefile.file_name.c_str(), "a");
+	FILE* fp = fopen(thefile.file_name, "a");
 
 	char szTemp[1024] = { 0 };
 	va_list ptr; va_start(ptr, message);
