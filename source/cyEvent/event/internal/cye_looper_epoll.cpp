@@ -5,12 +5,12 @@ Copyright(C) thecodeway.com
 #include <cy_event.h>
 #include "cye_looper_epoll.h"
 
-#ifdef CY_HAVE_EPOLL
-
 namespace cyclone
 {
 namespace event
 {
+
+#ifdef CY_HAVE_EPOLL
 
 //-------------------------------------------------------------------------------------
 Looper_epoll::Looper_epoll()
@@ -162,7 +162,11 @@ void Looper_epoll::_update_channel_remove_event(channel_s& channel, event_t even
 	}
 }
 
+#else
+//avoid MSVC LNK4221 WARNING
+void nothing(void){}
+#endif
+
 }
 }
 
-#endif
