@@ -15,7 +15,6 @@ namespace event
 //-------------------------------------------------------------------------------------
 Looper::Looper()
 	: m_current_thread(thread_api::thread_get_current_id())
-	, m_active_head(INVALID_EVENT_ID)
 	, m_free_head(INVALID_EVENT_ID)
 {
 }
@@ -60,15 +59,12 @@ void Looper::delete_event(event_id_t id)
 
 	//pool it 
 	channel_s& channel = m_channelBuffer[id];
-	assert(channel.event == kNone); //should be disabled already
+	assert(channel.event == kNone && channel.active == false); //should be disabled already
 	
 	//remove from active list to free list
 	//if (channel.)
 	channel.next = m_free_head;
 	m_free_head = id;
-
-	//it's not active now
-	channel.active = false;
 }
 
 //-------------------------------------------------------------------------------------

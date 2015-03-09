@@ -86,12 +86,12 @@ protected:
 		event_callback on_write;
 
 		event_id_t next;
+		event_id_t prev;	//only used in select looper
 	};
 	typedef std::vector< channel_s > channel_buffer;
 	typedef std::vector< channel_s* > channel_list;
 
 	channel_buffer m_channelBuffer;	//all event buf
-	event_id_t m_active_head;		//active list head in event buf
 	event_id_t m_free_head;			//free list head in event buf
 
 	pid_t m_current_thread;

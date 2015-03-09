@@ -16,6 +16,7 @@ Looper_select::Looper_select()
 	, m_max_read_counts(0)
 	, m_max_write_counts(0)
 	, m_max_fd(-1)
+	, m_active_head(INVALID_EVENT_ID)
 {
 	FD_ZERO(&m_master_read_fd_set);
 	FD_ZERO(&m_master_write_fd_set);
@@ -79,20 +80,66 @@ void Looper_select::_poll(int32_t time_out_ms,
 	}
 	else
 	{
-		for (size_t i = 0; i < m_channelBuffer.size(); i++)
+		for (event_id_t i = m_active_head; i != INVALID_EVENT_ID;)
 		{
 			channel_s& channel = m_channelBuffer[i];
 
-			if ((channel.event & kRead) && channel.on_read != 0 && FD_ISSET(channel.fd, &m_work_read_fd_set))
+			if (FD_ISSET(channel.fd, &m_work_read_fd_set))
 			{
+				assert(channel.event & kRead);
+				assert(channel.on_read);
+
 				readChannelList.push_back(&channel);
 			}
-			if ((channel.event & kWrite) && channel.on_write != 0 && FD_ISSET(channel.fd, &m_work_write_fd_set))
+
+			if (FD_ISSET(channel.fd, &m_work_write_fd_set))
 			{
+				assert(channel.event & kWrite);
+				assert(channel.on_write);
+
 				writeChannelList.push_back(&channel);
 			}
+
+			i = channel.next;
 		}
 	}
+}
+
+//-------------------------------------------------------------------------------------
+void Looper_select::_insert_to_active_list(channel_s& channel)
+{
+	if (channel.active) return;
+
+	if (m_active_head != INVALID_EVENT_ID) {
+		channel_s& head = m_channelBuffer[m_active_head];
+		head.prev = channel.id;
+	}
+
+	channel.next = m_active_head;
+	channel.prev = INVALID_EVENT_ID;
+
+	m_active_head = channel.id;
+	channel.active = true;
+}
+
+//-------------------------------------------------------------------------------------
+void Looper_select::_remove_from_active_list(channel_s& channel)
+{
+	if (!channel.active) return;
+
+	if (channel.next != INVALID_EVENT_ID) {
+		channel_s& next = m_channelBuffer[channel.next];
+		next.prev = channel.prev;
+	}
+
+	if (channel.prev != INVALID_EVENT_ID) {
+		channel_s& prev = m_channelBuffer[channel.prev];
+		prev.next = channel.next;
+	}
+	if (channel.id == m_active_head)
+		m_active_head = channel.next;
+
+	channel.active = false;
 }
 
 //-------------------------------------------------------------------------------------
@@ -113,7 +160,7 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		FD_SET(fd, &m_master_read_fd_set);
 		m_max_read_counts++;
 		channel.event |= kRead;
-		channel.active = true;
+		_insert_to_active_list(channel);
 		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
 	}
 	else if ((event & kWrite) && !(channel.event & kWrite) && channel.on_write)
@@ -121,7 +168,7 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		FD_SET(fd, &m_master_write_fd_set);
 		m_max_write_counts++;
 		channel.event |= kWrite;
-		channel.active = true;
+		_insert_to_active_list(channel);
 		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
 	}
 	else
@@ -158,7 +205,7 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 
 	if (channel.event == kNone)
 	{
-		channel.active = false;
+		_remove_from_active_list(channel);
 	}
 }
 

@@ -33,6 +33,13 @@ private:
 	int32_t m_max_write_counts;
 
 	socket_t m_max_fd;  //TODO: disable max_fd at windows platform
+
+	event_id_t m_active_head;	//active list in fd_set;
+
+private:
+	void _insert_to_active_list(channel_s& channel);
+	void _remove_from_active_list(channel_s& channel);
+
 public:
 	Looper_select();
 	virtual ~Looper_select();
