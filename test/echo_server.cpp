@@ -9,7 +9,7 @@ using namespace cyclone::network;
 //-------------------------------------------------------------------------------------
 void on_connection_callback(TcpServer* server, Connection* conn)
 {
-	CY_LOG(L_INFO, "new connection accept, from %s\n", 
+	CY_LOG(L_INFO, "new connection accept, from %s", 
 		conn->get_peer_addr().get_ip_port().c_str());
 }
 
@@ -21,7 +21,7 @@ void on_message_callback(TcpServer* server, Connection* conn)
 	char temp[1024] = { 0 };
 	buf.memcpy_out(temp, 1024);
 
-	CY_LOG(L_INFO, "receive:%s\n", temp);
+	CY_LOG(L_INFO, "receive:%s", temp);
 
 	if (strcmp(temp, "exit") == 0)
 	{
@@ -39,7 +39,7 @@ void on_message_callback(TcpServer* server, Connection* conn)
 //-------------------------------------------------------------------------------------
 void on_close_callback(TcpServer* server, Connection* conn)
 {
-	CY_LOG(L_INFO, "connection %s closed\n", conn->get_peer_addr().get_ip_port().c_str());
+	CY_LOG(L_INFO, "connection %s closed", conn->get_peer_addr().get_ip_port().c_str());
 }
 
 //-------------------------------------------------------------------------------------

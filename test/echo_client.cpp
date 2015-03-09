@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 	Address address(server_ip, server_port);
 
 	bool success = socket.connect(address);
-	CY_LOG(L_ERROR, "connect to %s:%d %s.", server_ip, server_port, success ? "OK" : "FAILED");
+	CY_LOG(L_DEBUG, "connect to %s:%d %s.", server_ip, server_port, success ? "OK" : "FAILED");
 	if (!success) return 1;
 
 	while (true)
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 			if (len <= 0) break;
 
 			temp[len] = 0;
-			CY_LOG(L_INFO, "recv:%s", temp);
+			printf("recv:%s", temp);
 
 			//break;
 			if (temp[len - 1] == '\n') break;

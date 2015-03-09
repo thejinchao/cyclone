@@ -44,10 +44,10 @@ TcpServer::~TcpServer()
 //-------------------------------------------------------------------------------------
 void TcpServer::start(int32_t work_thread_counts)
 {
-	CY_LOG(L_INFO, "TcpServer start with %d workthread(s)\n", work_thread_counts);
+	CY_LOG(L_INFO, "TcpServer start with %d workthread(s)", work_thread_counts);
 
 	if (work_thread_counts<1 || work_thread_counts > MAX_WORK_THREAD_COUNTS) {
-		CY_LOG(L_ERROR, "param thread counts error\n");
+		CY_LOG(L_ERROR, "param thread counts error");
 		return;
 	}
 

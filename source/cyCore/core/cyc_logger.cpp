@@ -115,13 +115,13 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	vsnprintf((char *)szTemp, 1024, message, ptr);
 	va_end(ptr);
 
-	fprintf(fp, "%s\t%s",
+	fprintf(fp, "%s\t%s\n",
 		thefile.level_name[level],
 		szTemp);
 	fclose(fp);
 
 	//print to stand output last
-	fprintf(level >= L_ERROR ? stderr : stdout, "%s\t%s", 
+	fprintf(level >= L_ERROR ? stderr : stdout, "%s\t%s\n", 
 		thefile.level_name[level], 
 		szTemp);
 }
