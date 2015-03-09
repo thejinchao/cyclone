@@ -47,9 +47,7 @@ check_include_file(sys/vfs.h		CY_HAVE_SYS_VFS_H)
 #check functions
 ########
 include(CheckFunctionExists)
-check_function_exists(epoll		CY_HAVE_EPOLL)
-check_function_exists(poll		CY_HAVE_POLL)
-check_function_exists(select	CY_HAVE_SELECT)
+check_function_exists(epoll_ctl	CY_HAVE_EPOLL)
 
 ########
 #is log enable

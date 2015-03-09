@@ -119,6 +119,11 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		thefile.level_name[level],
 		szTemp);
 	fclose(fp);
+
+	//print to stand output last
+	fprintf(level >= L_ERROR ? stderr : stdout, "%s\t%s", 
+		thefile.level_name[level], 
+		szTemp);
 }
 
 
