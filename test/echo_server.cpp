@@ -7,8 +7,9 @@ using namespace cyclone;
 //-------------------------------------------------------------------------------------
 void on_connection_callback(TcpServer* server, Connection* conn)
 {
-	CY_LOG(L_INFO, "new connection accept, from %s", 
-		conn->get_peer_addr().get_ip_port().c_str());
+	CY_LOG(L_INFO, "new connection accept, from %s:%d", 
+		conn->get_peer_addr().get_ip(),
+		conn->get_peer_addr().get_port());
 }
 
 //-------------------------------------------------------------------------------------
@@ -37,7 +38,9 @@ void on_message_callback(TcpServer* server, Connection* conn)
 //-------------------------------------------------------------------------------------
 void on_close_callback(TcpServer* server, Connection* conn)
 {
-	CY_LOG(L_INFO, "connection %s closed", conn->get_peer_addr().get_ip_port().c_str());
+	CY_LOG(L_INFO, "connection %s:%d closed", 
+		conn->get_peer_addr().get_ip(),
+		conn->get_peer_addr().get_port());
 }
 
 //-------------------------------------------------------------------------------------

@@ -16,10 +16,8 @@ public:
 	const struct sockaddr_in& get_sockaddr_in() const { return m_address; }
 
 	//// get ip address like "123.123.123.123"
-	const std::string	get_ip(void) const;
-	uint16_t			get_port(void) const;
-	//// get ip address with port, like "123.123.123.123:80"
-	std::string			get_ip_port(void) const;
+	const char*	get_ip(void) const;
+	uint16_t	get_port(void) const;
 
 public:
 	/// Constructs an endpoint with given port number.
@@ -33,17 +31,19 @@ public:
 
 	/// Constructs an endpoint with given struct @c sockaddr_in
 	/// Mostly used when accepting new connections
-	Address(const struct sockaddr_in& addr)
-		: m_address(addr)
-	{ }
+	Address(const struct sockaddr_in& addr);
 
 	/// Constructs current address to which the socket sfd is bound
 	Address(socket_t sfd);
 
 	Address(const Address& other);
-	Address(){}
+	Address();
+
 private:
 	struct sockaddr_in m_address;
+
+	enum { IP_ADDRESS_LEN=32 };
+	char m_ip_string[IP_ADDRESS_LEN];
 };
 
 }
