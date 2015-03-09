@@ -45,7 +45,11 @@ void on_close_callback(TcpServer* server, Connection* conn)
 //-------------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-	TcpServer server(Address(1978, false));
+	uint16_t server_port = 1978;
+	if (argc > 1)
+		server_port = (uint16_t)atoi(argv[1]);
+
+	TcpServer server(Address(server_port, false));
 	server.set_connection_callback(on_connection_callback);
 	server.set_close_callback(on_close_callback);
 	server.set_message_callback(on_message_callback);

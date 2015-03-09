@@ -7,10 +7,20 @@ using namespace cyclone::network;
 
 int main(int argc, char* argv[])
 {
-	Socket socket(socket_api::create_socket_ex(AF_INET, SOCK_STREAM, IPPROTO_TCP));
-	Address address("127.0.0.1", 1978);
+	const char* server_ip = "127.0.0.1";
+	if (argc > 1)
+		server_ip = argv[1];
 
-	socket.connect(address);
+	uint16_t server_port = 1978;
+	if (argc > 2)
+		server_port = (uint16_t)atoi(argv[2]);
+
+	Socket socket(socket_api::create_socket_ex(AF_INET, SOCK_STREAM, IPPROTO_TCP));
+	Address address(server_ip, server_port);
+
+	bool success = socket.connect(address);
+	CY_LOG(L_ERROR, "connect to %s:%d %s.", server_ip, server_port, success ? "OK" : "FAILED");
+	if (!success) return 1;
 
 	while (true)
 	{
@@ -28,7 +38,7 @@ int main(int argc, char* argv[])
 			if (len <= 0) break;
 
 			temp[len] = 0;
-			printf("recv:%s", temp);
+			CY_LOG(L_INFO, "recv:%s", temp);
 
 			//break;
 			if (temp[len - 1] == '\n') break;
