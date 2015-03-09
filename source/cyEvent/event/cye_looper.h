@@ -38,8 +38,7 @@ public:
 		event_t type,
 		void* param, 
 		event_callback _on_read,
-		event_callback _on_write,
-		event_callback _on_error);
+		event_callback _on_write);
 
 	//// unregister event
 	void delete_event(event_id_t id);
@@ -55,6 +54,8 @@ public:
 	void disable_write(event_id_t id);
 	void enable_write(event_id_t id);
 	bool is_write(event_id_t id) const;
+
+	void disable_all(event_id_t id);
 
 	pid_t get_thread_id(void) const { return m_current_thread; }
 
@@ -79,10 +80,10 @@ protected:
 		socket_t fd;
 		event_t event;
 		void *param;
+		bool active;
 
 		event_callback on_read;
 		event_callback on_write;
-		event_callback on_error;
 
 		event_id_t next;
 	};
@@ -98,13 +99,10 @@ protected:
 	/// Polls the I/O events.
 	virtual void _poll(int32_t time_out_ms, 
 		channel_list& readChannelList,
-		channel_list& writeChannelList,
-		channel_list& errorChannelList) = 0;
+		channel_list& writeChannelList) = 0;
 	/// Changes the interested I/O events.
 	virtual void _update_channel_add_event(channel_s& channel, event_t type) = 0;
 	virtual void _update_channel_remove_event(channel_s& channel, event_t type) = 0;
-	/// Remove the channel, when it destructs.
-	virtual void _remove_channel(channel_s& channel) = 0;
 
 private:
 	event_id_t _get_free_slot(void);

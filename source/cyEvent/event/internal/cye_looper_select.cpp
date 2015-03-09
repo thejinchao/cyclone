@@ -30,8 +30,7 @@ Looper_select::~Looper_select()
 //-------------------------------------------------------------------------------------
 void Looper_select::_poll(int32_t time_out_ms,
 	channel_list& readChannelList,
-	channel_list& writeChannelList,
-	channel_list& errorChannelList)
+	channel_list& writeChannelList)
 {
 	if (m_max_fd == -1)
 	{
@@ -99,27 +98,30 @@ void Looper_select::_poll(int32_t time_out_ms,
 //-------------------------------------------------------------------------------------
 void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 {
+	if (channel.event == event || event == kNone) return;
 	socket_t fd = channel.fd;
 
-	if ((event == kRead && m_max_read_counts >= FD_SETSIZE)
-		|| (event == kWrite && m_max_write_counts >= FD_SETSIZE))
+	if (((event & kRead) && m_max_read_counts >= FD_SETSIZE)
+		|| ((event & kWrite) && m_max_write_counts >= FD_SETSIZE))
 	{
 		//TODO: log error ,maximum number of descriptors supported by select() is FD_SETSIZE
 		return;
 	}
 
-	if (event == kRead && !(channel.event & kRead) && channel.on_read)
+	if ((event & kRead) && !(channel.event & kRead) && channel.on_read)
 	{
 		FD_SET(fd, &m_master_read_fd_set);
 		m_max_read_counts++;
 		channel.event |= kRead;
+		channel.active = true;
 		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
 	}
-	else if (event == kWrite && !(channel.event & kWrite) && channel.on_write)
+	else if ((event & kWrite) && !(channel.event & kWrite) && channel.on_write)
 	{
 		FD_SET(fd, &m_master_write_fd_set);
 		m_max_write_counts++;
 		channel.event |= kWrite;
+		channel.active = true;
 		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
 	}
 	else
@@ -132,16 +134,17 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 //-------------------------------------------------------------------------------------
 void Looper_select::_update_channel_remove_event(channel_s& channel, event_t event)
 {
+	if ((channel.event & event) == kNone || !channel.active) return;
 	socket_t fd = channel.fd;
 
-	if (event == kRead && (channel.event & kRead))
+	if ((event & kRead) && (channel.event & kRead))
 	{
 		FD_CLR(fd, &m_master_read_fd_set);
 		m_max_read_counts--;
 		channel.event &= ~kRead;
 		if (m_max_fd == fd) { m_max_fd = -1; }
 	}
-	else if (event == kWrite && (channel.event & kWrite))
+	else if ((event & kWrite) && (channel.event & kWrite))
 	{
 		FD_CLR(fd, &m_master_write_fd_set);
 		m_max_write_counts--;
@@ -152,12 +155,11 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 	{
 		//TODO: log error, select event is not in set 
 	}
-}
 
-//-------------------------------------------------------------------------------------
-void Looper_select::_remove_channel(channel_s& channel)
-{
-
+	if (channel.event == kNone)
+	{
+		channel.active = false;
+	}
 }
 
 }

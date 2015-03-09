@@ -15,7 +15,11 @@ namespace event
 //-------------------------------------------------------------------------------------
 Looper* Looper::create_looper(void)
 {
+#ifdef CY_HAVE_EPOLL
+	return new Looper_epoll();
+#else
 	return new Looper_select();
+#endif
 }
 
 //-------------------------------------------------------------------------------------

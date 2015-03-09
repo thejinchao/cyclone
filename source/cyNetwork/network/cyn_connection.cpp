@@ -56,8 +56,7 @@ void Connection::established(void)
 		event::Looper::kRead,			//care read event only
 		this,
 		_on_socket_read_entry,
-		_on_socket_write_entry,
-		0);
+		_on_socket_write_entry);
 
 	//logic callback
 	if (m_server && m_server->get_connection_callback()) {
@@ -217,8 +216,7 @@ void Connection::_on_socket_close(void)
 
 	//disable all event
 	m_state = kDisconnected;
-	m_looper->disable_read(m_event_id);
-	m_looper->disable_write(m_event_id);
+	m_looper->disable_all(m_event_id);
 
 	//logic callback
 	if (m_server && m_server->get_close_callback()) {

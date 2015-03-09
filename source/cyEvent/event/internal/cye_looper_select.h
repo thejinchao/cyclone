@@ -17,13 +17,10 @@ class Looper_select : public Looper
 protected:
 	virtual void _poll(int32_t time_out_ms,
 		channel_list& readChannelList,
-		channel_list& writeChannelList,
-		channel_list& errorChannelList);
+		channel_list& writeChannelList);
 	/// Changes the interested I/O events.
-	virtual void _update_channel_add_event(channel_s& channel, event_t type);
-	virtual void _update_channel_remove_event(channel_s& channel, event_t type);
-	/// Remove the channel, when it destructs.
-	virtual void _remove_channel(channel_s& channel);
+	virtual void _update_channel_add_event(channel_s& channel, event_t event);
+	virtual void _update_channel_remove_event(channel_s& channel, event_t event);
 
 private:
 	fd_set	m_master_read_fd_set;

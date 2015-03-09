@@ -43,7 +43,7 @@ void WorkThread::_work_thread(void)
 
 	//register pipe read event
 	m_looper->register_event(m_pipe.get_read_port(), Looper::kRead, this,
-		_on_command_entry, 0, 0);
+		_on_command_entry, 0);
 
 	// set work thread ready signal
 	thread_api::signal_notify(m_thread_ready);

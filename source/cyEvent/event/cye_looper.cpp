@@ -30,8 +30,7 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	event_t event,
 	void* param,
 	event_callback _on_read,
-	event_callback _on_write,
-	event_callback _on_error)
+	event_callback _on_write)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
 
@@ -43,15 +42,13 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	channel.fd = sockfd;
 	channel.event = 0;
 	channel.param = param;
+	channel.active = false;
 	channel.on_read = _on_read;
 	channel.on_write = _on_write;
-	channel.on_error = _on_error;
 
 	//update to poll
-	if (event&kRead)
-		_update_channel_add_event(channel, kRead);
-	if (event&kWrite)
-		_update_channel_add_event(channel, kWrite);
+	if (event != kNone)
+		_update_channel_add_event(channel, event);
 	return id;
 }
 
@@ -63,8 +60,15 @@ void Looper::delete_event(event_id_t id)
 
 	//pool it 
 	channel_s& channel = m_channelBuffer[id];
+	assert(channel.event == kNone); //should be disabled already
+	
+	//remove from active list to free list
+	//if (channel.)
 	channel.next = m_free_head;
 	m_free_head = id;
+
+	//it's not active now
+	channel.active = false;
 }
 
 //-------------------------------------------------------------------------------------
@@ -128,22 +132,30 @@ bool Looper::is_write(event_id_t id) const
 }
 
 //-------------------------------------------------------------------------------------
+void Looper::disable_all(event_id_t id)
+{
+	assert(thread_api::thread_get_current_id() == m_current_thread);
+	assert(id >= 0 && id < m_channelBuffer.size());
+
+	channel_s& channel = m_channelBuffer[id];
+	_update_channel_remove_event(channel, kRead|kWrite);
+}
+
+//-------------------------------------------------------------------------------------
 void Looper::loop(void)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
 
 	channel_list readList;
 	channel_list writeList;
-	channel_list errorList;
 
 	for (;;)
 	{
 		readList.clear();
 		writeList.clear();
-		errorList.clear();
 
 		//wait in kernel...
-		_poll(0, readList, writeList, errorList);
+		_poll(0, readList, writeList);
 		
 		//reactor
 		for (size_t i = 0; i < readList.size(); i++)
@@ -160,14 +172,6 @@ void Looper::loop(void)
 			if (c->on_write == 0) continue;
 
 			c->on_write(c->id, c->fd, kWrite, c->param);
-		}
-
-		for (size_t i = 0; i < errorList.size(); i++)
-		{
-			channel_s* c = errorList[i];
-			if (c->on_error == 0) continue;
-
-			c->on_error(c->id, c->fd, kError, c->param);
 		}
 	}
 }

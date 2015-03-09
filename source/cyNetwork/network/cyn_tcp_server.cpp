@@ -96,8 +96,7 @@ void TcpServer::_accept_thread(void)
 	looper->register_event(m_acceptor_socket.get_fd(),
 		Looper::kRead,
 		this,
-		_on_accept_function_entry, 
-		0, 
+		_on_accept_function_entry,
 		0);
 
 	//begin listen
