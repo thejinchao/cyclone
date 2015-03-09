@@ -9,8 +9,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 //-------------------------------------------------------------------------------------
 Looper* Looper::create_looper(void)
@@ -28,5 +26,4 @@ void Looper::destroy_looper(Looper* looper)
 	delete looper;
 }
 
-}
 }

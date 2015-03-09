@@ -7,8 +7,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 //-------------------------------------------------------------------------------------
 Looper_select::Looper_select()
@@ -210,4 +208,4 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 }
 
 }
-}
+

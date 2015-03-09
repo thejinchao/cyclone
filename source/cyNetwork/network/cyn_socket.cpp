@@ -7,8 +7,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
 
 //-------------------------------------------------------------------------------------
 Socket::Socket(socket_t fd)
@@ -101,4 +99,4 @@ void Socket::set_keep_alive(bool on)
 }
 
 }
-}
+

@@ -9,8 +9,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
 
 class Connection
 {
@@ -41,15 +39,15 @@ public:
 	void shutdown(void);
 
 	int32_t get_work_thread_index(void) const { return m_work_thread_index;  }
-	event::Looper::event_id_t get_event_id(void) const { return m_event_id; }
+	Looper::event_id_t get_event_id(void) const { return m_event_id; }
 
 private:
 	Socket m_socket;
 	State m_state;
 	const Address m_local_addr;
 	const Address m_peer_addr;
-	event::Looper* m_looper;
-	event::Looper::event_id_t m_event_id;
+	Looper* m_looper;
+	Looper::event_id_t m_event_id;
 	TcpServer* m_server;
 	const int32_t m_work_thread_index;
 
@@ -59,13 +57,13 @@ private:
 
 private:
 	//// on socket read event
-	static void _on_socket_read_entry(event::Looper::event_id_t id, socket_t fd, event::Looper::event_t event, void* param){
+	static void _on_socket_read_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
 		((Connection*)param)->_on_socket_read();
 	}
 	void _on_socket_read(void);
 
 	//// on socket read event
-	static void _on_socket_write_entry(event::Looper::event_id_t id, socket_t fd, event::Looper::event_t event, void* param){
+	static void _on_socket_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
 		((Connection*)param)->_on_socket_write();
 	}
 	void _on_socket_write(void);
@@ -84,11 +82,11 @@ public:
 		const Address& peer_addr,
 		TcpServer* server,
 		int32_t work_thread_index,
-		event::Looper* looper);
+		Looper* looper);
 	~Connection();
 };
 
 }
-}
+
 #endif
 

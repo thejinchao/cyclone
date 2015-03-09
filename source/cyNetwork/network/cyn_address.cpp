@@ -7,8 +7,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
 
 //-------------------------------------------------------------------------------------
 Address::Address(uint16_t port, bool loopbackOnly)
@@ -68,5 +66,4 @@ std::string Address::get_ip_port(void) const
 	return std::string(buf);
 }
 
-}
 }

@@ -3,7 +3,6 @@
 #include <cy_network.h>
 
 using namespace cyclone;
-using namespace cyclone::network;
 
 int main(int argc, char* argv[])
 {

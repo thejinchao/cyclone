@@ -12,8 +12,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 class Looper_epoll : public Looper
 {
@@ -40,7 +38,6 @@ public:
 	virtual ~Looper_epoll();
 };
 
-}
 }
 
 #endif

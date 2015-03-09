@@ -9,8 +9,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 #ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
@@ -129,5 +127,4 @@ ssize_t Pipe::read(char* buf, ssize_t len)
 	return socket_api::read(m_pipe_fd[0], buf, len);
 }
 
-}
 }

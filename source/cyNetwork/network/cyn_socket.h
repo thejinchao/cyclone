@@ -9,8 +9,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
 
 class Socket
 {
@@ -47,5 +45,5 @@ private:
 };
 
 }
-}
+
 #endif

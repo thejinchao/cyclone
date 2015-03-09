@@ -3,8 +3,6 @@
 #include <cy_network.h>
 
 using namespace cyclone;
-using namespace cyclone::event;
-using namespace cyclone::network;
 
 //-------------------------------------------------------------------------------------
 void on_connection_callback(TcpServer* server, Connection* conn)

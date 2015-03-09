@@ -7,8 +7,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 #ifdef CY_HAVE_EPOLL
 
@@ -168,5 +166,3 @@ void nothing(void){}
 #endif
 
 }
-}
-

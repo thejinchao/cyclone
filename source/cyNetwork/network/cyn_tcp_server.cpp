@@ -9,11 +9,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
-
-//-------------------------------------------------------------------------------------
-using namespace cyclone::event;  //using cyclone event namespace
 
 //-------------------------------------------------------------------------------------
 TcpServer::TcpServer(const Address& addr)
@@ -64,7 +59,7 @@ void TcpServer::start(int32_t work_thread_counts)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_accept_function(event::Looper::event_id_t id, socket_t fd, event::Looper::event_t event)
+void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
 	//call accept and create peer socket
 	Address peer_addr;
@@ -131,5 +126,4 @@ void TcpServer::shutdown_connection(Connection* conn)
 	cmd_pipe.write((const char*)&(conn_ptr), sizeof(conn_ptr));
 }
 
-}
 }

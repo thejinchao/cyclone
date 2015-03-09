@@ -10,8 +10,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 class Looper
 {
@@ -108,7 +106,6 @@ private:
 	event_id_t _get_free_slot(void);
 };
 
-}
 }
 
 #endif

@@ -8,15 +8,13 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
 
 //-------------------------------------------------------------------------------------
 Connection::Connection(socket_t sfd,
 		const Address& peer_addr,
 		TcpServer* server,
 		int32_t work_thread_index,
-		event::Looper* looper)
+		Looper* looper)
 	: m_socket(sfd)
 	, m_peer_addr(peer_addr)
 	, m_local_addr(sfd) //create local address
@@ -53,7 +51,7 @@ void Connection::established(void)
 
 	//register socket event
 	m_event_id = m_looper->register_event(m_socket.get_fd(),
-		event::Looper::kRead,			//care read event only
+		Looper::kRead,			//care read event only
 		this,
 		_on_socket_read_entry,
 		_on_socket_write_entry);
@@ -235,5 +233,4 @@ void Connection::_on_socket_error(void)
 	_on_socket_close();
 }
 
-}
 }

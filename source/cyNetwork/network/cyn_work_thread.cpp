@@ -7,11 +7,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
-
-//-------------------------------------------------------------------------------------
-using namespace cyclone::event;  //using cyclone event namespace
 
 //-------------------------------------------------------------------------------------
 WorkThread::WorkThread(TcpServer* server, int32_t index)
@@ -118,5 +113,4 @@ void WorkThread::_on_command(void)
 	}
 }
 
-}
 }

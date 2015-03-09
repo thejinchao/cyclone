@@ -8,8 +8,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 typedef socket_t pipe_port_t;
 
@@ -28,7 +26,6 @@ public:
 	~Pipe();
 };
 
-}
 }
 
 #endif

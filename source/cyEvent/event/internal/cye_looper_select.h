@@ -9,8 +9,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace event
-{
 
 class Looper_select : public Looper
 {
@@ -45,7 +43,6 @@ public:
 	virtual ~Looper_select();
 };
 
-}
 }
 
 #endif

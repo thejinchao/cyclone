@@ -8,8 +8,6 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace network
-{
 
 class Address
 {
@@ -48,7 +46,6 @@ private:
 	struct sockaddr_in m_address;
 };
 
-}
 }
 
 #endif
