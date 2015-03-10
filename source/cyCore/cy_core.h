@@ -10,5 +10,6 @@ Copyright(C) thecodeway.com
 #include <core/cyc_socket_api.h>
 #include <core/cyc_thread_api.h>
 #include <core/cyc_ring_buf.h>
+#include <core/cyc_adler.h>
 
 #endif
