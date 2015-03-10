@@ -64,11 +64,18 @@ public:
 		return get_free_size() == 0;
 	}
 
-	////  copy n bytes from a contiguous memory area src into the ring buffer
+	////  copy n bytes from a contiguous memory area into the ring buffer
 	void memcpy_into(const void *src, size_t count);
 
-	//// copy n bytes from the ring buffer src into a contiguous memory area dst
+	//// copy n bytes from the ring buffer into a contiguous memory area dst
 	size_t memcpy_out(void *dst, size_t count);
+
+	//// copy n bytes from the ring bufffer into a contiguous memory, but 
+	//// do not change current buf
+	size_t peek(size_t off, void* dst, size_t count) const;
+
+	//// just discard at least n bytes data, return size that abandon actually
+	size_t discard(size_t count);
 
 	//// call read on the socket descriptor(fd), using the ring buffer rb as the 
 	//// destination buffer for the read, and read as more data as impossible data.
@@ -78,6 +85,11 @@ public:
 	//// source buffer for writing, In Linux platform, it will only call writev
 	//// once, and may return a short count.
 	ssize_t write_socket(socket_t fd);
+
+	//// caculate the checksum(adler32) of data from off to off+len
+	//// if off greater than size() or off+count greater than size() 
+	//// or len equ 0 return initial adler value (1)
+	uint32_t checksum(size_t off, size_t count) const;
 
 public:
 	RingBuf(size_t capacity = kDefaultCapacity);

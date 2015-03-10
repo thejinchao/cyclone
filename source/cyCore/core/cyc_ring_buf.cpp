@@ -81,7 +81,7 @@ size_t RingBuf::memcpy_out(void *dst, size_t count)
 	size_t nread = 0;
 	while (nread != count) {
 		size_t n = MIN((size_t)(m_end - m_read), count - nread);
-		memcpy(cdst + nread, m_buf+m_read, n);
+		memcpy(cdst + nread, m_buf + m_read, n);
 		m_read += n;
 		nread += n;
 
@@ -91,6 +91,47 @@ size_t RingBuf::memcpy_out(void *dst, size_t count)
 
 	//reset read and write index to zero
 	if (empty()) reset();
+	return count;
+}
+
+//-------------------------------------------------------------------------------------
+size_t RingBuf::peek(size_t off, void* dst, size_t count) const
+{
+	size_t bytes_used = size();
+	if (off > bytes_used) return 0;
+	if (off + count > bytes_used) count = bytes_used - off;
+	if (count == 0 || dst == 0) return 0;
+
+	char* cdst = (char*)dst;
+	size_t read_off = (m_read+off)%m_end;
+
+	size_t nread = 0;
+	while (nread != count) {
+		size_t n = MIN((size_t)(m_end - read_off), count - nread);
+		memcpy(cdst + nread, m_buf + read_off, n);
+		read_off += n;
+		nread += n;
+
+		// wrap 
+		if (read_off >= m_end) read_off = 0;
+	}
+
+	return count;
+}
+
+//-------------------------------------------------------------------------------------
+size_t RingBuf::discard(size_t count)
+{
+	size_t bytes_used = size();
+	if (count > bytes_used)
+		count = bytes_used;
+
+	m_read += count;
+	m_read %= m_end;
+
+	//reset read and write index to zero
+	if (empty()) reset();
+
 	return count;
 }
 
@@ -247,6 +288,32 @@ ssize_t RingBuf::write_socket(socket_t fd)
 
 	return (ssize_t)nsended;
 #endif
+}
+
+//-------------------------------------------------------------------------------------
+uint32_t RingBuf::checksum(size_t off, size_t count) const
+{
+	uint32_t adler = adler32(0, 0, 0);
+
+	size_t bytes_used = size();
+	if (off > bytes_used) return adler;
+	if (off + count > bytes_used) return adler;
+	if (count == 0) return adler;
+
+	size_t read_off = (m_read + off) % m_end;
+
+	size_t nread = 0;
+	while (nread != count) {
+		size_t n = MIN((size_t)(m_end - read_off), count - nread);
+		adler = adler32(adler, m_buf + read_off, n);
+		read_off += n;
+		nread += n;
+
+		// wrap 
+		if (read_off >= m_end) read_off = 0;
+	}
+
+	return adler;
 }
 
 }
