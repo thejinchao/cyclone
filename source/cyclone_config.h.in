@@ -48,8 +48,14 @@ Copyright(C) thecodeway.com
 
 #ifdef CY_SYS_WINDOWS
 typedef SOCKET	socket_t;
-typedef int32_t	ssize_t;
 typedef uint32_t pid_t;
+
+#ifdef  _WIN64
+typedef signed __int64    ssize_t;
+#else
+typedef _W64 signed int   ssize_t;
+#endif
+
 #else
 typedef int		socket_t;
 #endif

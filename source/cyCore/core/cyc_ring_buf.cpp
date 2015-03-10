@@ -196,7 +196,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 		if (m_read >= m_end) m_read = 0;
 
 		//socket buf busy, try next time
-		if(len < n) {
+		if(len < (ssize_t)n) {
 			break;
 		}
 	}

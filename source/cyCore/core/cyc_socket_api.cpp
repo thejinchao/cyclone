@@ -177,23 +177,23 @@ bool inet_ntop(const struct in_addr& a, char *dst, socklen_t size)
 }
 
 //-------------------------------------------------------------------------------------
-ssize_t write(socket_t s, const char* buf, ssize_t len)
+ssize_t write(socket_t s, const char* buf, size_t len)
 {
 #ifdef CY_SYS_WINDOWS
-	ssize_t _len = ::send((int)s, buf, len, MSG_DONTROUTE);
+	ssize_t _len = (ssize_t)::send((int)s, buf, (int32_t)len, MSG_DONTROUTE);
 #else
-	ssize_t _len = ::write(s, buf, len);
+	ssize_t _len = (ssize_t)::write(s, buf, len);
 #endif
 	return _len;
 }
 
 //-------------------------------------------------------------------------------------
-ssize_t read(socket_t s, void *buf, ssize_t len)
+ssize_t read(socket_t s, void *buf, size_t len)
 {
 #ifdef CY_SYS_WINDOWS
-	ssize_t _len = ::recv((int)s, (char*)buf, len, 0);
+	ssize_t _len = (ssize_t)::recv((int)s, (char*)buf, (int32_t)len, 0);
 #else
-	ssize_t _len = ::read(s, buf, len);
+	ssize_t _len = (ssize_t)::read(s, buf, len);
 #endif
 
 	return _len;
@@ -215,10 +215,10 @@ bool shutdown(socket_t s)
 }
 
 //-------------------------------------------------------------------------------------
-bool setsockopt(socket_t s, int level, int optname, const void *optval, ssize_t optlen)
+bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t optlen)
 {
 #ifdef CY_SYS_WINDOWS
-	if (::setsockopt(s, level, optname, (const char*)optval, optlen) == SOCKET_ERROR)
+	if (::setsockopt(s, level, optname, (const char*)optval, (int32_t)optlen) == SOCKET_ERROR)
 #else
 	if (::setsockopt(s, level, optname, (const char*)optval, optlen) < 0)
 #endif
