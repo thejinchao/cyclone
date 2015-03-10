@@ -62,26 +62,29 @@ void Socket::set_reuse_addr(bool on)
 
 	if (!success && on)
 	{
-		//TODO: log error set SO_REUSEPORT failed.;
+		//log error set SO_REUSEPORT failed
+		CY_LOG(L_FATAL, "set SO_REUSEPORT failed[%s]", on ? "ON" : "OFF");
 	}
 }
 
 //-------------------------------------------------------------------------------------
 void Socket::set_reuse_port(bool on)
 {
+#ifdef CY_SYS_WINDOWS
+	//NOT SUPPORT 
+#else
 	int optval = on ? 1 : 0;
 	bool success = socket_api::setsockopt(m_sockfd, SOL_SOCKET, 
-#ifdef CY_SYS_WINDOWS
-		SO_REUSEADDR,
-#else
 		SO_REUSEPORT,
-#endif
 		&optval, static_cast<socklen_t>(sizeof optval));
 
 	if (!success && on)
 	{
-		//TODO: log error set SO_REUSEPORT failed.;
+		//log error set SO_REUSEPORT failed; 
+		//this option avaliable in linux 3.9
+		CY_LOG(L_FATAL, "set SO_REUSEPORT failed[%s]", on ? "ON" : "OFF");
 	}
+#endif
 }
 
 //-------------------------------------------------------------------------------------
@@ -89,12 +92,14 @@ void Socket::set_keep_alive(bool on)
 {
 	int optval = on ? 1 : 0;
 	bool success = socket_api::setsockopt(m_sockfd, 
-		SOL_SOCKET, SO_KEEPALIVE,
+		SOL_SOCKET, 
+		SO_KEEPALIVE,
 		&optval, static_cast<socklen_t>(sizeof optval));
 
 	if (!success && on)
 	{
 		//TODO: log error set SO_KEEPALIVE failed.;
+		CY_LOG(L_FATAL, "set SO_KEEPALIVE failed[%s]", on ? "ON" : "OFF");
 	}
 }
 

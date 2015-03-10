@@ -22,8 +22,14 @@ TcpServer::TcpServer(const Address& addr)
 	, m_close_cb(0)
 {
 	//set accept socket option
+
+	//
+	//http://stackoverflow.com/questions/14388706/socket-options-so-reuseaddr-and-so-reuseport-how-do-they-differ-do-they-mean-t
+	//
 	m_acceptor_socket.set_reuse_port(true);
 	m_acceptor_socket.set_reuse_addr(true);
+
+	//bind address
 	m_acceptor_socket.bind(addr);
 
 	//zero work thread pool
