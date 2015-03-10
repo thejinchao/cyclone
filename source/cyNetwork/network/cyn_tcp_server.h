@@ -29,6 +29,9 @@ public:
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(Connection* conn); 
 
+	/// get callback param
+	void* get_callback_param(void) { return m_callback_param; }
+
 public:
 	typedef void(*on_connection_callback)(TcpServer* server, Connection* conn);
 	typedef void(*on_message_callback)(TcpServer* server, Connection* conn);
@@ -61,6 +64,8 @@ private:
 		return m_next_work = (m_next_work + 1) % m_work_thread_counts;
 	}
 
+	void*					m_callback_param;
+
 	on_connection_callback	m_connection_cb;
 	on_message_callback		m_message_cb;
 	on_close_callback		m_close_cb;
@@ -79,7 +84,7 @@ private:
 	void _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(const Address& addr);
+	TcpServer(const Address& addr, void* cb_param);
 	~TcpServer();
 };
 

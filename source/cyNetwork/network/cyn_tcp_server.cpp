@@ -11,7 +11,7 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(const Address& addr)
+TcpServer::TcpServer(const Address& addr, void* cb_param)
 	: m_address(addr)
 	, m_acceptor_socket(socket_api::create_non_blocking_socket())
 	, m_acceptor_thread(0)
@@ -20,6 +20,7 @@ TcpServer::TcpServer(const Address& addr)
 	, m_connection_cb(0)
 	, m_message_cb(0)
 	, m_close_cb(0)
+	, m_callback_param(cb_param)
 {
 	//set accept socket option
 

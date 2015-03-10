@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 
 		socket_api::write(socket.get_fd(), temp, (int)strlen(temp));
 
-		int len=0;
+		ssize_t len=0;
 		do {
 			len = socket_api::read(socket.get_fd(), temp, 1024);
 			if (len <= 0) break;

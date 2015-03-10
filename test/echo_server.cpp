@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	if (argc > 1)
 		server_port = (uint16_t)atoi(argv[1]);
 
-	TcpServer server(Address(server_port, false));
+	TcpServer server(Address(server_port, false), 0);
 	server.set_connection_callback(on_connection_callback);
 	server.set_close_callback(on_close_callback);
 	server.set_message_callback(on_message_callback);
