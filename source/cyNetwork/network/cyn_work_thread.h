@@ -15,6 +15,8 @@ public:
 	Pipe& get_cmd_port(void) { return m_pipe; }
 	//// get work thread index in work thread pool (thread safe)
 	int32_t get_index(void) const { return m_index; }
+	/// wait thread to termeinate(thread safe)
+	thread_t get_thread(void) const { return m_thread; }
 
 private:
 	const int32_t	m_index;

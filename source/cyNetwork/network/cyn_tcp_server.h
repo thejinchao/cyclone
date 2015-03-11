@@ -26,7 +26,8 @@ public:
 	/// wait server to termeinate(thread safe)
 	void join(void);
 
-	/// stop the server gracefully (thread safe)
+	/// stop the server gracefully 
+	//(NOT thread safe, you can't call this function in any work thread)
 	void stop(void);
 
 	/// shutdown one of connection(thread safe)

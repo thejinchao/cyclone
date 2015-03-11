@@ -85,7 +85,9 @@ bool WorkThread::_on_command(void)
 	else if (cmd == kCloseConnectionCmd)
 	{
 		intptr_t conn_ptr;
-		if (sizeof(conn_ptr) != m_pipe.read((char*)&conn_ptr, sizeof(conn_ptr)))
+		int32_t shutdown_ing;
+		if (sizeof(conn_ptr) != m_pipe.read((char*)&conn_ptr, sizeof(conn_ptr)) ||
+			sizeof(shutdown_ing) != m_pipe.read((char*)&shutdown_ing, sizeof(shutdown_ing)))
 		{//error
 			return false;
 		}
@@ -98,7 +100,6 @@ bool WorkThread::_on_command(void)
 			//shutdown,and wait 
 			conn->shutdown();
 		}
-
 		else if (curr_state == Connection::kDisconnected)
 		{
 			//delete the event channel
@@ -115,7 +116,7 @@ bool WorkThread::_on_command(void)
 		}
 
 		//if all connection is shutdown, and server is in shutdown process, quit the loop
-		
+		if (m_connections.empty() && shutdown_ing>0) return true;
 	}
 	else if (cmd == kShutdownCmd)
 	{

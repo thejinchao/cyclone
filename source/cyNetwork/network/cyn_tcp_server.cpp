@@ -87,30 +87,39 @@ bool TcpServer::start(const Address& bind_addr,
 //-------------------------------------------------------------------------------------
 void TcpServer::stop(void)
 {
+	//TODO: this function can't run in work thread
+
 	//is shutdown in processing?
 	if (m_shutdown_ing.get_and_set(1) > 0)return;
-
-	//first shutdown all connection
-	for (int32_t i = 0; i < m_work_thread_counts; i++){
-		//send it to one of work thread
-		WorkThread* work = m_work_thread_pool[_get_next_work_thread()];
-		Pipe& cmd_pipe = work->get_cmd_port();
-
-		int32_t cmd = WorkThread::kShutdownCmd;
-		cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
-	}
-
-	//
-	//TODO: wait all thread quit
-	//
 
 	//touch the listen socket, cause the accept thread quit
 	socket_t s = socket_api::create_socket_ex(PF_INET, SOCK_STREAM, 0);
 	socket_api::connect(s, Address(m_address.get_port(), true).get_sockaddr_in());
 	socket_api::close_socket(s);
 
+	//first shutdown all connection
+	for (int32_t i = 0; i < m_work_thread_counts; i++){
+		WorkThread* work = m_work_thread_pool[i];
+		Pipe& cmd_pipe = work->get_cmd_port();
+
+		int32_t cmd = WorkThread::kShutdownCmd;
+		cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
+	}
+
+	//wait all thread quit
+	for (int32_t i = 0; i < m_work_thread_counts; i++){
+		WorkThread* work = m_work_thread_pool[i];
+
+		thread_api::thread_join(work->get_thread());
+		delete work;
+	}
+
 	//wait accept thread quit
 	thread_api::thread_join(m_acceptor_thread);
+
+	//close the listen socket
+	delete m_acceptor_socket; 
+	m_acceptor_socket = 0;
 
 	//OK!
 	return;
@@ -191,11 +200,13 @@ void TcpServer::shutdown_connection(Connection* conn)
 	Pipe& cmd_pipe = work->get_cmd_port();
 
 	intptr_t conn_ptr = (intptr_t)conn;
+	int32_t shutdown_ing = m_shutdown_ing.get();
 
 	//write close conn command
 	int32_t cmd = WorkThread::kCloseConnectionCmd;
 	cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
 	cmd_pipe.write((const char*)&(conn_ptr), sizeof(conn_ptr));
+	cmd_pipe.write((const char*)&(shutdown_ing), sizeof(shutdown_ing));
 }
 
 }
