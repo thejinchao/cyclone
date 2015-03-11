@@ -21,7 +21,9 @@ class TcpServer
 public:
 	/// start the server(start one accept thread and n workthreads)
 	/// (thread safe, but you wouldn't want call it again...)
-	void start(int32_t work_thread_counts);
+	bool start(const Address& bind_addr, 
+		bool enable_reuse_port,
+		int32_t work_thread_counts);
 
 	/// wait server to termeinate(thread safe)
 	void join(void);
@@ -52,7 +54,7 @@ public:
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 
-	Socket			m_acceptor_socket;
+	Socket*			m_acceptor_socket;
 	Address			m_address;
 	thread_t		m_acceptor_thread;
 
@@ -84,7 +86,7 @@ private:
 	void _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(const Address& addr, void* cb_param);
+	TcpServer(void* cb_param);
 	~TcpServer();
 };
 

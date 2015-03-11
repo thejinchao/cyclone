@@ -21,9 +21,9 @@ Socket::~Socket()
 }
 
 //-------------------------------------------------------------------------------------
-void Socket::bind(const Address& addr)
+bool Socket::bind(const Address& addr)
 {
-	socket_api::bind(m_sockfd, addr.get_sockaddr_in());
+	return socket_api::bind(m_sockfd, addr.get_sockaddr_in());
 }
 
 //-------------------------------------------------------------------------------------

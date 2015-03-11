@@ -19,7 +19,7 @@ public:
 
 	/// get native handle
 	socket_t get_fd(void) const { return m_sockfd; }
-	void bind(const Address& addr);
+	bool bind(const Address& addr);
 	void listen(void);
 	bool connect(const Address& addr);
 	socket_t accept(Address& peer_addr);
