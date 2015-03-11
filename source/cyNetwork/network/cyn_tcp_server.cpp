@@ -85,7 +85,7 @@ bool TcpServer::start(const Address& bind_addr,
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
+bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
 	//call accept and create peer socket
 	Address peer_addr;
@@ -93,7 +93,7 @@ void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	if (s<0)
 	{
 		//TODO: log error
-		return;
+		return false;
 	}
 
 	//send it to one of work thread
@@ -105,6 +105,7 @@ void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
 	cmd_pipe.write((const char*)&(s), sizeof(s));
 	cmd_pipe.write((const char*)&(peer_addr.get_sockaddr_in()), sizeof(struct sockaddr_in));
+	return false;
 }
 
 //-------------------------------------------------------------------------------------

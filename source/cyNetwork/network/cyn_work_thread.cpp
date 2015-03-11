@@ -48,7 +48,7 @@ void WorkThread::_work_thread(void)
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::_on_command(void)
+bool WorkThread::_on_command(void)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 
@@ -56,7 +56,7 @@ void WorkThread::_on_command(void)
 	//read cmd
 	if (sizeof(cmd) != m_pipe.read((char*)&cmd, sizeof(cmd)))
 	{//error
-		return;
+		return false;
 	}
 
 	if (cmd == kNewConnectionCmd)
@@ -68,7 +68,7 @@ void WorkThread::_on_command(void)
 		if (sizeof(sfd) != m_pipe.read((char*)&sfd, sizeof(sfd)) ||
 			sizeof(peer_addr) != m_pipe.read((char*)&peer_addr, sizeof(peer_addr)))
 		{	//error
-			return;
+			return false;
 		}
 
 		//create tcp connection 
@@ -83,7 +83,7 @@ void WorkThread::_on_command(void)
 		intptr_t conn_ptr;
 		if (sizeof(conn_ptr) != m_pipe.read((char*)&conn_ptr, sizeof(conn_ptr)))
 		{//error
-			return;
+			return false;
 		}
 
 		Connection* conn = (Connection*)conn_ptr;
@@ -109,8 +109,9 @@ void WorkThread::_on_command(void)
 			//kDisconnecting...
 			//shutdown is in process, do nothing...
 		}
-		
 	}
+
+	return false;
 }
 
 }

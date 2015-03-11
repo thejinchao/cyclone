@@ -57,16 +57,16 @@ private:
 
 private:
 	//// on socket read event
-	static void _on_socket_read_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		((Connection*)param)->_on_socket_read();
+	static bool _on_socket_read_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+		return ((Connection*)param)->_on_socket_read();
 	}
-	void _on_socket_read(void);
+	bool _on_socket_read(void);
 
 	//// on socket read event
-	static void _on_socket_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		((Connection*)param)->_on_socket_write();
+	static bool _on_socket_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+		return ((Connection*)param)->_on_socket_write();
 	}
-	void _on_socket_write(void);
+	bool _on_socket_write(void);
 
 	//// on socket close
 	void _on_socket_close(void);

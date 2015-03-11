@@ -24,7 +24,7 @@ public:
 		kError	= 1<<2,
 	};
 
-	typedef void(*event_callback)(event_id_t id, socket_t fd, event_t event, void* param);
+	typedef bool(*event_callback)(event_id_t id, socket_t fd, event_t event, void* param);
 
 public:
 	//----------------------

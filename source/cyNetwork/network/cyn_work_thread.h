@@ -36,10 +36,10 @@ private:
 	void _work_thread(void);
 
 	//// on work thread receive new connection
-	static void _on_command_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		((WorkThread*)param)->_on_command();
+	static bool _on_command_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+		return ((WorkThread*)param)->_on_command();
 	}
-	void _on_command(void);
+	bool _on_command(void);
 
 public:
 	WorkThread(TcpServer* server, int32_t index);

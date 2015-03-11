@@ -148,7 +148,7 @@ void Connection::shutdown(void)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_on_socket_read(void)
+bool Connection::_on_socket_read(void)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 
@@ -171,10 +171,11 @@ void Connection::_on_socket_read(void)
 		//error!
 		_on_socket_error();
 	}
+	return false;
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_on_socket_write(void)
+bool Connection::_on_socket_write(void)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
@@ -204,6 +205,8 @@ void Connection::_on_socket_write(void)
 			//TODO: log error
 		}
 	}
+
+	return false;
 }
 
 //-------------------------------------------------------------------------------------
