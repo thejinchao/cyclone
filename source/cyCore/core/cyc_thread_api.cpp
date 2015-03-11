@@ -70,12 +70,19 @@ thread_t thread_create(thread_function func, void* param)
 		__win32_thread_entry, (void*)(data),
 		THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME, &thread_id);
 	
+	if (hThread < 0) {
+		free(data);
+		return INVALID_HANDLE_VALUE;
+	}
 	data->thread_id = thread_id;
 	::ResumeThread(hThread);
 	return hThread;
 #else
 	pthread_t thread;
-	pthread_create(&thread, 0, __pthread_thread_entry, data);
+	if(pthread_create(&thread, 0, __pthread_thread_entry, data)!=0) {
+		free(data);
+		return INVALID_HANDLE_VALUE;
+	}
 	return thread;
 #endif
 }

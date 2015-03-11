@@ -13,6 +13,10 @@ typedef HANDLE		thread_t;
 typedef pthread_t	thread_t;
 #endif
 
+#ifndef INVALID_HANDLE_VALUE
+#define INVALID_HANDLE_VALUE (intptr_t)(-1)
+#endif
+
 namespace cyclone
 {
 namespace thread_api
