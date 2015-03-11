@@ -15,6 +15,7 @@ set(CY_CORE_INCLUDE_FILES
 	cyCore/core/cyc_thread_api.h
 	cyCore/core/cyc_ring_buf.h
 	cyCore/core/cyc_adler.h
+	cyCore/core/cyc_atomic.h
 )
 source_group("cyCore" FILES ${CY_CORE_INCLUDE_FILES})
 
