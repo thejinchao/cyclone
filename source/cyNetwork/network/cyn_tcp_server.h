@@ -31,8 +31,8 @@ public:
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(Connection* conn); 
 
-	/// get callback param
-	void* get_callback_param(void) { return m_callback_param; }
+	/// get callback param(thread safe)
+	const void* get_callback_param(void) const { return m_callback_param; }
 
 public:
 	typedef void(*on_connection_callback)(TcpServer* server, Connection* conn);
@@ -66,7 +66,7 @@ private:
 		return m_next_work = (m_next_work + 1) % m_work_thread_counts;
 	}
 
-	void*					m_callback_param;
+	const void*				m_callback_param;
 
 	on_connection_callback	m_connection_cb;
 	on_message_callback		m_message_cb;
