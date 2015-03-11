@@ -45,6 +45,10 @@ void WorkThread::_work_thread(void)
 
 	//enter loop ...
 	m_looper->loop();
+
+	//delete the looper
+	Looper::destroy_looper(m_looper);
+	m_looper = 0;
 }
 
 //-------------------------------------------------------------------------------------
@@ -109,6 +113,26 @@ bool WorkThread::_on_command(void)
 			//kDisconnecting...
 			//shutdown is in process, do nothing...
 		}
+
+		//if all connection is shutdown, and server is in shutdown process, quit the loop
+		
+	}
+	else if (cmd == kShutdownCmd)
+	{
+		//all connection is disconnect, just quit the loop
+		if (m_connections.empty()) return true;
+
+		//send shutdown command to all connection
+		ConnectionList::iterator it, end = m_connections.end();
+		for (it = m_connections.begin(); it != end; ++it)
+		{
+			Connection* conn = *it;
+			if (conn->get_state() == Connection::kConnected)
+			{
+				conn->shutdown();
+			}
+		}
+		//just wait...
 	}
 
 	return false;

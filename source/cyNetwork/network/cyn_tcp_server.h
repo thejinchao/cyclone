@@ -4,10 +4,8 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_NETWORK_TCP_SERVER_H_
 #define _CYCLONE_NETWORK_TCP_SERVER_H_
 
-#include <cyclone_config.h>
+#include <cy_core.h>
 #include <cy_event.h>
-#include <network/cyn_socket.h>
-#include <network/cyn_address.h>
 
 namespace cyclone
 {
@@ -27,6 +25,9 @@ public:
 
 	/// wait server to termeinate(thread safe)
 	void join(void);
+
+	/// stop the server gracefully (thread safe)
+	void stop(void);
 
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(Connection* conn); 
@@ -71,6 +72,8 @@ private:
 	on_connection_callback	m_connection_cb;
 	on_message_callback		m_message_cb;
 	on_close_callback		m_close_cb;
+
+	atomic_int32_t m_shutdown_ing;
 
 private:
 	/// accept thread function

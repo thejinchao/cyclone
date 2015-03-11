@@ -85,8 +85,43 @@ bool TcpServer::start(const Address& bind_addr,
 }
 
 //-------------------------------------------------------------------------------------
+void TcpServer::stop(void)
+{
+	//is shutdown in processing?
+	if (m_shutdown_ing.get_and_set(1) > 0)return;
+
+	//first shutdown all connection
+	for (int32_t i = 0; i < m_work_thread_counts; i++){
+		//send it to one of work thread
+		WorkThread* work = m_work_thread_pool[_get_next_work_thread()];
+		Pipe& cmd_pipe = work->get_cmd_port();
+
+		int32_t cmd = WorkThread::kShutdownCmd;
+		cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
+	}
+
+	//
+	//TODO: wait all thread quit
+	//
+
+	//touch the listen socket, cause the accept thread quit
+	socket_t s = socket_api::create_socket_ex(PF_INET, SOCK_STREAM, 0);
+	socket_api::connect(s, Address(m_address.get_port(), true).get_sockaddr_in());
+	socket_api::close_socket(s);
+
+	//wait accept thread quit
+	thread_api::thread_join(m_acceptor_thread);
+
+	//OK!
+	return;
+}
+
+//-------------------------------------------------------------------------------------
 bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
+	//is shutdown in processing?
+	if (m_shutdown_ing.get() > 0) return true;
+
 	//call accept and create peer socket
 	Address peer_addr;
 	socket_t s = m_acceptor_socket->accept(peer_addr);
@@ -126,6 +161,10 @@ void TcpServer::_accept_thread(void)
 
 	//enter event loop...
 	looper->loop();
+
+	//it's time to disppear...
+	Looper::destroy_looper(looper);
+	return;
 }
 
 //-------------------------------------------------------------------------------------

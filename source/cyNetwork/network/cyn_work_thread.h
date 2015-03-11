@@ -10,7 +10,7 @@ namespace cyclone
 class WorkThread
 {
 public:
-	enum { kNewConnectionCmd=1, kCloseConnectionCmd=2 };
+	enum { kNewConnectionCmd=1, kCloseConnectionCmd=2, kShutdownCmd=3 };
 	//// thread safe
 	Pipe& get_cmd_port(void) { return m_pipe; }
 	//// get work thread index in work thread pool (thread safe)
