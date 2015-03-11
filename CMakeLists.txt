@@ -69,7 +69,15 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/cyclone_config.h.in ${CY_AUTO_
 #compiler flag
 ########
 if(MSVC)
+	option(CY_USE_MULTITHREAD "Use Multi-thread /MT" OFF)
+endif()
+
+if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+	if(CY_USE_MULTITHREAD)
+		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MT")
+	endif()
 else()
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g")
 endif()
