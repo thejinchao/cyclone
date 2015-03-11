@@ -93,3 +93,29 @@ add_library(cyclone
 	${CY_NETWORK_SOURCE_FILES}
 )
 
+########
+#INSTALL
+########
+install(FILES ${CY_AUTO_CONFIG_FILE}
+	DESTINATION include)
+	
+install(DIRECTORY cyCore/ cyEvent/ cyNetwork/
+	DESTINATION include
+	FILES_MATCHING 
+	PATTERN "*.h"
+	PATTERN "internal" EXCLUDE)
+
+if (MSVC)
+install(TARGETS cyclone
+	DESTINATION lib/Release
+	CONFIGURATIONS Release)
+	
+install(TARGETS cyclone
+	DESTINATION lib/Debug
+	CONFIGURATIONS Debug)	
+else()
+
+install(TARGETS cyclone
+	DESTINATION lib)
+
+endif()
