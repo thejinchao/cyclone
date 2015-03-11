@@ -70,6 +70,9 @@ public:
 	//// copy n bytes from the ring buffer into a contiguous memory area dst
 	size_t memcpy_out(void *dst, size_t count);
 
+	//// copy data to another ringbuf dst
+	size_t copyto(RingBuf* dst, size_t count);
+
 	//// copy n bytes from the ring bufffer into a contiguous memory, but 
 	//// do not change current buf
 	size_t peek(size_t off, void* dst, size_t count) const;
