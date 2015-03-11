@@ -53,7 +53,7 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 void Looper::delete_event(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	//pool it 
 	channel_s& channel = m_channelBuffer[id];
@@ -69,7 +69,7 @@ void Looper::delete_event(event_id_t id)
 void Looper::disable_read(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
 	_update_channel_remove_event(channel, kRead);
@@ -79,7 +79,7 @@ void Looper::disable_read(event_id_t id)
 void Looper::enable_read(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
 	_update_channel_add_event(channel, kRead);
@@ -89,7 +89,7 @@ void Looper::enable_read(event_id_t id)
 bool Looper::is_read(event_id_t id) const
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	const channel_s& channel = m_channelBuffer[id];
 	return (channel.event & kRead)!=0;
@@ -99,7 +99,7 @@ bool Looper::is_read(event_id_t id) const
 void Looper::disable_write(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
 	_update_channel_remove_event(channel, kWrite);
@@ -109,7 +109,7 @@ void Looper::disable_write(event_id_t id)
 void Looper::enable_write(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
 	_update_channel_add_event(channel, kWrite);
@@ -119,7 +119,7 @@ void Looper::enable_write(event_id_t id)
 bool Looper::is_write(event_id_t id) const
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	const channel_s& channel = m_channelBuffer[id];
 	return (channel.event & kWrite)!=0;
@@ -129,7 +129,7 @@ bool Looper::is_write(event_id_t id) const
 void Looper::disable_all(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
-	assert(id >= 0 && id < m_channelBuffer.size());
+	assert(id >= 0 && (size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
 	_update_channel_remove_event(channel, kRead|kWrite);
