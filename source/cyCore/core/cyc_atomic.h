@@ -61,9 +61,12 @@ protected:
 
 typedef atomic_t<int32_t> atomic_int32_t;
 typedef atomic_t<int64_t> atomic_int64_t;
+typedef atomic_t<uint32_t> atomic_uint32_t;
+typedef atomic_t<uint64_t> atomic_uint64_t;
 
 #ifdef _MSC_VER
 
+//--------------
 inline int32_t atomic_t<int32_t>::get(void) {
 	return InterlockedCompareExchange((LONG volatile *)&value_, (LONG)0, (LONG)0);
 }
@@ -75,6 +78,8 @@ inline int32_t atomic_t<int32_t>::get_and_add(int32_t x)	{
 inline int32_t atomic_t<int32_t>::get_and_set(int32_t x){
 	return InterlockedExchange((LONG volatile *)&value_, x);
 }
+
+//--------------
 
 inline int64_t atomic_t<int64_t>::get(void){
 	return InterlockedCompareExchange64((LONGLONG volatile *)&value_, (LONG)0, (LONG)0);
@@ -88,6 +93,32 @@ inline int64_t atomic_t<int64_t>::get_and_set(int64_t x){
 	return InterlockedExchange64((LONGLONG volatile *)&value_, x);
 }
 
+//--------------
+inline uint32_t atomic_t<uint32_t>::get(void) {
+	return InterlockedCompareExchange((LONG volatile *)&value_, (LONG)0, (LONG)0);
+}
+
+inline uint32_t atomic_t<uint32_t>::get_and_add(uint32_t x)	{
+	return InterlockedExchangeAdd((LONG volatile *)&value_, x);
+}
+
+inline uint32_t atomic_t<uint32_t>::get_and_set(uint32_t x){
+	return InterlockedExchange((LONG volatile *)&value_, x);
+}
+
+//--------------
+
+inline uint64_t atomic_t<uint64_t>::get(void){
+	return InterlockedCompareExchange64((LONGLONG volatile *)&value_, (LONG)0, (LONG)0);
+}
+
+inline uint64_t atomic_t<uint64_t>::get_and_add(uint64_t x)	{
+	return InterlockedExchangeAdd64((LONGLONG volatile *)&value_, x);
+}
+
+inline uint64_t atomic_t<uint64_t>::get_and_set(uint64_t x){
+	return InterlockedExchange64((LONGLONG volatile *)&value_, x);
+}
 
 #else
 
