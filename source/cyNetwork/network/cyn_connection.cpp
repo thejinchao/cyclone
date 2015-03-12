@@ -179,7 +179,7 @@ bool Connection::_on_socket_write(void)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
-
+	
 	if (m_looper->is_write(m_event_id))
 	{
 		assert(!m_writeBuf.empty());
@@ -218,6 +218,7 @@ void Connection::_on_socket_close(void)
 	//disable all event
 	m_state = kDisconnected;
 	m_looper->disable_all(m_event_id);
+	m_writeBuf.reset();
 
 	//logic callback
 	if (m_server && m_server->get_close_callback()) {
