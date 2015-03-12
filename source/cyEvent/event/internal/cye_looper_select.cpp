@@ -161,18 +161,14 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		_insert_to_active_list(channel);
 		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
 	}
-	else if ((event & kWrite) && !(channel.event & kWrite) && channel.on_write)
+	
+	if ((event & kWrite) && !(channel.event & kWrite) && channel.on_write)
 	{
 		FD_SET(fd, &m_master_write_fd_set);
 		m_max_write_counts++;
 		channel.event |= kWrite;
 		_insert_to_active_list(channel);
 		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
-	}
-	else
-	{
-		//TODO: log error, select event is already in set or callback is null
-		return;
 	}
 }
 
@@ -189,16 +185,13 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 		channel.event &= ~kRead;
 		if (m_max_fd == fd) { m_max_fd = -1; }
 	}
-	else if ((event & kWrite) && (channel.event & kWrite))
+	
+	if ((event & kWrite) && (channel.event & kWrite))
 	{
 		FD_CLR(fd, &m_master_write_fd_set);
 		m_max_write_counts--;
 		channel.event &= ~kWrite;
 		if (m_max_fd == fd) { m_max_fd = -1; }
-	}
-	else
-	{
-		//TODO: log error, select event is not in set 
 	}
 
 	if (channel.event == kNone)

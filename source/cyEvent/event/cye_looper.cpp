@@ -157,7 +157,7 @@ void Looper::loop(void)
 		for (size_t i = 0; i < readList.size(); i++)
 		{
 			channel_s* c = readList[i];
-			if (c->on_read == 0) continue;
+			if (c->on_read == 0 || (c->event & kRead) == 0) continue;
 
 			if (c->on_read(c->id, c->fd, kRead, c->param)) {
 				quit_cmd = true;
@@ -167,7 +167,7 @@ void Looper::loop(void)
 		for (size_t i = 0; i < writeList.size(); i++)
 		{
 			channel_s* c = writeList[i];
-			if (c->on_write == 0) continue;
+			if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
 
 			if (c->on_write(c->id, c->fd, kWrite, c->param)){
 				quit_cmd = true;
