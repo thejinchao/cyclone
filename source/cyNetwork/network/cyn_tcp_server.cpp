@@ -87,7 +87,15 @@ bool TcpServer::start(const Address& bind_addr,
 //-------------------------------------------------------------------------------------
 void TcpServer::stop(void)
 {
-	//TODO: this function can't run in work thread
+	//this function can't run in work thread
+	for (int32_t i = 0; i < m_work_thread_counts; i++){
+		WorkThread* work = m_work_thread_pool[i];
+		if (thread_api::thread_get_id(work->get_thread()) == thread_api::thread_get_current_id())
+		{
+			CY_LOG(L_ERROR, "you can't stop server in work thread.");
+			return;
+		}
+	}
 
 	//is shutdown in processing?
 	if (m_shutdown_ing.get_and_set(1) > 0)return;
