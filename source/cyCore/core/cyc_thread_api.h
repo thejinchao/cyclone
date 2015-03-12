@@ -6,16 +6,11 @@ Copyright(C) thecodeway.com
 
 #include <cyclone_config.h>
 
-#ifdef CY_SYS_WINDOWS
-typedef HANDLE		thread_t;
-#else
+#ifndef CY_SYS_WINDOWS
 #include <pthread.h>
-typedef pthread_t	thread_t;
 #endif
 
-#ifndef INVALID_HANDLE_VALUE
-#define INVALID_HANDLE_VALUE (intptr_t)(-1)
-#endif
+typedef void* thread_t;
 
 namespace cyclone
 {
@@ -31,6 +26,9 @@ typedef void (*thread_function)(void* param);
 
 //// get current thread id
 pid_t thread_get_current_id(void);
+
+//// get the system id of thread
+pid_t thread_get_id(thread_t t);
 
 //// create a new thread
 thread_t thread_create(thread_function func, void* param);

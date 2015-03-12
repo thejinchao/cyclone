@@ -18,11 +18,16 @@ namespace thread_api
 {
 
 //-------------------------------------------------------------------------------------
-struct thread_data
+struct thread_data_s
 {
-	pid_t thread_id;
+	atomic_t<pid_t> tid;
 	thread_function entry_func;
 	void* param;
+#ifdef CY_SYS_WINDOWS
+	HANDLE handle;
+#else
+	pthread_t handle;
+#endif
 };
 
 //-------------------------------------------------------------------------------------
@@ -35,11 +40,18 @@ pid_t thread_get_current_id(void)
 #endif
 }
 
+//-------------------------------------------------------------------------------------
+pid_t thread_get_id(thread_t t)
+{
+	thread_data_s* data = (thread_data_s*)t;
+	return data->tid.get();
+}
+
 #ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
 static unsigned int __stdcall __win32_thread_entry(void* param)
 {
-	thread_data* data = (thread_data*)param;
+	thread_data_s* data = (thread_data_s*)param;
 	if (data && data->entry_func)
 		data->entry_func(data->param);
 	free(data);
@@ -49,7 +61,8 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 //-------------------------------------------------------------------------------------
 static void* __pthread_thread_entry(void* param)
 {
-	thread_data* data = (thread_data*)param;
+	thread_data_s* data = (thread_data_s*)param;
+	data->tid.set(thread_get_current_id());
 	if (data && data->entry_func)
 		data->entry_func(data->param);
 	free(data);
@@ -60,9 +73,11 @@ static void* __pthread_thread_entry(void* param)
 //-------------------------------------------------------------------------------------
 thread_t thread_create(thread_function func, void* param)
 {
-	thread_data* data = (thread_data*)malloc(sizeof(*data));
+	thread_data_s* data = (thread_data_s*)malloc(sizeof(*data));
+	data->tid.set(0);
 	data->param = param;
 	data->entry_func = func;
+	data->handle = 0;
 
 #ifdef CY_SYS_WINDOWS
 	unsigned int thread_id;
@@ -72,18 +87,21 @@ thread_t thread_create(thread_function func, void* param)
 	
 	if (hThread < 0) {
 		free(data);
-		return INVALID_HANDLE_VALUE;
+		return 0;
 	}
-	data->thread_id = thread_id;
+	data->handle = hThread;
+	data->tid.set(thread_id);
 	::ResumeThread(hThread);
-	return hThread;
+	return data;
 #else
 	pthread_t thread;
 	if(pthread_create(&thread, 0, __pthread_thread_entry, data)!=0) {
 		free(data);
-		return INVALID_HANDLE_VALUE;
+		return 0;
 	}
-	return thread;
+	data->handle = thread;
+	while(data->tid.get()==0); //make sure we got the pid(BUSY LOOP, BUT IT IS VERY SHORT)
+	return data;
 #endif
 }
 
@@ -103,10 +121,11 @@ void thread_sleep(int32_t msec)
 //-------------------------------------------------------------------------------------
 void thread_join(thread_t thread)
 {
+	thread_data_s* data = (thread_data_s*)thread;
 #ifdef CY_SYS_WINDOWS
-	::WaitForSingleObject(thread, INFINITE);
+	::WaitForSingleObject(data->handle, INFINITE);
 #else
-	pthread_join(thread, 0);
+	pthread_join(data->handle, 0);
 #endif
 }
 
