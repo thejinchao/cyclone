@@ -13,7 +13,7 @@ namespace cyclone
 class Looper_select : public Looper
 {
 protected:
-	virtual void _poll(int32_t time_out_ms,
+	virtual void _poll(
 		channel_list& readChannelList,
 		channel_list& writeChannelList);
 	/// Changes the interested I/O events.

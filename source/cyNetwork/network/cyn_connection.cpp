@@ -16,15 +16,15 @@ Connection::Connection(socket_t sfd,
 		int32_t work_thread_index,
 		Looper* looper)
 	: m_socket(sfd)
-	, m_peer_addr(peer_addr)
-	, m_local_addr(sfd) //create local address
 	, m_state(kConnecting)
+	, m_local_addr(sfd) //create local address
+	, m_peer_addr(peer_addr)
+	, m_looper(looper)
 	, m_event_id(0)
 	, m_server(server)
-	, m_looper(looper)
+	, m_work_thread_index(work_thread_index)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
-	, m_work_thread_index(work_thread_index)
 {
 	m_socket.set_keep_alive(true);
 }
@@ -83,7 +83,7 @@ void Connection::_send(const char* buf, size_t len)
 
 	bool faultError = false;
 	size_t remaining = len;
-	size_t nwrote = 0;
+	ssize_t nwrote = 0;
 
 	if (m_state != kConnected)
 	{
@@ -108,6 +108,7 @@ void Connection::_send(const char* buf, size_t len)
 		}
 		else
 		{
+			//TODO: get correct errno in windows platform
 			nwrote = 0;
 			if (errno != EWOULDBLOCK)
 			{

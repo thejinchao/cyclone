@@ -9,6 +9,8 @@ using namespace cyclone;
 //-------------------------------------------------------------------------------------
 void on_connection_callback(TcpServer* server, Connection* conn)
 {
+	(void)server;
+
 	CY_LOG(L_INFO, "new connection accept, from %s:%d", 
 		conn->get_peer_addr().get_ip(),
 		conn->get_peer_addr().get_port());
@@ -31,7 +33,7 @@ void on_message_callback(TcpServer* server, Connection* conn)
 	}
 
 	size_t len = strlen(temp);
-	for (size_t i = 0; i < len; i++) temp[i]=toupper(temp[i]);
+	for (size_t i = 0; i < len; i++) temp[i]=(char)toupper(temp[i]);
 	strcat(temp, "\n");
 
 	conn->send(temp, strlen(temp));
@@ -40,6 +42,8 @@ void on_message_callback(TcpServer* server, Connection* conn)
 //-------------------------------------------------------------------------------------
 void on_close_callback(TcpServer* server, Connection* conn)
 {
+	(void)server;
+
 	CY_LOG(L_INFO, "connection %s:%d closed", 
 		conn->get_peer_addr().get_ip(),
 		conn->get_peer_addr().get_port());

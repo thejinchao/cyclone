@@ -12,11 +12,11 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-RingBuf::RingBuf(size_t capacity)
+RingBuf::RingBuf(size_t _capacity)
 {
 	/* One byte is used for detecting the full condition. */
-	m_buf = (char*)malloc(capacity+1);
-	m_end = capacity + 1;
+	m_buf = (char*)malloc(_capacity + 1);
+	m_end = _capacity + 1;
 	reset();
 }
 
@@ -165,11 +165,12 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	char stack_buf[STACK_BUF_SIZE];
 
 #ifdef CY_SYS_WINDOWS
+	//TODO: it is not correct to call read() more than once in on event call!
 	size_t count = get_free_size();
 
 	//in windows call read three times maxmium
 	ssize_t nwritten = 0;
-	while (nwritten != count)	{
+	while (nwritten != (ssize_t)count)	{
 		ssize_t n = (ssize_t)MIN((size_t)(m_end - m_write), count - nwritten);
 		ssize_t len = socket_api::read(fd, m_buf + m_write, (ssize_t)n);
 		if (len <= 0) return len;
@@ -196,7 +197,7 @@ ssize_t RingBuf::read_socket(socket_t fd)
 
 	ssize_t nwritten = 0;
 	size_t write_off = m_write;
-	while (nwritten != count)	{
+	while (nwritten != (ssize_t)count)	{
 		ssize_t n = (ssize_t)MIN((size_t)(m_end - write_off), count - nwritten);
 		vec[vec_counts].iov_base = m_buf + write_off;
 		vec[vec_counts].iov_len = n;
@@ -219,9 +220,9 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	if (read_counts <= 0) return read_counts;	//error
 
 	//adjust point
-	count = MIN(get_free_size(), read_counts);
+	count = MIN(get_free_size(), (size_t)read_counts);
 	nwritten = 0;
-	while (nwritten != count)	{
+	while (nwritten != (ssize_t)count)	{
 		ssize_t n = (ssize_t)MIN((size_t)(m_end - m_write), count - nwritten);
 
 		nwritten += n;
@@ -296,7 +297,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 
 	//adjust point
 	nsended = 0;
-	while (nsended != write_counts) {
+	while (nsended != (size_t)write_counts) {
 		size_t n = MIN((size_t)(m_end - m_read), write_counts - nsended);
 
 		m_read += n;

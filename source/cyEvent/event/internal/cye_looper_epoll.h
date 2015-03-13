@@ -17,7 +17,7 @@ class Looper_epoll : public Looper
 {
 public:
 	/// Polls the I/O events.
-	virtual void _poll(int32_t time_out_ms, 
+	virtual void _poll( 
 		channel_list& readChannelList,
 		channel_list& writeChannelList);
 	/// Changes the interested I/O events.

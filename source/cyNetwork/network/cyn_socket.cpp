@@ -71,6 +71,7 @@ void Socket::set_reuse_addr(bool on)
 void Socket::set_reuse_port(bool on)
 {
 #ifdef CY_SYS_WINDOWS
+	(void)on;
 	//NOT SUPPORT 
 #else
 	int optval = on ? 1 : 0;

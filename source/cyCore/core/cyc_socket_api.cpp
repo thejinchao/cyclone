@@ -92,6 +92,8 @@ bool set_nonblock(socket_t s, bool enable)
 bool set_close_onexec(socket_t s, bool enable)
 {
 #ifdef CY_SYS_WINDOWS
+	(void)s;
+	(void)enable;
 	//NOT SUPPORT (I'm not sure...)
 #else
 	// close-on-exec
@@ -229,7 +231,7 @@ bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t o
 #ifdef CY_SYS_WINDOWS
 	if (::setsockopt(s, level, optname, (const char*)optval, (int32_t)optlen) == SOCKET_ERROR)
 #else
-	if (::setsockopt(s, level, optname, (const char*)optval, optlen) < 0)
+	if (::setsockopt(s, level, optname, (const char*)optval, (socklen_t)optlen) < 0)
 #endif
 	{
 		CY_LOG(L_FATAL, "socket_api::setsockopt");

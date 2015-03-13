@@ -27,8 +27,8 @@ Looper_select::~Looper_select()
 }
 
 //-------------------------------------------------------------------------------------
-void Looper_select::_poll(int32_t time_out_ms,
-	channel_list& readChannelList,
+void Looper_select::_poll(
+	channel_list& readChannelList, 
 	channel_list& writeChannelList)
 {
 	if (m_max_fd == INVALID_SOCKET)

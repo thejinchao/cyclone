@@ -10,9 +10,9 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 WorkThread::WorkThread(TcpServer* server, int32_t index)
-	: m_server(server)
+	: m_index(index)
+	, m_server(server)
 	, m_looper(0)
-	, m_index(index)
 {
 	m_thread_ready = thread_api::signal_create();
 

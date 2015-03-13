@@ -12,8 +12,8 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 Looper::Looper()
-	: m_current_thread(thread_api::thread_get_current_id())
-	, m_free_head(INVALID_EVENT_ID)
+	: m_free_head(INVALID_EVENT_ID)
+	, m_current_thread(thread_api::thread_get_current_id())
 {
 }
 
@@ -149,7 +149,7 @@ void Looper::loop(void)
 		writeList.clear();
 
 		//wait in kernel...
-		_poll(0, readList, writeList);
+		_poll(readList, writeList);
 		
 		bool quit_cmd = false;
 
@@ -182,7 +182,8 @@ void Looper::loop(void)
 //-------------------------------------------------------------------------------------
 Looper::event_id_t Looper::_get_free_slot(void)
 {
-	do {
+	for (;;)
+	{
 		if (m_free_head != INVALID_EVENT_ID) {
 			event_id_t id = m_free_head;
 
@@ -194,7 +195,7 @@ Looper::event_id_t Looper::_get_free_slot(void)
 
 		//need alloc more space
 		size_t old_size = m_channelBuffer.size();
-		size_t new_size = (old_size == 0) ? DEFAULT_CHANNEL_BUF_COUNTS : old_size * 2;
+		size_t new_size = (old_size == 0) ? ((size_t)DEFAULT_CHANNEL_BUF_COUNTS) : (old_size * 2);
 
 		m_channelBuffer.reserve(new_size);
 
@@ -209,7 +210,7 @@ Looper::event_id_t Looper::_get_free_slot(void)
 			m_channelBuffer.push_back(channel);
 		}
 		//try again now...
-	} while (true);
+	}
 }
 
 }

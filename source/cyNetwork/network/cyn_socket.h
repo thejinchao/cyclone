@@ -42,6 +42,10 @@ public:
 
 private:
 	const socket_t m_sockfd;	//native socket fd
+
+private:
+	//not-copyable
+	Socket & operator=(const Socket &) { return *this; }
 };
 
 }

@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 	CY_LOG(L_DEBUG, "connect to %s:%d %s.", server_ip, server_port, success ? "OK" : "FAILED");
 	if (!success) return 1;
 
-	while (true)
+	for (;;)
 	{
 		printf("input:");
 		char temp[1024] = { 0 };
@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 		socket_api::write(socket.get_fd(), temp, (int)strlen(temp));
 
 		ssize_t len=0;
-		do {
+		for(;;) {
 			len = socket_api::read(socket.get_fd(), temp, 1024);
 			if (len <= 0) break;
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 
 			//break;
 			if (temp[len - 1] == '\n') break;
-		} while (true);
+		}
 
 		if (len <= 0) break;
 	}

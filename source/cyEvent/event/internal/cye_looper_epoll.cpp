@@ -13,8 +13,8 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 Looper_epoll::Looper_epoll()
 	: Looper()
-	, m_eoll_fd(::epoll_create1(EPOLL_CLOEXEC))
 	, m_events(DEFAULT_CHANNEL_BUF_COUNTS)
+	, m_eoll_fd(::epoll_create1(EPOLL_CLOEXEC))
 {
 }
 
@@ -25,7 +25,7 @@ Looper_epoll::~Looper_epoll()
 }
 
 //-------------------------------------------------------------------------------------
-void Looper_epoll::_poll(int32_t time_out_ms,
+void Looper_epoll::_poll(
 	channel_list& readChannelList,
 	channel_list& writeChannelList)
 {
@@ -134,7 +134,7 @@ void Looper_epoll::_update_channel_add_event(channel_s& channel, event_t event)
 //-------------------------------------------------------------------------------------
 void Looper_epoll::_update_channel_remove_event(channel_s& channel, event_t event)
 {
-	if (channel.event & event == kNone || !channel.active) return;
+	if ((channel.event & event) == kNone || !channel.active) return;
 	uint32_t event_to_set = 0;
 
 	if ((channel.event & kRead) && !(event & kRead) && channel.on_read)

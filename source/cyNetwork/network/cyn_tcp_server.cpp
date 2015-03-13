@@ -16,10 +16,10 @@ TcpServer::TcpServer(void* cb_param)
 	, m_acceptor_thread(0)
 	, m_work_thread_counts(0)
 	, m_next_work(0)
+	, m_callback_param(cb_param)
 	, m_connection_cb(0)
 	, m_message_cb(0)
 	, m_close_cb(0)
-	, m_callback_param(cb_param)
 {
 	//zero work thread pool
 	memset(m_work_thread_pool, 0, sizeof(m_work_thread_pool[0])*MAX_WORK_THREAD_COUNTS);
@@ -144,6 +144,9 @@ void TcpServer::stop(void)
 //-------------------------------------------------------------------------------------
 bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
+	(void)id;
+	(void)fd;
+	(void)event;
 	//is shutdown in processing?
 	if (m_shutdown_ing.get() > 0) return true;
 

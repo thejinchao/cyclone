@@ -95,7 +95,7 @@ protected:
 	pid_t m_current_thread;
 
 	/// Polls the I/O events.
-	virtual void _poll(int32_t time_out_ms, 
+	virtual void _poll(
 		channel_list& readChannelList,
 		channel_list& writeChannelList) = 0;
 	/// Changes the interested I/O events.

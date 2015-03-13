@@ -38,7 +38,7 @@ private:
 	void _work_thread(void);
 
 	//// on work thread receive new connection
-	static bool _on_command_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+	static bool _on_command_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
 		return ((WorkThread*)param)->_on_command();
 	}
 	bool _on_command(void);
@@ -46,6 +46,10 @@ private:
 public:
 	WorkThread(TcpServer* server, int32_t index);
 	~WorkThread();
+
+	//not-copyable
+private:
+	WorkThread & operator=(const WorkThread &) { return *this; }
 };
 
 }

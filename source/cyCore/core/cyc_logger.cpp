@@ -110,7 +110,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 
 	char szTemp[1024] = { 0 };
 	va_list ptr; va_start(ptr, message);
-	vsnprintf((char *)szTemp, 1024, message, ptr);
+	vsnprintf(szTemp, 1024, message, ptr);
 	va_end(ptr);
 
 	fprintf(fp, "%s\t%s\n",
