@@ -59,6 +59,9 @@ bool getsockname(socket_t s, struct sockaddr_in& addr);
 uint16_t ntoh_16(uint16_t x);
 uint32_t ntoh_32(uint32_t x);
 
+//// get last socket error
+int get_lasterror(void);
+
 }
 }
 

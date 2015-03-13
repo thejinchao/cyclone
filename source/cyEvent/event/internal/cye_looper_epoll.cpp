@@ -35,7 +35,7 @@ void Looper_epoll::_poll(
 		num_events = ::epoll_wait(m_eoll_fd,
 			&*m_events.begin(), static_cast<int>(m_events.size()),
 			-1);
-	}while (num_events < 0 && errno == EINTR); //gdb may cause interrupted system call
+	}while (num_events < 0 && socket_api::get_lasterror() == EINTR); //gdb may cause interrupted system call
 
 	if (num_events < 0)
 	{

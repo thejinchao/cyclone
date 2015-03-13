@@ -292,5 +292,15 @@ uint32_t ntoh_32(uint32_t x)
 #endif
 }
 
+//-------------------------------------------------------------------------------------
+int get_lasterror(void)
+{
+#ifdef CY_SYS_WINDOWS
+	return ::WSAGetLastError();
+#else
+	return errno;
+#endif
+}
+
 }
 }

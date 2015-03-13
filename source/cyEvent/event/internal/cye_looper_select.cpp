@@ -55,7 +55,7 @@ void Looper_select::_poll(
 		thread_api::thread_sleep(1);
 	}
 
-	int err = (ready < -1) ? errno : 0;
+	int err = (ready < -1) ? socket_api::get_lasterror() : 0;
 
 	if (err < 0)
 	{

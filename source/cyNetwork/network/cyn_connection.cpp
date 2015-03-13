@@ -108,12 +108,22 @@ void Connection::_send(const char* buf, size_t len)
 		}
 		else
 		{
-			//TODO: get correct errno in windows platform
 			nwrote = 0;
-			if (errno != EWOULDBLOCK)
+			int err = socket_api::get_lasterror();
+
+#ifdef CY_SYS_WINDOWS
+			if(err != WSAEWOULDBLOCK)
+#else
+			if(err != EWOULDBLOCK)
+#endif
 			{
-				//TODO: log error;
-				if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
+				CY_LOG(L_ERROR, "socket send error, err=%d", err);
+
+#ifdef CY_SYS_WINDOWS
+				if (err == WSAESHUTDOWN || err == WSAENETRESET)
+#else
+				if (err == EPIPE || err == ECONNRESET)
+#endif
 				{
 					faultError = true;
 				}
