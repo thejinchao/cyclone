@@ -65,15 +65,15 @@ socket_t create_non_blocking_socket(void)
 }
 
 //-------------------------------------------------------------------------------------
-socket_t create_socket_ex(int af, int type, int protocol)
+socket_t create_blocking_socket(void)
 {
 #ifdef CY_SYS_WINDOWS
 	AUTO_INIT_WIN_SOCKET();
 
-	socket_t sockfd = ::socket(af, type, protocol);
+	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == INVALID_SOCKET)
 #elif defined(CY_SYS_LINUX)
-	socket_t sockfd = ::socket(af, type, protocol);
+	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0)
 #endif
 	{

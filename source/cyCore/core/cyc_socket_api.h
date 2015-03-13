@@ -14,8 +14,8 @@ namespace socket_api
 /// Creates a non-blocking socket file descriptor,
 socket_t create_non_blocking_socket(void);
 
-/// Creates a normal socket file descriptor,
-socket_t create_socket_ex(int af, int type, int protocol);
+/// Creates a blocking socket file descriptor,
+socket_t create_blocking_socket(void);
 
 /// Close socket
 void close_socket(socket_t s);

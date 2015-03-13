@@ -101,7 +101,7 @@ void TcpServer::stop(void)
 	if (m_shutdown_ing.get_and_set(1) > 0)return;
 
 	//touch the listen socket, cause the accept thread quit
-	socket_t s = socket_api::create_socket_ex(PF_INET, SOCK_STREAM, 0);
+	socket_t s = socket_api::create_blocking_socket();
 	socket_api::connect(s, Address(m_address.get_port(), true).get_sockaddr_in());
 	socket_api::close_socket(s);
 

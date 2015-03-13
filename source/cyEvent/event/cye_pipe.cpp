@@ -19,7 +19,7 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 	//
 	handles[0] = handles[1] = INVALID_SOCKET;
 
-	socket_t s = socket_api::create_socket_ex(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	socket_t s = socket_api::create_blocking_socket();
 	if (s == 0)
 	{
 		//TODO: log L_FATAL message
@@ -54,7 +54,7 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 		return false;
 	}
 
-	if ((handles[1] = socket_api::create_socket_ex(PF_INET, SOCK_STREAM, 0)) == 0)
+	if ((handles[1] = socket_api::create_blocking_socket()) == 0)
 	{
 		//TODO: log L_FATAL message
 		socket_api::close_socket(s);
