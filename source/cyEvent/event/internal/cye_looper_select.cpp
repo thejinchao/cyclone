@@ -13,7 +13,7 @@ Looper_select::Looper_select()
 	: Looper()
 	, m_max_read_counts(0)
 	, m_max_write_counts(0)
-	, m_max_fd(-1)
+	, m_max_fd(INVALID_SOCKET)
 	, m_active_head(INVALID_EVENT_ID)
 {
 	FD_ZERO(&m_master_read_fd_set);
@@ -31,7 +31,7 @@ void Looper_select::_poll(int32_t time_out_ms,
 	channel_list& readChannelList,
 	channel_list& writeChannelList)
 {
-	if (m_max_fd == -1)
+	if (m_max_fd == INVALID_SOCKET)
 	{
 		for (size_t i = 0; i < m_channelBuffer.size(); i++)
 		{
@@ -159,7 +159,7 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		m_max_read_counts++;
 		channel.event |= kRead;
 		_insert_to_active_list(channel);
-		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
+		if (m_max_fd == INVALID_SOCKET || m_max_fd < fd)  m_max_fd = fd;
 	}
 	
 	if ((event & kWrite) && !(channel.event & kWrite) && channel.on_write)
@@ -168,7 +168,7 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		m_max_write_counts++;
 		channel.event |= kWrite;
 		_insert_to_active_list(channel);
-		if (m_max_fd == -1 || m_max_fd < fd)  m_max_fd = fd;
+		if (m_max_fd == INVALID_SOCKET || m_max_fd < fd)  m_max_fd = fd;
 	}
 }
 
@@ -183,7 +183,7 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 		FD_CLR(fd, &m_master_read_fd_set);
 		m_max_read_counts--;
 		channel.event &= ~kRead;
-		if (m_max_fd == fd) { m_max_fd = -1; }
+		if (m_max_fd == fd) { m_max_fd = INVALID_SOCKET; }
 	}
 	
 	if ((event & kWrite) && (channel.event & kWrite))
@@ -191,7 +191,7 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 		FD_CLR(fd, &m_master_write_fd_set);
 		m_max_write_counts--;
 		channel.event &= ~kWrite;
-		if (m_max_fd == fd) { m_max_fd = -1; }
+		if (m_max_fd == fd) { m_max_fd = INVALID_SOCKET; }
 	}
 
 	if (channel.event == kNone)

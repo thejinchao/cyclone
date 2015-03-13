@@ -36,48 +36,16 @@ static const _auto_init_win_socke_s& AUTO_INIT_WIN_SOCKET()
 #endif
 
 //-------------------------------------------------------------------------------------
-socket_t create_non_blocking_socket(void)
+socket_t create_socket(void)
 {
 #ifdef CY_SYS_WINDOWS
 	AUTO_INIT_WIN_SOCKET();
-
-	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if(sockfd==INVALID_SOCKET)
-#elif defined(CY_SYS_LINUX)
-	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
-	if (sockfd < 0)
 #endif
-	{
-		CY_LOG(L_FATAL, "socket_api::create_non_blocking_socket");
-		return 0;
-	}
-
-#ifndef CY_SYS_LINUX
-	if (!set_nonblock(sockfd, true)) 
-	{
-		close_socket(sockfd);
-		return 0;
-	}
-#endif
-
-	return sockfd;
-}
-
-//-------------------------------------------------------------------------------------
-socket_t create_blocking_socket(void)
-{
-#ifdef CY_SYS_WINDOWS
-	AUTO_INIT_WIN_SOCKET();
 
 	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == INVALID_SOCKET)
-#elif defined(CY_SYS_LINUX)
-	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0)
-#endif
 	{
 		CY_LOG(L_FATAL, "socket_api::create_socket");
-		return 0;
 	}
 
 	return sockfd;
@@ -108,15 +76,33 @@ bool set_nonblock(socket_t s, bool enable)
 		return false;
 	}
 #else
-	int flags = fcntl(s, F_GETFL, 0);
+	int32_t flags = ::fcntl(s, F_GETFL, 0);
 	if(flags==-1 ||
-		fcntl(s, F_SETFL, enable ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK)))
+		::fcntl(s, F_SETFL, enable ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK))==-1)
 	{
 		CY_LOG(L_FATAL, "socket_api::set_nonblock");
 		return false;
 	}
 #endif
 
+	return true;
+}
+
+//-------------------------------------------------------------------------------------
+bool set_close_onexec(socket_t s, bool enable)
+{
+#ifdef CY_SYS_WINDOWS
+	//NOT SUPPORT (I'm not sure...)
+#else
+	// close-on-exec
+	int32_t flags = ::fcntl(s, F_GETFD, 0);
+	if(flags==-1 ||
+		::fcntl(s, F_SETFD, enable ? (flags | FD_CLOEXEC) : (flags & ~FD_CLOEXEC))==-1)
+	{
+		CY_LOG(L_FATAL, "socket_api::set_close_onexec");
+		return false;
+	}
+#endif
 	return true;
 }
 
@@ -203,7 +189,7 @@ bool inet_ntop(const struct in_addr& a, char *dst, socklen_t size)
 ssize_t write(socket_t s, const char* buf, size_t len)
 {
 #ifdef CY_SYS_WINDOWS
-	ssize_t _len = (ssize_t)::send((int)s, buf, (int32_t)len, MSG_DONTROUTE);
+	ssize_t _len = (ssize_t)::send(s, buf, (int32_t)len, MSG_DONTROUTE);
 #else
 	ssize_t _len = (ssize_t)::write(s, buf, len);
 #endif
@@ -214,7 +200,7 @@ ssize_t write(socket_t s, const char* buf, size_t len)
 ssize_t read(socket_t s, void *buf, size_t len)
 {
 #ifdef CY_SYS_WINDOWS
-	ssize_t _len = (ssize_t)::recv((int)s, (char*)buf, (int32_t)len, 0);
+	ssize_t _len = (ssize_t)::recv(s, (char*)buf, (int32_t)len, 0);
 #else
 	ssize_t _len = (ssize_t)::read(s, buf, len);
 #endif
@@ -257,17 +243,11 @@ socket_t accept(socket_t s, struct sockaddr_in& addr)
 {
 	socklen_t addrlen = static_cast<socklen_t>(sizeof addr);
 
-#ifdef CY_SYS_WINDOWS
-	socket_t connfd = ::accept(s, (struct sockaddr *)&addr, (int*)&addrlen);
-	if (connfd == SOCKET_ERROR)
-#else
-	socket_t connfd = ::accept4(s, (struct sockaddr*)(&addr),
-		&addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
-	if (connfd < 0)
-#endif
+	socket_t connfd = ::accept(s, (struct sockaddr *)&addr, &addrlen);
+
+	if (connfd == INVALID_SOCKET)
 	{
 		CY_LOG(L_FATAL, "socket_api::accept");
-		return -1;
 	}
 	return connfd;
 }

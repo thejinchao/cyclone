@@ -152,7 +152,7 @@ bool Connection::_on_socket_read(void)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	ssize_t len = m_readBuf.read_socket((int)m_socket.get_fd());
+	ssize_t len = m_readBuf.read_socket(m_socket.get_fd());
 
 	if (len > 0)
 	{

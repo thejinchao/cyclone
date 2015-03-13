@@ -38,7 +38,7 @@ socket_t Socket::accept(Address& peer_addr)
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof addr);
 	socket_t connfd = socket_api::accept(m_sockfd, addr);
-	if (connfd > 0)
+	if (connfd != INVALID_SOCKET)
 	{
 		peer_addr = addr;
 	}

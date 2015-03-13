@@ -50,12 +50,20 @@ bool TcpServer::start(const Address& bind_addr,
 	m_address = Address(bind_addr);
 
 	//create a non blocking socket
-	socket_t sfd = socket_api::create_non_blocking_socket();
-	if (sfd == 0) {
+	socket_t sfd = socket_api::create_socket();
+	if (sfd == INVALID_SOCKET) {
 		CY_LOG(L_ERROR, "create socket error");
 		return false;
 	}
 	m_acceptor_socket = new Socket(sfd);
+
+	//set socket to non-block mode
+	if (!socket_api::set_nonblock(m_acceptor_socket->get_fd(), true)) {
+		//the process should be stop
+		return false;
+	}
+	//set socket close on exe flag, the file  descriptor will be closed open across an execve.
+	socket_api::set_close_onexec(m_acceptor_socket->get_fd(), true);
 
 	//set accept socket option
 	if (enable_reuse_port) {
@@ -101,7 +109,7 @@ void TcpServer::stop(void)
 	if (m_shutdown_ing.get_and_set(1) > 0)return;
 
 	//touch the listen socket, cause the accept thread quit
-	socket_t s = socket_api::create_blocking_socket();
+	socket_t s = socket_api::create_socket();
 	socket_api::connect(s, Address(m_address.get_port(), true).get_sockaddr_in());
 	socket_api::close_socket(s);
 
@@ -142,11 +150,16 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	//call accept and create peer socket
 	Address peer_addr;
 	socket_t s = m_acceptor_socket->accept(peer_addr);
-	if (s<0)
+	if (s == INVALID_SOCKET)
 	{
-		//TODO: log error
+		//log error
+		CY_LOG(L_ERROR, "accept socket error");
 		return false;
 	}
+
+	//set socket to non-block and close-onexec
+	socket_api::set_nonblock(s, true);
+	socket_api::set_close_onexec(s, true);
 
 	//send it to one of work thread
 	WorkThread* work = m_work_thread_pool[_get_next_work_thread()];

@@ -19,8 +19,8 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 	//
 	handles[0] = handles[1] = INVALID_SOCKET;
 
-	socket_t s = socket_api::create_blocking_socket();
-	if (s == 0)
+	socket_t s = socket_api::create_socket();
+	if (s == INVALID_SOCKET)
 	{
 		//TODO: log L_FATAL message
 		return false;
@@ -54,27 +54,25 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 		return false;
 	}
 
-	if ((handles[1] = socket_api::create_blocking_socket()) == 0)
+	if ((handles[1] = socket_api::create_socket()) == INVALID_SOCKET)
 	{
 		//TODO: log L_FATAL message
 		socket_api::close_socket(s);
 		return false;
 	}
 
-	//TODO: move connect to socket_api
-	if (::connect(handles[1], (SOCKADDR *)& serv_addr, len) == SOCKET_ERROR)
+	if (!socket_api::connect(handles[1], serv_addr))
 	{
 		//TODO: log L_FATAL message
 		socket_api::close_socket(s);
 		return false;
 	}
 
-	//TODO: move connect to socket_api
-	if ((handles[0] = accept(s, (SOCKADDR *)& serv_addr, &len)) == INVALID_SOCKET)
+	if ((handles[0] = socket_api::accept(s, serv_addr)) == INVALID_SOCKET)
 	{
 		//TODO: log L_FATAL message
 		socket_api::close_socket(handles[1]);
-		handles[1] = 0;
+		handles[1] = INVALID_SOCKET;
 		socket_api::close_socket(s);
 		return false;
 	}
@@ -86,10 +84,10 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 static void _destroy_pipe_windows(pipe_port_t handles[2])
 {
 	socket_api::close_socket(handles[0]);
-	handles[0] = 0;
+	handles[0] = INVALID_SOCKET;
 
 	socket_api::close_socket(handles[1]);
-	handles[1] = 0;
+	handles[1] = INVALID_SOCKET;
 }
 #endif
 

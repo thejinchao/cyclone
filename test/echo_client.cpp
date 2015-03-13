@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 	if (argc > 2)
 		server_port = (uint16_t)atoi(argv[2]);
 
-	Socket socket(socket_api::create_blocking_socket());
+	Socket socket(socket_api::create_socket());
 	Address address(server_ip, server_port);
 
 	bool success = socket.connect(address);
