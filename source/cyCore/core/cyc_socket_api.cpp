@@ -6,8 +6,8 @@ Copyright(C) thecodeway.com
 
 #ifdef CY_SYS_WINDOWS
 #include <io.h>
-#include <fcntl.h>
 #endif
+#include <fcntl.h>
 
 //
 // Winsock Reference https://msdn.microsoft.com/en-us/library/ms741416(v=vs.85).aspx
@@ -51,16 +51,15 @@ socket_t create_non_blocking_socket(void)
 		CY_LOG(L_FATAL, "socket_api::create_non_blocking_socket");
 		return 0;
 	}
-#ifdef CY_SYS_WINDOWS
-	//set socket to nonblock
-	unsigned long nonblock = 1;
-	if (::ioctlsocket(sockfd, FIONBIO, &nonblock) != 0)
+
+#ifndef CY_SYS_LINUX
+	if (!set_nonblock(sockfd, true)) 
 	{
-		CY_LOG(L_FATAL, "socket_api::create_non_blocking_socket");
 		close_socket(sockfd);
 		return 0;
 	}
 #endif
+
 	return sockfd;
 }
 
@@ -95,6 +94,30 @@ void close_socket(socket_t s)
 	{
 		CY_LOG(L_ERROR, "socket_api::close_socket");
 	}
+}
+
+//-------------------------------------------------------------------------------------
+bool set_nonblock(socket_t s, bool enable)
+{
+#ifdef CY_SYS_WINDOWS
+	//set socket to nonblock
+	unsigned long nonblock = enable ? 1 : 0;
+	if (::ioctlsocket(s, FIONBIO, &nonblock) != 0)
+	{
+		CY_LOG(L_FATAL, "socket_api::set_nonblock");
+		return false;
+	}
+#else
+	int flags = fcntl(s, F_GETFL, 0);
+	if(flags==-1 ||
+		fcntl(s, F_SETFL, enable ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK)))
+	{
+		CY_LOG(L_FATAL, "socket_api::set_nonblock");
+		return false;
+	}
+#endif
+
+	return true;
 }
 
 //-------------------------------------------------------------------------------------

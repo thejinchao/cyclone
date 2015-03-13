@@ -20,6 +20,9 @@ socket_t create_blocking_socket(void);
 /// Close socket
 void close_socket(socket_t s);
 
+/// enable/disable socket non-block mode
+bool set_nonblock(socket_t s, bool enable);
+
 bool bind(socket_t s, const struct sockaddr_in& addr);
 bool listen(socket_t s);
 socket_t accept(socket_t s, struct sockaddr_in& addr);
