@@ -22,62 +22,41 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 	socket_t s = socket_api::create_socket();
 	if (s == INVALID_SOCKET)
 	{
-		//TODO: log L_FATAL message
 		return false;
 	}
 
 	struct sockaddr_in serv_addr;
-	int len = sizeof(serv_addr);
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(0);
 	serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-	if (!socket_api::bind(s, serv_addr))
-	{
-		//TODO: log L_FATAL message
+	for(;;) {
+		if (!socket_api::bind(s, serv_addr)) 
+			break;
+		if (!socket_api::listen(s)) 
+			break;
+		if (!socket_api::getsockname(s, serv_addr)) 
+			break;
+		if ((handles[1] = socket_api::create_socket()) == INVALID_SOCKET) 
+			break;
+		if (!socket_api::connect(handles[1], serv_addr)) 
+			break;
+		if ((handles[0] = socket_api::accept(s, serv_addr)) == INVALID_SOCKET) 
+			break;
+
 		socket_api::close_socket(s);
-		return false;
-	}
-	if(!socket_api::listen(s))
-	{
-		//TODO: log L_FATAL message
-		socket_api::close_socket(s);
-		return false;
+		return true;
 	}
 
-	//TODO: move getsockname to socket_api
-	if (::getsockname(s, (SOCKADDR *)& serv_addr, &len) == SOCKET_ERROR) 
-	{
-		//TODO: log L_FATAL message
-		socket_api::close_socket(s);
-		return false;
-	}
-
-	if ((handles[1] = socket_api::create_socket()) == INVALID_SOCKET)
-	{
-		//TODO: log L_FATAL message
-		socket_api::close_socket(s);
-		return false;
-	}
-
-	if (!socket_api::connect(handles[1], serv_addr))
-	{
-		//TODO: log L_FATAL message
-		socket_api::close_socket(s);
-		return false;
-	}
-
-	if ((handles[0] = socket_api::accept(s, serv_addr)) == INVALID_SOCKET)
-	{
-		//TODO: log L_FATAL message
+//error case
+	if (handles[0] != INVALID_SOCKET)
+		socket_api::close_socket(handles[0]);
+	if (handles[1] != INVALID_SOCKET)
 		socket_api::close_socket(handles[1]);
-		handles[1] = INVALID_SOCKET;
-		socket_api::close_socket(s);
-		return false;
-	}
 	socket_api::close_socket(s);
-	return true;
+	handles[0] = handles[1] = INVALID_SOCKET;
+	return false;
 }
 
 //-------------------------------------------------------------------------------------
@@ -95,11 +74,13 @@ static void _destroy_pipe_windows(pipe_port_t handles[2])
 Pipe::Pipe()
 {
 #ifdef CY_SYS_WINDOWS
-	_construct_pipe_windows(m_pipe_fd);
+	if (!_construct_pipe_windows(m_pipe_fd))
 #else
-	::pipe2(m_pipe_fd, O_NONBLOCK | O_CLOEXEC);
+	if(::pipe(m_pipe_fd)<0)
 #endif
-	//TODO: error...
+	{
+		CY_LOG(L_FATAL, "create pipe failed!");
+	}
 }
 
 //-------------------------------------------------------------------------------------
