@@ -33,8 +33,9 @@ public:
 	/// Mostly used when accepting new connections
 	Address(const struct sockaddr_in& addr);
 
-	/// Constructs current address to which the socket sfd is bound
-	Address(socket_t sfd);
+	/// Constructs current address to which the socket sfd is bound 
+	/// @param peer constructs the peer address of active socket
+	Address(socket_t sfd, bool peer);
 
 	Address(const Address& other);
 	Address();

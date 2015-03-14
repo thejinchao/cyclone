@@ -11,14 +11,13 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 Connection::Connection(socket_t sfd,
-		const Address& peer_addr,
 		TcpServer* server,
 		int32_t work_thread_index,
 		Looper* looper)
 	: m_socket(sfd)
 	, m_state(kConnecting)
-	, m_local_addr(sfd) //create local address
-	, m_peer_addr(peer_addr)
+	, m_local_addr(sfd, false) //create local address
+	, m_peer_addr(sfd, true) //create peer address
 	, m_looper(looper)
 	, m_event_id(0)
 	, m_server(server)

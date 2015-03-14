@@ -273,6 +273,24 @@ bool getsockname(socket_t s, struct sockaddr_in& addr)
 }
 
 //-------------------------------------------------------------------------------------
+bool getpeername(socket_t s, struct sockaddr_in& addr)
+{
+	socklen_t addrlen = static_cast<socklen_t>(sizeof addr);
+	memset(&addr, 0, sizeof addr);
+
+#ifdef CY_SYS_WINDOWS
+	if (::getpeername(s, (struct sockaddr*)(&addr), &addrlen) == SOCKET_ERROR)
+#else
+	if (::getpeername(s, (struct sockaddr*)(&addr), &addrlen) < 0)
+#endif
+	{
+		CY_LOG(L_FATAL, "socket_api::getpeername");
+		return false;
+	}
+	return true;
+}
+
+//-------------------------------------------------------------------------------------
 uint16_t ntoh_16(uint16_t x)
 {
 #ifdef CY_SYS_LINUX

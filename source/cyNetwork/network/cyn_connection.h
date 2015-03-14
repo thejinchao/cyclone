@@ -79,7 +79,6 @@ private:
 
 public:
 	Connection(socket_t sfd, 
-		const Address& peer_addr,
 		TcpServer* server,
 		int32_t work_thread_index,
 		Looper* looper);

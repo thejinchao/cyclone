@@ -55,6 +55,9 @@ bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t o
 /// get local name of socket
 bool getsockname(socket_t s, struct sockaddr_in& addr);
 
+/// get peer name of socket
+bool getpeername(socket_t s, struct sockaddr_in& addr);
+
 /// big-endian/little-endian convert
 uint16_t ntoh_16(uint16_t x);
 uint32_t ntoh_32(uint32_t x);
