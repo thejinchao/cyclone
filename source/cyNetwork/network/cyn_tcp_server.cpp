@@ -76,6 +76,7 @@ bool TcpServer::start(const Address& bind_addr,
 	if (!(m_acceptor_socket->bind(m_address))){
 		CY_LOG(L_ERROR, "bind to address %s:%d failed", m_address.get_ip(), m_address.get_port());
 		delete m_acceptor_socket;
+		m_acceptor_socket = 0;
 		return false;
 	}
 
