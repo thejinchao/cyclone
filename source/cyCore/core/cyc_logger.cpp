@@ -6,6 +6,8 @@ Copyright(C) thecodeway.com
 
 #ifdef CY_SYS_WINDOWS
 #include <Shlwapi.h>
+#elif defined(CY_SYS_MACOS)
+#include <libproc.h>
 #else
 #include <stdarg.h>
 #endif
@@ -48,10 +50,20 @@ struct DiskLogFile
 			time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond,
 			host_name, process_id);
 #else
+		//get process id
+		pid_t process_id = ::getpid();
+
 		//get process name
+#ifdef CY_SYS_MACOS
+		char process_path_name[PROC_PIDPATHINFO_MAXSIZE]={0};
+		proc_pidpath(process_id, process_path_name, PROC_PIDPATHINFO_MAXSIZE);
+#else
 		char process_path_name[256] = { 0 };
 		readlink("/proc/self/exe", process_path_name, 256);
-		const char* process_name = strrchr(process_path_name, '/')+1;
+#endif
+		const char* process_name = strrchr(process_path_name, '/');
+		if(process_name!=0) process_name++;
+		else process_name="unknown";
 
 		//current time
 		time_t t = time(0);
@@ -65,9 +77,6 @@ struct DiskLogFile
 		//host name
 		char host_name[256] = { 0 };
 		::gethostname(host_name, sizeof(host_name));
-
-		//get process id
-		pid_t process_id = ::getpid();
 
 		snprintf(file_name, _MAX_PATH, "%s.%s.%s.%d.log",
 			process_name, timebuf, host_name, process_id);
