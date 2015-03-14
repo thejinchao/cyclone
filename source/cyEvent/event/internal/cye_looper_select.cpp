@@ -34,7 +34,7 @@ void Looper_select::_poll(
 	if (m_max_fd == INVALID_SOCKET)
 	{
 		for (size_t i = 0; i < m_channelBuffer.size(); i++)
-		{
+			{
 			const channel_s& channel = m_channelBuffer[i];
 			if ((channel.event & kRead || channel.event & kWrite) && channel.fd > m_max_fd)
 				m_max_fd = channel.id;
@@ -182,7 +182,7 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 	{
 		FD_CLR(fd, &m_master_read_fd_set);
 		m_max_read_counts--;
-		channel.event &= ~kRead;
+		channel.event &= ~((event_t)kRead);
 		if (m_max_fd == fd) { m_max_fd = INVALID_SOCKET; }
 	}
 	
@@ -190,7 +190,7 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 	{
 		FD_CLR(fd, &m_master_write_fd_set);
 		m_max_write_counts--;
-		channel.event &= ~kWrite;
+		channel.event &= ~((event_t)kWrite);
 		if (m_max_fd == fd) { m_max_fd = INVALID_SOCKET; }
 	}
 

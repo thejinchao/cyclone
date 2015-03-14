@@ -94,10 +94,10 @@ void Connection::_send(const char* buf, size_t len)
 	//nothing in write buf, send it diretly
 	if (!(m_looper->is_write(m_event_id)) && m_writeBuf.empty())
 	{
-		nwrote = socket_api::write(m_socket.get_fd(), buf, (ssize_t)len);
+		nwrote = socket_api::write(m_socket.get_fd(), buf, len);
 		if (nwrote >= 0)
 		{
-			remaining = (ssize_t)(len - nwrote);
+			remaining = len - (size_t)nwrote;
 			if (remaining == 0)
 			{
 				//TODO: notify logic layer
