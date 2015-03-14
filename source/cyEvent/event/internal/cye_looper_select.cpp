@@ -33,11 +33,16 @@ void Looper_select::_poll(
 {
 	if (m_max_fd == INVALID_SOCKET)
 	{
-		for (size_t i = 0; i < m_channelBuffer.size(); i++)
+		for (event_id_t i = m_active_head; i != INVALID_EVENT_ID;)
+		{
+			channel_s& channel = m_channelBuffer[i];
+			if ((m_max_fd == INVALID_SOCKET) ||
+				((channel.fd > m_max_fd) && (channel.event != kNone)))
 			{
-			const channel_s& channel = m_channelBuffer[i];
-			if ((channel.event & kRead || channel.event & kWrite) && channel.fd > m_max_fd)
-				m_max_fd = channel.id;
+				m_max_fd = channel.fd;
+			}
+
+			i = channel.next;
 		}
 	}
 
