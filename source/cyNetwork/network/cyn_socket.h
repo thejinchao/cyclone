@@ -35,6 +35,8 @@ public:
 	void set_reuse_port(bool on);
 	/// Enable/disable SO_KEEPALIVE
 	void set_keep_alive(bool on);
+	/// Set socket SO_LINGER
+	void set_linger(bool on, uint16_t linger_time);
 
 public:
 	Socket(socket_t fd);

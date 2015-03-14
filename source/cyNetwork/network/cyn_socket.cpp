@@ -99,8 +99,22 @@ void Socket::set_keep_alive(bool on)
 
 	if (!success && on)
 	{
-		//TODO: log error set SO_KEEPALIVE failed.;
+		//log error set SO_KEEPALIVE failed.;
 		CY_LOG(L_FATAL, "set SO_KEEPALIVE failed[%s]", on ? "ON" : "OFF");
+	}
+}
+
+//-------------------------------------------------------------------------------------
+void Socket::set_linger(bool on, uint16_t linger_time)
+{
+	struct linger linger_;
+
+	linger_.l_onoff = on; // && (linger_time > 0)) ? 1 : 0;
+	linger_.l_linger = on ? linger_time : 0;
+
+	if (!socket_api::setsockopt(m_sockfd, SOL_SOCKET, SO_LINGER, &linger_, sizeof(linger_)))
+	{
+		CY_LOG(L_ERROR, "set SO_LINGER failed[%s]", on ? "ON" : "OFF");
 	}
 }
 

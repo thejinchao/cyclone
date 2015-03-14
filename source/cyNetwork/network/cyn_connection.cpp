@@ -27,6 +27,7 @@ Connection::Connection(socket_t sfd,
 	, m_writeBuf(kDefaultWriteBufSize)
 {
 	m_socket.set_keep_alive(true);
+	m_socket.set_linger(false, 0);
 }
 
 //-------------------------------------------------------------------------------------
