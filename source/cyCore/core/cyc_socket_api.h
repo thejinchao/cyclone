@@ -29,7 +29,7 @@ bool bind(socket_t s, const struct sockaddr_in& addr);
 bool listen(socket_t s);
 
 /// accept a connection on a socket, return INVALID_SOCKET if failed
-socket_t accept(socket_t s, struct sockaddr_in& addr);
+socket_t accept(socket_t s, struct sockaddr_in* addr);
 
 /// initiate a connection on a socket
 bool connect(socket_t s, const struct sockaddr_in& addr);

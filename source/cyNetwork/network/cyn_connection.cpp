@@ -16,8 +16,8 @@ Connection::Connection(socket_t sfd,
 		Looper* looper)
 	: m_socket(sfd)
 	, m_state(kConnecting)
-	, m_local_addr(sfd, false) //create local address
-	, m_peer_addr(sfd, true) //create peer address
+	, m_local_addr(false, sfd) //create local address
+	, m_peer_addr(true, sfd) //create peer address
 	, m_looper(looper)
 	, m_event_id(0)
 	, m_server(server)
@@ -25,6 +25,10 @@ Connection::Connection(socket_t sfd,
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 {
+	//set socket to non-block and close-onexec
+	socket_api::set_nonblock(sfd, true);
+	socket_api::set_close_onexec(sfd, true);
+	//set other socket option
 	m_socket.set_keep_alive(true);
 	m_socket.set_linger(false, 0);
 }

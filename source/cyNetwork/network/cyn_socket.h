@@ -22,7 +22,6 @@ public:
 	bool bind(const Address& addr);
 	void listen(void);
 	bool connect(const Address& addr);
-	socket_t accept(Address& peer_addr);
 
 	//----------------------
 	// socket option api

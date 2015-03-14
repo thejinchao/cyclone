@@ -33,20 +33,6 @@ void Socket::listen()
 }
 
 //-------------------------------------------------------------------------------------
-socket_t Socket::accept(Address& peer_addr)
-{
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof addr);
-	socket_t connfd = socket_api::accept(m_sockfd, addr);
-	if (connfd != INVALID_SOCKET)
-	{
-		peer_addr = addr;
-	}
-
-	return connfd;
-}
-
-//-------------------------------------------------------------------------------------
 bool Socket::connect(const Address& addr)
 {
 	return socket_api::connect(m_sockfd, addr.get_sockaddr_in());

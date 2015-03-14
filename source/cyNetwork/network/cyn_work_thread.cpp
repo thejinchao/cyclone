@@ -67,10 +67,8 @@ bool WorkThread::_on_command(void)
 	{
 		//get new connection
 		socket_t sfd;
-		sockaddr_in peer_addr;
 
-		if (sizeof(sfd) != m_pipe.read((char*)&sfd, sizeof(sfd)) ||
-			sizeof(peer_addr) != m_pipe.read((char*)&peer_addr, sizeof(peer_addr)))
+		if (sizeof(sfd) != m_pipe.read((char*)&sfd, sizeof(sfd)))
 		{	//error
 			return false;
 		}

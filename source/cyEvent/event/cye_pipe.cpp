@@ -42,7 +42,7 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 			break;
 		if (!socket_api::connect(handles[1], serv_addr)) 
 			break;
-		if ((handles[0] = socket_api::accept(s, serv_addr)) == INVALID_SOCKET) 
+		if ((handles[0] = socket_api::accept(s, 0)) == INVALID_SOCKET) 
 			break;
 
 		socket_api::close_socket(s);

@@ -45,7 +45,7 @@ Address::Address(const Address& other)
 }
 
 //-------------------------------------------------------------------------------------
-Address::Address(socket_t sfd, bool peer)
+Address::Address(bool peer, socket_t sfd)
 {
 	if (peer)
 		socket_api::getpeername(sfd, m_address);

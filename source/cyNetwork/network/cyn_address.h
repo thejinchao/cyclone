@@ -35,7 +35,7 @@ public:
 
 	/// Constructs current address to which the socket sfd is bound 
 	/// @param peer constructs the peer address of active socket
-	Address(socket_t sfd, bool peer);
+	Address(bool peer, socket_t sfd);
 
 	Address(const Address& other);
 	Address();
