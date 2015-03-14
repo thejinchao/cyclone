@@ -15,8 +15,8 @@ class Pipe
 {
 public:
 	pipe_port_t get_read_port(void) { return m_pipe_fd[0]; }
-	ssize_t write(const char* buf, ssize_t len);
-	ssize_t read(char* buf, ssize_t len);
+	ssize_t write(const char* buf, size_t len);
+	ssize_t read(char* buf, size_t len);
 
 private:
 	pipe_port_t m_pipe_fd[2];

@@ -11,6 +11,9 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
+const Looper::event_id_t Looper::INVALID_EVENT_ID = (Looper::event_id_t)(~0);
+
+//-------------------------------------------------------------------------------------
 Looper::Looper()
 	: m_free_head(INVALID_EVENT_ID)
 	, m_current_thread(thread_api::thread_get_current_id())

@@ -3,6 +3,9 @@ Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
 #include "cyc_ring_buf.h"
+#ifdef CY_HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
 
 #ifndef MIN
 #define MIN(x, y)	((x)<(y)?(x):(y))
@@ -161,7 +164,7 @@ size_t RingBuf::discard(size_t count)
 //-------------------------------------------------------------------------------------
 ssize_t RingBuf::read_socket(socket_t fd)
 {
-	const int32_t STACK_BUF_SIZE = 0xFFFF;
+	const size_t STACK_BUF_SIZE = 0xFFFF;
 	char stack_buf[STACK_BUF_SIZE];
 
 #ifdef CY_SYS_WINDOWS
@@ -195,10 +198,10 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	int32_t vec_counts = 0;
 	size_t count = get_free_size();
 
-	ssize_t nwritten = 0;
+	size_t nwritten = 0;
 	size_t write_off = m_write;
-	while (nwritten != (ssize_t)count)	{
-		ssize_t n = (ssize_t)MIN((size_t)(m_end - write_off), count - nwritten);
+	while (nwritten != count)	{
+		size_t n = MIN((size_t)(m_end - write_off), count - nwritten);
 		vec[vec_counts].iov_base = m_buf + write_off;
 		vec[vec_counts].iov_len = n;
 		vec_counts++;
@@ -222,8 +225,8 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	//adjust point
 	count = MIN(get_free_size(), (size_t)read_counts);
 	nwritten = 0;
-	while (nwritten != (ssize_t)count)	{
-		ssize_t n = (ssize_t)MIN((size_t)(m_end - m_write), count - nwritten);
+	while (nwritten != count)	{
+		size_t n = MIN((size_t)(m_end - m_write), count - nwritten);
 
 		nwritten += n;
 		m_write += n;
@@ -233,8 +236,8 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	}
 
 	//append extra data
-	if (nwritten < read_counts) {
-		memcpy_into(stack_buf, read_counts - nwritten);
+	if (nwritten < (size_t)read_counts) {
+		memcpy_into(stack_buf, (size_t)read_counts - nwritten);
 	}
 
 	return read_counts;
@@ -298,7 +301,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 	//adjust point
 	nsended = 0;
 	while (nsended != (size_t)write_counts) {
-		size_t n = MIN((size_t)(m_end - m_read), write_counts - nsended);
+		size_t n = MIN((size_t)(m_end - m_read), (size_t)write_counts - nsended);
 
 		m_read += n;
 		nsended += n;

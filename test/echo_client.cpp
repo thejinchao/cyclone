@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
 		if (temp[0] == 0) break;
 
-		socket_api::write(socket.get_fd(), temp, (int)strlen(temp));
+		socket_api::write(socket.get_fd(), temp, strlen(temp));
 
 		ssize_t len=0;
 		for(;;) {

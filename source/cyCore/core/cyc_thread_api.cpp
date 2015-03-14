@@ -176,7 +176,7 @@ void mutex_unlock(mutex_t m)
 }
 
 //-------------------------------------------------------------------------------------
-#ifdef CY_SYS_LINUX
+#ifndef CY_SYS_WINDOWS
 struct signal_s
 {
 	pthread_mutex_t mutex;

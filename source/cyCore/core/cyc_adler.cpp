@@ -15,7 +15,7 @@ namespace cyclone
 
 	/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 
-#define DO1(buf,i)  {adler += (buf)[i]; sum2 += adler;}
+#define DO1(buf,i)  {adler += (uint32_t)(buf)[i]; sum2 += adler;}
 #define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
 #define DO4(buf,i)  DO2(buf,i); DO2(buf,i+2);
 #define DO8(buf,i)  DO4(buf,i); DO4(buf,i+4);
@@ -74,7 +74,7 @@ uint32_t adler32(uint32_t adler, const char* buf, size_t len)
 
     /* in case user likes doing a byte at a time, keep it fast */
     if (len == 1) {
-        adler += buf[0];
+        adler += (uint32_t)buf[0];
         if (adler >= BASE)
             adler -= BASE;
         sum2 += adler;
@@ -90,7 +90,7 @@ uint32_t adler32(uint32_t adler, const char* buf, size_t len)
     /* in case short lengths are provided, keep it somewhat fast */
     if (len < 16) {
         while (len--) {
-            adler += *buf++;
+			adler += (uint32_t)(*buf++);
             sum2 += adler;
         }
         if (adler >= BASE)
@@ -119,7 +119,7 @@ uint32_t adler32(uint32_t adler, const char* buf, size_t len)
             buf += 16;
         }
         while (len--) {
-            adler += *buf++;
+			adler += (uint32_t)(*buf++);
             sum2 += adler;
         }
         MOD(adler);

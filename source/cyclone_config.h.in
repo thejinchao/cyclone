@@ -6,6 +6,8 @@ Copyright(C) thecodeway.com
 
 #cmakedefine CY_HAVE_UNISTD_H 1
 #cmakedefine CY_HAVE_INTTYPES_H 1
+#cmakedefine CY_HAVE_SYS_UIO_H 1
+
 #cmakedefine CY_SYS_LINUX 1
 #cmakedefine CY_SYS_WINDOWS 1
 #cmakedefine CY_SYS_MACOS 1

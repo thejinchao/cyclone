@@ -114,13 +114,13 @@ Pipe::~Pipe()
 }
 
 //-------------------------------------------------------------------------------------
-ssize_t Pipe::write(const char* buf, ssize_t len)
+ssize_t Pipe::write(const char* buf, size_t len)
 {
 	return socket_api::write(m_pipe_fd[1], buf, len);
 }
 
 //-------------------------------------------------------------------------------------
-ssize_t Pipe::read(char* buf, ssize_t len)
+ssize_t Pipe::read(char* buf, size_t len)
 {
 	return socket_api::read(m_pipe_fd[0], buf, len);
 }

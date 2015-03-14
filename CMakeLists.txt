@@ -43,6 +43,7 @@ check_include_file(sys/statvfs.h	CY_HAVE_SYS_STATVFS_H)
 check_include_file(crypt.h			CY_HAVE_CRYPT_H)
 check_include_file(sys/prctl.h		CY_HAVE_SYS_PRCTL_H)
 check_include_file(sys/vfs.h		CY_HAVE_SYS_VFS_H)
+check_include_file(sys/uio.h		CY_HAVE_SYS_UIO_H)
 
 ########
 #check functions

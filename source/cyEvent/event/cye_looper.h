@@ -14,8 +14,8 @@ namespace cyclone
 class Looper
 {
 public:
-	typedef int32_t	event_id_t;
-	typedef int32_t event_t;
+	typedef uint32_t event_id_t;
+	typedef uint32_t event_t;
 
 	enum {
 		kNone = 0,
@@ -70,7 +70,7 @@ public:
 	//----------------------
 protected:
 	enum { DEFAULT_CHANNEL_BUF_COUNTS = 16 };
-	enum { INVALID_EVENT_ID = -1 };
+	static const event_id_t INVALID_EVENT_ID;
 
 	struct channel_s
 	{
