@@ -275,20 +275,20 @@ bool getsockname(socket_t s, struct sockaddr_in& addr)
 //-------------------------------------------------------------------------------------
 uint16_t ntoh_16(uint16_t x)
 {
-#ifdef CY_SYS_WINDOWS
-	return ::ntohs(x);
-#else
+#ifdef CY_SYS_LINUX
 	return be16toh(x);
+#else
+	return ntohs(x);
 #endif
 }
 
 //-------------------------------------------------------------------------------------
 uint32_t ntoh_32(uint32_t x)
 {
-#ifdef CY_SYS_WINDOWS
-	return ::ntohl(x);
-#else
+#ifdef CY_SYS_LINUX
 	return be32toh(x);
+#else
+	return ntohl(x);
 #endif
 }
 
