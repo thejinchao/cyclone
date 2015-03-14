@@ -17,20 +17,6 @@ add_executable(echo-client echo_client.cpp)
 set_property(TARGET echo-server PROPERTY FOLDER "test")
 set_property(TARGET echo-client PROPERTY FOLDER "test")
 
-if(CY_SYS_LINUX)
-target_link_libraries(echo-server
-	cyclone
-	pthread
-	rt
-)
-
-target_link_libraries(echo-client
-	cyclone
-	pthread
-	rt
-)
-endif()
-
 if(CY_SYS_WINDOWS)
 target_link_libraries(echo-server
 	cyclone
@@ -42,5 +28,17 @@ target_link_libraries(echo-client
 	cyclone
 	ws2_32.lib
 	shlwapi.lib
+)
+
+else()
+
+target_link_libraries(echo-server
+	cyclone
+	pthread
+)
+
+target_link_libraries(echo-client
+	cyclone
+	pthread
 )
 endif()
