@@ -87,9 +87,6 @@ void signal_destroy(signal_t s);
 //// wait a signal inifinite
 void signal_wait(signal_t s);
 
-//// wait a signal for some times.
-void signal_time_wait(signal_t s, int32_t msec);
-
 //// light the signal
 void signal_notify(signal_t s);
 

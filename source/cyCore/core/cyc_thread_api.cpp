@@ -222,22 +222,6 @@ void signal_wait(signal_t s)
 }
 
 //-------------------------------------------------------------------------------------
-void signal_time_wait(signal_t s, int32_t msec)
-{
-#ifdef CY_SYS_WINDOWS
-	::WaitForSingleObject(s, msec);
-#else
-	signal_s* sig = (signal_s*)s;
-	struct timespec abstime = { 0, 0 };
-	// FIXME: use CLOCK_MONOTONIC or CLOCK_MONOTONIC_RAW to prevent time rewind.
-	clock_gettime(CLOCK_REALTIME, &abstime);
-	abstime.tv_sec += static_cast<time_t>(msec / 1000);
-	//abstime.tv_nsec = static_cast<long>((msec % 1000) * 1000 * 1000);
-	pthread_cond_timedwait(&(sig->cond), &(sig->mutex), &abstime);
-#endif
-}
-
-//-------------------------------------------------------------------------------------
 void signal_notify(signal_t s)
 {
 #ifdef CY_SYS_WINDOWS
