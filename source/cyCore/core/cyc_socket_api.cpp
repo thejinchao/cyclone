@@ -319,5 +319,16 @@ int get_lasterror(void)
 #endif
 }
 
+//-------------------------------------------------------------------------------------
+bool is_lasterror_WOULDBLOCK(void)
+{
+#ifdef CY_SYS_WINDOWS
+	return get_lasterror() == WSAEWOULDBLOCK;
+#else
+	return errno==EWOULDBLOCK;
+#endif
+
+}
+
 }
 }

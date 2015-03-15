@@ -176,7 +176,9 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	while (nwritten != (ssize_t)count)	{
 		ssize_t n = (ssize_t)MIN((size_t)(m_end - m_write), count - nwritten);
 		ssize_t len = socket_api::read(fd, m_buf + m_write, (ssize_t)n);
-		if (len <= 0) return len;
+		if (len == 0) return 0; //EOF
+		if (len < 0) return socket_api::is_lasterror_WOULDBLOCK() ? nwritten : len;
+
 		m_write += len;
 		nwritten += len;
 
@@ -189,7 +191,8 @@ ssize_t RingBuf::read_socket(socket_t fd)
 
 	//need read more data
 	ssize_t len = socket_api::read(fd, stack_buf, STACK_BUF_SIZE);
-	if (len <= 0) return len;
+	if (len == 0) return len; //EOF
+	if (len < 0) return socket_api::is_lasterror_WOULDBLOCK() ? nwritten : len;
 	memcpy_into(stack_buf, len);
 	return nwritten + len;
 #else
@@ -247,6 +250,8 @@ ssize_t RingBuf::read_socket(socket_t fd)
 //-------------------------------------------------------------------------------------
 ssize_t RingBuf::write_socket(socket_t fd)
 {
+	assert(!empty());
+
 #ifdef CY_SYS_WINDOWS
 	size_t count = size();
 
@@ -255,7 +260,12 @@ ssize_t RingBuf::write_socket(socket_t fd)
 		size_t n = MIN((size_t)(m_end - m_read), count - nsended);
 
 		ssize_t len = socket_api::write(fd, m_buf + m_read, (ssize_t)n);
-		if (len <= 0) return len; //error
+		if (len == 0) break; //nothing was written
+		if (len < 0) //error
+		{
+			if (nsended>0) break;
+			else return len;
+		}
 
 		m_read += len;
 		nsended += len;

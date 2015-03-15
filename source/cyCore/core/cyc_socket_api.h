@@ -65,6 +65,9 @@ uint32_t ntoh_32(uint32_t x);
 //// get last socket error
 int get_lasterror(void);
 
+//// is lasterror  WOULDBLOCK
+bool is_lasterror_WOULDBLOCK(void);
+
 }
 }
 
