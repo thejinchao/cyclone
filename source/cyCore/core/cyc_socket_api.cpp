@@ -243,7 +243,7 @@ bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t o
 //-------------------------------------------------------------------------------------
 socket_t accept(socket_t s, struct sockaddr_in* addr)
 {
-	socklen_t addrlen = static_cast<socklen_t>(sizeof sockaddr_in);
+	socklen_t addrlen = static_cast<socklen_t>(sizeof(sockaddr_in));
 	socket_t connfd = ::accept(s, (struct sockaddr *)addr, addr ? (&addrlen) : 0);
 
 	if (connfd == INVALID_SOCKET)
