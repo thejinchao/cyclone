@@ -30,7 +30,9 @@ private:
 	int32_t m_max_read_counts;
 	int32_t m_max_write_counts;
 
-	socket_t m_max_fd;  //TODO: disable max_fd at windows platform
+#ifndef CY_SYS_WINDOWS	//disable max_fd at windows platform
+	socket_t m_max_fd;  
+#endif
 
 	event_id_t m_active_head;	//active list in fd_set;
 

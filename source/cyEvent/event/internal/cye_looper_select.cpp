@@ -13,7 +13,9 @@ Looper_select::Looper_select()
 	: Looper()
 	, m_max_read_counts(0)
 	, m_max_write_counts(0)
+#ifndef CY_SYS_WINDOWS
 	, m_max_fd(INVALID_SOCKET)
+#endif
 	, m_active_head(INVALID_EVENT_ID)
 {
 	FD_ZERO(&m_master_read_fd_set);
@@ -31,6 +33,7 @@ void Looper_select::_poll(
 	channel_list& readChannelList, 
 	channel_list& writeChannelList)
 {
+#ifndef CY_SYS_WINDOWS
 	if (m_max_fd == INVALID_SOCKET)
 	{
 		for (event_id_t i = m_active_head; i != INVALID_EVENT_ID;)
@@ -45,6 +48,7 @@ void Looper_select::_poll(
 			i = channel.next;
 		}
 	}
+#endif
 
 	m_work_read_fd_set = m_master_read_fd_set;
 	m_work_write_fd_set = m_master_write_fd_set;
@@ -52,7 +56,13 @@ void Looper_select::_poll(
 	int ready = 0;
 	if (m_max_read_counts > 0 || m_max_write_counts>0)
 	{
-		ready = ::select((int)(m_max_fd+1), &m_work_read_fd_set, &m_work_write_fd_set, 0, 0);
+		ready = ::select(
+#ifdef CY_SYS_WINDOWS
+			0,
+#else
+			(int)(m_max_fd+1), 
+#endif
+			&m_work_read_fd_set, &m_work_write_fd_set, 0, 0);
 	}
 	else 
 	{
@@ -164,7 +174,9 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		m_max_read_counts++;
 		channel.event |= kRead;
 		_insert_to_active_list(channel);
+#ifndef CY_SYS_WINDOWS
 		if (m_max_fd == INVALID_SOCKET || m_max_fd < fd)  m_max_fd = fd;
+#endif
 	}
 	
 	if ((event & kWrite) && !(channel.event & kWrite) && channel.on_write)
@@ -173,7 +185,9 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		m_max_write_counts++;
 		channel.event |= kWrite;
 		_insert_to_active_list(channel);
+#ifndef CY_SYS_WINDOWS
 		if (m_max_fd == INVALID_SOCKET || m_max_fd < fd)  m_max_fd = fd;
+#endif
 	}
 }
 
@@ -188,7 +202,9 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 		FD_CLR(fd, &m_master_read_fd_set);
 		m_max_read_counts--;
 		channel.event &= ~((event_t)kRead);
+#ifndef CY_SYS_WINDOWS
 		if (m_max_fd == fd) { m_max_fd = INVALID_SOCKET; }
+#endif
 	}
 	
 	if ((event & kWrite) && (channel.event & kWrite))
@@ -196,7 +212,9 @@ void Looper_select::_update_channel_remove_event(channel_s& channel, event_t eve
 		FD_CLR(fd, &m_master_write_fd_set);
 		m_max_write_counts--;
 		channel.event &= ~((event_t)kWrite);
+#ifndef CY_SYS_WINDOWS
 		if (m_max_fd == fd) { m_max_fd = INVALID_SOCKET; }
+#endif
 	}
 
 	if (channel.event == kNone)
