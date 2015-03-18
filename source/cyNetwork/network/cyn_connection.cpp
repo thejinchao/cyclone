@@ -92,6 +92,7 @@ void Connection::_send(const char* buf, size_t len)
 	if (m_state != kConnected)
 	{
 		//TODO: log error, give up send message
+		CY_LOG(L_ERROR, "send message state error, state=%d", m_state);
 		return;
 	}
 
@@ -217,7 +218,8 @@ bool Connection::_on_socket_write(void)
 		}
 		else
 		{
-			//TODO: log error
+			//log error
+			CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
 		}
 	}
 
@@ -248,7 +250,6 @@ void Connection::_on_socket_close(void)
 //-------------------------------------------------------------------------------------
 void Connection::_on_socket_error(void)
 {
-	//TODO: log some thing...
 	_on_socket_close();
 }
 

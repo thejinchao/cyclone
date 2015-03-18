@@ -164,7 +164,8 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 	if (((event & kRead) && m_max_read_counts >= FD_SETSIZE)
 		|| ((event & kWrite) && m_max_write_counts >= FD_SETSIZE))
 	{
-		//TODO: log error ,maximum number of descriptors supported by select() is FD_SETSIZE
+		//log error ,maximum number of descriptors supported by select() is FD_SETSIZE
+		CY_LOG(L_ERROR, "maximum number of descriptors supported by select() is FD_SETSIZE(%d)", FD_SETSIZE);
 		return;
 	}
 

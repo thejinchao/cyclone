@@ -39,7 +39,8 @@ void Looper_epoll::_poll(
 
 	if (num_events < 0)
 	{
-		//TODO: error log something...
+		//error log something...
+		CY_LOG(L_ERROR, "epoll_wait error, err=%d", socket_api::get_lasterror());
 		return;
 	}
 	else if (num_events == 0)
@@ -56,7 +57,8 @@ void Looper_epoll::_poll(
 		channel_s* channel = (channel_s*)event.data.ptr;
 
 		if (revents & (EPOLLERR | EPOLLHUP)) {
-			//TODO: error fd, log something...
+			//error fd, log something...
+			CY_LOG(L_ERROR, "got error event, err=0x%x", revents);
 		}
 
 		if ((revents & (EPOLLERR | EPOLLHUP)) 
@@ -103,7 +105,8 @@ bool Looper_epoll::_set_event(channel_s& channel, int operation, uint32_t events
 	}
 
 	if (::epoll_ctl(m_eoll_fd, operation, channel.fd, &event) < 0) {
-		//TODO: log something...
+		//log something...
+		CY_LOG(L_ERROR, "epoll_ctl error, err=%d", socket_api::get_lasterror());
 		return false;
 	}
 	return true;
