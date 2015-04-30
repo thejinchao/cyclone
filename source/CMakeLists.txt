@@ -14,7 +14,6 @@ set(CY_CORE_INCLUDE_FILES
 	cyCore/core/cyc_socket_api.h
 	cyCore/core/cyc_thread_api.h
 	cyCore/core/cyc_ring_buf.h
-	cyCore/core/cyc_adler.h
 	cyCore/core/cyc_atomic.h
 )
 source_group("cyCore" FILES ${CY_CORE_INCLUDE_FILES})
@@ -24,7 +23,6 @@ set(CY_CORE_SOURCE_FILES
 	cyCore/core/cyc_socket_api.cpp
 	cyCore/core/cyc_thread_api.cpp
 	cyCore/core/cyc_ring_buf.cpp
-	cyCore/core/cyc_adler.cpp
 )
 source_group("cyCore" FILES ${CY_CORE_SOURCE_FILES})
 
@@ -77,11 +75,27 @@ set(CY_NETWORK_SOURCE_FILES
 )
 source_group("cyNetwork" FILES ${CY_NETWORK_SOURCE_FILES})
 
+########
+#cyCrypt
+########
+set(CY_CRYPT_INCLUDE_FILES
+	cyCrypt/cy_crypt.h
+	cyCrypt/crypt/cyr_adler32.h
+)
+source_group("cyCrypt" FILES ${CY_CRYPT_INCLUDE_FILES})
+
+set(CY_CRYPT_SOURCE_FILES
+	cyCrypt/crypt/cyr_adler32.cpp
+)
+source_group("cyCrypt" FILES ${CY_CRYPT_SOURCE_FILES})
+
+
 include_directories(
 	${CY_AUTO_INCLUDE_PATH}
 	${CY_SOURCE_CORE_PATH}
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
+	${CY_SOURCE_CRYPT_PATH}
 )
 
 add_library(cyclone 
@@ -92,6 +106,8 @@ add_library(cyclone
 	${CY_EVENT_INTERNAL_FILES}
 	${CY_NETWORK_INCLUDE_FILES}
 	${CY_NETWORK_SOURCE_FILES}
+	${CY_CRYPT_INCLUDE_FILES}
+	${CY_CRYPT_SOURCE_FILES}
 )
 
 ########
@@ -100,7 +116,7 @@ add_library(cyclone
 install(FILES ${CY_AUTO_CONFIG_FILE}
 	DESTINATION include)
 	
-install(DIRECTORY cyCore/ cyEvent/ cyNetwork/
+install(DIRECTORY cyCore/ cyEvent/ cyNetwork/ cyCrypt/
 	DESTINATION include
 	FILES_MATCHING 
 	PATTERN "*.h"

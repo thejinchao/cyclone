@@ -2,6 +2,8 @@
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
+#include <cy_crypt.h>
+
 #include "cyc_ring_buf.h"
 #ifdef CY_HAVE_SYS_UIO_H
 #include <sys/uio.h>

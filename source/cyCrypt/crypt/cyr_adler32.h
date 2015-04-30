@@ -1,8 +1,8 @@
 /*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CORE_ADLER_H_
-#define _CYCLONE_CORE_ADLER_H_
+#ifndef _CYCLONE_CRYPT_ADLER_H_
+#define _CYCLONE_CRYPT_ADLER_H_
 
 #include <cyclone_config.h>
 

@@ -1,8 +1,8 @@
 /*
 Copyright(C) thecodeway.com
 */
-#include <cy_core.h>
-#include "cyc_adler.h"
+#include <cy_crypt.h>
+#include "cyr_adler32.h"
 
 /* adler32.c -- compute the Adler-32 checksum of a data stream
 * Copyright (C) 1995-2011 Mark Adler
