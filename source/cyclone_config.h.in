@@ -68,5 +68,11 @@ Copyright(C) thecodeway.com
 #define snprintf _snprintf 
 #endif
 
+#ifdef CY_SYS_WINDOWS
+#define INLINE inline
+#else
+#define INLINE __inline
+#endif
+
 #endif
 
