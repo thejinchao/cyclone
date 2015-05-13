@@ -24,7 +24,8 @@ struct DiskLogFile
 
 	char file_name[_MAX_PATH];
 	thread_api::mutex_t lock;
-	const char* level_name[NUM_LOG_LEVELS];
+	const char* level_name[L_MAXIMUM_LEVEL];
+	LOG_LEVEL level_threshold;
 
 	DiskLogFile() 
 	{
@@ -85,6 +86,9 @@ struct DiskLogFile
 		//create lock
 		lock = thread_api::mutex_create();
 
+		//default level(all level will be writed)
+		level_threshold = L_TRACE;
+
 		//set level name
 		level_name[L_TRACE] = "TRACE";
 		level_name[L_DEBUG] = "DEBUG";
@@ -92,10 +96,6 @@ struct DiskLogFile
 		level_name[L_WARN] = "WARN";
 		level_name[L_ERROR] = "ERROR";
 		level_name[L_FATAL] = "FATAL";
-
-		//create the log file first
-		FILE* fp = fopen(file_name, "w");
-		fclose(fp);
 	}
 };
 
@@ -107,15 +107,35 @@ static DiskLogFile& _get_disk_log(void)
 }
 
 //-------------------------------------------------------------------------------------
-void disk_log(LOG_LEVEL level, const char* message, ...)
+void set_log_threshold(LOG_LEVEL level)
 {
-	assert(level >= 0 && level < NUM_LOG_LEVELS);
-	if (level < 0 || level >= NUM_LOG_LEVELS)return;
+	assert(level >= 0 && level <= L_MAXIMUM_LEVEL);
+	if (level < 0 || level > L_MAXIMUM_LEVEL)return;
 
 	DiskLogFile& thefile = _get_disk_log();
 	thread_api::auto_mutex guard(thefile.lock);
 
+	thefile.level_threshold = level;
+}
+
+//-------------------------------------------------------------------------------------
+void disk_log(LOG_LEVEL level, const char* message, ...)
+{
+	assert(level >= 0 && level < L_MAXIMUM_LEVEL);
+	if (level < 0 || level >= L_MAXIMUM_LEVEL)return;
+
+	DiskLogFile& thefile = _get_disk_log();
+	thread_api::auto_mutex guard(thefile.lock);
+
+	//check the level
+	if (level < thefile.level_threshold) return;
+
 	FILE* fp = fopen(thefile.file_name, "a");
+	if (fp == 0) {
+		//create the log file first
+		fp = fopen(thefile.file_name, "w");
+	}
+	if (fp == 0) return;
 
 	char szTemp[1024] = { 0 };
 	va_list ptr; va_start(ptr, message);

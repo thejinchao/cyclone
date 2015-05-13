@@ -17,7 +17,8 @@ enum LOG_LEVEL
 	L_WARN,
 	L_ERROR,
 	L_FATAL,
-	NUM_LOG_LEVELS,
+
+	L_MAXIMUM_LEVEL,
 };
 
 //----------------------
@@ -29,6 +30,10 @@ enum LOG_LEVEL
 // like "test.20150302-1736.server1.63581.log"
 // the time part is the time(LOCAL) of first log be written
 void disk_log(LOG_LEVEL level, const char* message, ...);
+
+//set the a global log level, default is L_TRACE, 
+//all the log message lower than this level will be ignored
+void set_log_threshold(LOG_LEVEL level);
 
 }
 
