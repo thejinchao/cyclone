@@ -12,8 +12,7 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 TcpServer::TcpServer(void* cb_param)
-	: m_acceptor_socket(0)
-	, m_acceptor_thread(0)
+	: m_acceptor_thread(0)
 	, m_work_thread_counts(0)
 	, m_next_work(0)
 	, m_callback_param(cb_param)
@@ -21,6 +20,9 @@ TcpServer::TcpServer(void* cb_param)
 	, m_message_cb(0)
 	, m_close_cb(0)
 {
+	//zero accept socket 
+	memset(m_acceptor_socket, 0, sizeof(Socket*)*MAX_BIND_PORT_COUNTS);
+
 	//zero work thread pool
 	memset(m_work_thread_pool, 0, sizeof(m_work_thread_pool[0])*MAX_WORK_THREAD_COUNTS);
 }
@@ -28,26 +30,30 @@ TcpServer::TcpServer(void* cb_param)
 //-------------------------------------------------------------------------------------
 TcpServer::~TcpServer()
 {
-	if (m_acceptor_socket)
-		delete m_acceptor_socket;
+	for (int i = 0; i < MAX_BIND_PORT_COUNTS; i++)
+	{
+		if (m_acceptor_socket[i])
+			delete m_acceptor_socket[i];
+	}
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpServer::start(const Address& bind_addr, 
-	bool enable_reuse_port,
-	int32_t work_thread_counts)
+bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 {
-	assert(m_acceptor_socket == 0);
+	//is running already?
+	if (m_running.get() > 0) return false;
 
-	CY_LOG(L_INFO, "TcpServer start with %d workthread(s)", work_thread_counts);
-
-	if (work_thread_counts<1 || work_thread_counts > MAX_WORK_THREAD_COUNTS) {
-		CY_LOG(L_ERROR, "param thread counts error");
-		return false;
+	//find a empty listen socket slot
+	int index = -1;
+	for (int i = 0; i < MAX_BIND_PORT_COUNTS; i++)
+	{
+		if (m_acceptor_socket[i] == 0)
+		{
+			index = i;
+			break;
+		}
 	}
-
-	//store bind address
-	m_address = Address(bind_addr);
+	if (index < 0) return false;
 
 	//create a non blocking socket
 	socket_t sfd = socket_api::create_socket();
@@ -55,32 +61,54 @@ bool TcpServer::start(const Address& bind_addr,
 		CY_LOG(L_ERROR, "create socket error");
 		return false;
 	}
-	m_acceptor_socket = new Socket(sfd);
 
 	//set socket to non-block mode
-	if (!socket_api::set_nonblock(m_acceptor_socket->get_fd(), true)) {
+	if (!socket_api::set_nonblock(sfd, true)) {
 		//the process should be stop		
 		CY_LOG(L_ERROR, "set socket to non block mode error");
 		return false;
 	}
 
 	//set socket close on exe flag, the file  descriptor will be closed open across an execve.
-	socket_api::set_close_onexec(m_acceptor_socket->get_fd(), true);
+	socket_api::set_close_onexec(sfd, true);
+
+	Socket* acceptor_socket = new Socket(sfd);
 
 	//set accept socket option
 	if (enable_reuse_port) {
 		//http://stackoverflow.com/questions/14388706/socket-options-so-reuseaddr-and-so-reuseport-how-do-they-differ-do-they-mean-t
-		m_acceptor_socket->set_reuse_port(true);
-		m_acceptor_socket->set_reuse_addr(true);
+		acceptor_socket->set_reuse_port(true);
+		acceptor_socket->set_reuse_addr(true);
 	}
 
 	//bind address
-	if (!(m_acceptor_socket->bind(m_address))){
-		CY_LOG(L_ERROR, "bind to address %s:%d failed", m_address.get_ip(), m_address.get_port());
-		delete m_acceptor_socket;
-		m_acceptor_socket = 0;
+	if (!(socket_api::bind(sfd, bind_addr.get_sockaddr_in()))){
+		CY_LOG(L_ERROR, "bind to address %s:%d failed", bind_addr.get_ip(), bind_addr.get_port());
+		delete acceptor_socket;
 		return false;
 	}
+
+	m_acceptor_socket[index] = acceptor_socket;
+	return true;
+}
+
+//-------------------------------------------------------------------------------------
+bool TcpServer::start(int32_t work_thread_counts)
+{
+	CY_LOG(L_INFO, "TcpServer start with %d workthread(s)", work_thread_counts);
+
+	if (work_thread_counts<1 || work_thread_counts > MAX_WORK_THREAD_COUNTS) {
+		CY_LOG(L_ERROR, "param thread counts error");
+		return false;
+	}
+
+	if (m_acceptor_socket[0] == 0) {
+		CY_LOG(L_ERROR, "at least listen one port!");
+		return false;
+	}
+
+	//is running already?
+	if (m_running.get_and_set(1) > 0) return false;
 
 	//start work thread pool
 	m_work_thread_counts = work_thread_counts;
@@ -96,8 +124,24 @@ bool TcpServer::start(const Address& bind_addr,
 }
 
 //-------------------------------------------------------------------------------------
+Address TcpServer::get_bind_address(int index)
+{
+	Address address;
+	if (index < 0 || index >= MAX_BIND_PORT_COUNTS) return address;
+	if (m_acceptor_socket[index] == 0) return address;
+
+	sockaddr_in addr;
+	socket_api::getsockname(m_acceptor_socket[index]->get_fd(), addr);
+
+	return Address(addr);
+}
+
+//-------------------------------------------------------------------------------------
 void TcpServer::stop(void)
 {
+	//not running?
+	if (m_running.get() == 0) return;
+
 	//this function can't run in work thread
 	for (int32_t i = 0; i < m_work_thread_counts; i++){
 		WorkThread* work = m_work_thread_pool[i];
@@ -111,9 +155,10 @@ void TcpServer::stop(void)
 	//is shutdown in processing?
 	if (m_shutdown_ing.get_and_set(1) > 0)return;
 
-	//touch the listen socket, cause the accept thread quit
+	//touch the first listen socket, cause the accept thread quit
+	Address address(get_bind_address(0).get_port(), true);
 	socket_t s = socket_api::create_socket();
-	socket_api::connect(s, Address(m_address.get_port(), true).get_sockaddr_in());
+	socket_api::connect(s, address.get_sockaddr_in());
 	socket_api::close_socket(s);
 
 	//first shutdown all connection
@@ -137,8 +182,13 @@ void TcpServer::stop(void)
 	thread_api::thread_join(m_acceptor_thread);
 
 	//close the listen socket
-	delete m_acceptor_socket; 
-	m_acceptor_socket = 0;
+	for (int i = 0; i < MAX_BIND_PORT_COUNTS; i++)
+	{
+		if (m_acceptor_socket[i] == 0) break;
+
+		delete m_acceptor_socket[i];
+		m_acceptor_socket[i] = 0;
+	}
 
 	//OK!
 	return;
@@ -148,13 +198,13 @@ void TcpServer::stop(void)
 bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
 	(void)id;
-	(void)fd;
 	(void)event;
+
 	//is shutdown in processing?		
 	if (m_shutdown_ing.get() > 0) return true;
 
 	//call accept and create peer socket		
-	socket_t connfd = socket_api::accept(m_acceptor_socket->get_fd(), 0);
+	socket_t connfd = socket_api::accept(fd, 0);
 	if (connfd == INVALID_SOCKET)
 	{
 		//log error		
@@ -179,15 +229,22 @@ void TcpServer::_accept_thread(void)
 	//create a event looper		
 	Looper* looper = Looper::create_looper();
 
-	//registe listen event		
-	looper->register_event(m_acceptor_socket->get_fd(),
-		Looper::kRead,
-		this,
-		_on_accept_function_entry,
-		0);
-	
-	//begin listen
-	m_acceptor_socket->listen();
+	//registe listen event	
+	for (int i = 0; i < MAX_BIND_PORT_COUNTS; i++)
+	{
+		if(m_acceptor_socket[i] == 0) break;
+
+		socket_t sfd = m_acceptor_socket[i]->get_fd();
+
+		looper->register_event(sfd,
+			Looper::kRead,
+			this,
+			_on_accept_function_entry,
+			0);
+
+		//begin listen
+		socket_api::listen(sfd);
+	}
 
 	looper->loop();
 

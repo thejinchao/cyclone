@@ -17,11 +17,13 @@ class Connection;
 class TcpServer
 {
 public:
+	/// add a bind port, return false means too much port has beed binded or bind failed
+	// NOT thread safe, and this function must be called before start the server
+	bool bind(const Address& bind_addr, bool enable_reuse_port);
+
 	/// start the server(start one accept thread and n workthreads)
 	/// (thread safe, but you wouldn't want call it again...)
-	bool start(const Address& bind_addr, 
-		bool enable_reuse_port,
-		int32_t work_thread_counts);
+	bool start(int32_t work_thread_counts);
 
 	/// wait server to termeinate(thread safe)
 	void join(void);
@@ -35,6 +37,9 @@ public:
 
 	/// get callback param(thread safe)
 	const void* get_callback_param(void) const { return m_callback_param; }
+
+	/// get bind address, if index is invalid return default Address value
+	Address get_bind_address(int index);
 
 public:
 	typedef void(*on_connection_callback)(TcpServer* server, Connection* conn);
@@ -54,10 +59,10 @@ public:
 	on_close_callback get_close_callback(void) { return m_close_cb; }
 
 private:
-	enum { MAX_WORK_THREAD_COUNTS = 32 };
+	enum { MAX_BIND_PORT_COUNTS = 128, MAX_WORK_THREAD_COUNTS = 32 };
 
-	Socket*			m_acceptor_socket;
-	Address			m_address;
+	Socket*			m_acceptor_socket[MAX_BIND_PORT_COUNTS];
+
 	thread_t		m_acceptor_thread;
 
 	WorkThread*		m_work_thread_pool[MAX_WORK_THREAD_COUNTS];
@@ -74,6 +79,7 @@ private:
 	on_message_callback		m_message_cb;
 	on_close_callback		m_close_cb;
 
+	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
 
 private:

@@ -11,9 +11,11 @@ void on_connection_callback(TcpServer* server, Connection* conn)
 {
 	(void)server;
 
-	CY_LOG(L_INFO, "new connection accept, from %s:%d", 
+	CY_LOG(L_INFO, "new connection accept, from %s:%d to %s:%d", 
 		conn->get_peer_addr().get_ip(),
-		conn->get_peer_addr().get_port());
+		conn->get_peer_addr().get_port(),
+		conn->get_local_addr().get_ip(),
+		conn->get_local_addr().get_port());
 }
 
 //-------------------------------------------------------------------------------------
@@ -52,16 +54,18 @@ void on_close_callback(TcpServer* server, Connection* conn)
 //-------------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-	uint16_t server_port = 1978;
-	if (argc > 1)
-		server_port = (uint16_t)atoi(argv[1]);
+	(void)argc; 
+	(void)argv;
 
 	TcpServer server(0);
 	server.set_connection_callback(on_connection_callback);
 	server.set_close_callback(on_close_callback);
 	server.set_message_callback(on_message_callback);
 
-	if (!server.start(Address(server_port, false), true, 2))
+	server.bind(Address(1978, false), true);
+	server.bind(Address(1979, false), true);
+
+	if (!server.start(2))
 		return 1;
 
 	server.join();

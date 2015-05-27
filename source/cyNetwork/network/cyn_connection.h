@@ -28,6 +28,9 @@ public:
 	/// get peer address (thread safe)
 	const Address& get_peer_addr(void) const { return m_peer_addr; }
 
+	/// get local address (thread safe)
+	const Address& get_local_addr(void) const { return m_local_addr; }
+
 	/// get input stream buf (NOT thread safe, call it in work thread)
 	RingBuf& get_input_buf(void) { return m_readBuf; }
 
