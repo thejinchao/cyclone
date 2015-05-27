@@ -57,6 +57,13 @@ bool TcpServer::start(const Address& bind_addr,
 	}
 	m_acceptor_socket = new Socket(sfd);
 
+	//set socket to non-block mode
+	if (!socket_api::set_nonblock(m_acceptor_socket->get_fd(), true)) {
+		//the process should be stop		
+		CY_LOG(L_ERROR, "set socket to non block mode error");
+		return false;
+	}
+
 	//set socket close on exe flag, the file  descriptor will be closed open across an execve.
 	socket_api::set_close_onexec(m_acceptor_socket->get_fd(), true);
 
@@ -138,35 +145,55 @@ void TcpServer::stop(void)
 }
 
 //-------------------------------------------------------------------------------------
+bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
+{
+	(void)id;
+	(void)fd;
+	(void)event;
+	//is shutdown in processing?		
+	if (m_shutdown_ing.get() > 0) return true;
+
+	//call accept and create peer socket		
+	socket_t connfd = socket_api::accept(m_acceptor_socket->get_fd(), 0);
+	if (connfd == INVALID_SOCKET)
+	{
+		//log error		
+		CY_LOG(L_ERROR, "accept socket error");
+		return false;
+	}
+
+	//send it to one of work thread		
+	WorkThread* work = m_work_thread_pool[_get_next_work_thread()];
+	Pipe& cmd_pipe = work->get_cmd_port();
+
+	//write new connection command(cmd, socket_t, sockaddr_in)		
+	int32_t cmd = WorkThread::kNewConnectionCmd;
+	cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
+	cmd_pipe.write((const char*)&(connfd), sizeof(connfd));
+	return false;
+}
+
+//-------------------------------------------------------------------------------------
 void TcpServer::_accept_thread(void)
 {
+	//create a event looper		
+	Looper* looper = Looper::create_looper();
+
+	//registe listen event		
+	looper->register_event(m_acceptor_socket->get_fd(),
+		Looper::kRead,
+		this,
+		_on_accept_function_entry,
+		0);
+	
 	//begin listen
 	m_acceptor_socket->listen();
 
-	//enter accept loop...
-	for (;;)
-	{
-		//blocking call
-		socket_t connfd = socket_api::accept(m_acceptor_socket->get_fd(), 0);
-		//is shutdown in processing?
-		if (m_shutdown_ing.get() > 0) break;
+	looper->loop();
 
-		if (connfd == INVALID_SOCKET)
-		{
-			//log error
-			CY_LOG(L_ERROR, "accept socket error");
-			continue;
-		}
-
-		//send it to one of work thread
-		WorkThread* work = m_work_thread_pool[_get_next_work_thread()];
-		Pipe& cmd_pipe = work->get_cmd_port();
-
-		//write new connection command(cmd, socket_t)
-		int32_t cmd = WorkThread::kNewConnectionCmd;
-		cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
-		cmd_pipe.write((const char*)&(connfd), sizeof(socket_t));
-	}
+	//it's time to disppear...
+	Looper::destroy_looper(looper);
+	return;
 }
 
 //-------------------------------------------------------------------------------------
