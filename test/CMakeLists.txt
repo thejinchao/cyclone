@@ -22,12 +22,14 @@ target_link_libraries(echo-server
 	cyclone
 	ws2_32.lib
 	shlwapi.lib
+	winmm.lib
 )
 
 target_link_libraries(echo-client
 	cyclone
 	ws2_32.lib
 	shlwapi.lib
+	winmm.lib
 )
 
 else()

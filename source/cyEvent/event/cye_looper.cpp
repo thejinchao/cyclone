@@ -7,6 +7,10 @@ Copyright(C) thecodeway.com
 #include "internal/cye_looper_epoll.h"
 #include "internal/cye_looper_select.h"
 
+#ifndef CY_SYS_WINDOWS
+#include <sys/timerfd.h>
+#endif
+
 namespace cyclone
 {
 
@@ -43,6 +47,7 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	channel.event = 0;
 	channel.param = param;
 	channel.active = false;
+	channel.timer = false;
 	channel.on_read = _on_read;
 	channel.on_write = _on_write;
 
@@ -53,17 +58,90 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 }
 
 //-------------------------------------------------------------------------------------
+Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
+	void* param,
+	timer_callback _on_timer)
+{
+	assert(thread_api::thread_get_current_id() == m_current_thread);
+
+	//get a new channel slot
+	event_id_t id = _get_free_slot();
+	channel_s& channel = m_channelBuffer[id];
+
+	timer_s* timer = new timer_s();
+	timer->on_timer = _on_timer;
+	timer->param = param;
+
+#ifdef CY_SYS_WINDOWS
+	channel.id = id;
+	channel.fd = timer->pipe.get_read_port();
+	channel.event = 0;
+	channel.param = timer;
+	channel.active = false;
+	channel.timer = true;
+	channel.on_read = _on_timer_event_callback;
+	channel.on_write = 0;
+
+	//create mmsystem timer
+	timer->winmm_timer_id = ::timeSetEvent(milliSeconds, 1, 
+		_on_windows_timer, (DWORD_PTR)(timer->pipe.get_write_port()), 
+		TIME_CALLBACK_FUNCTION|TIME_PERIODIC);
+#else
+	channel.id = id;
+	channel.event = 0;
+	channel.param = timer;
+	channel.active = false;
+	channel.timer = true;
+	channel.on_read = _on_timer_event_callback;
+	channel.on_write = 0;
+	channel.fd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+
+	if (channel.fd < 0) {
+		//TODO: error
+	}
+
+	struct itimerspec newValue;
+	struct itimerspec oldValue;
+	memset(&newValue, 0, sizeof(newValue));
+	memset(&oldValue, 0, sizeof(oldValue));
+
+	struct timespec ts;
+	ts.tv_sec = milliSeconds / 1000;
+	ts.tv_nsec = (milliSeconds%1000) * 1000*1000;
+
+	newValue.it_value = ts;
+	newValue.it_interval.tv_sec=1; //set non-zero for repeated timer
+	::timerfd_settime(channel.fd, 0, &newValue, &oldValue);
+
+#endif
+
+	//add kRead event to poll
+	_update_channel_add_event(channel, kRead);
+	return id;
+}
+
+//-------------------------------------------------------------------------------------
 void Looper::delete_event(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
 	assert((size_t)id < m_channelBuffer.size());
 
-	//pool it 
+	//unpool it 
 	channel_s& channel = m_channelBuffer[id];
 	assert(channel.event == kNone && channel.active == false); //should be disabled already
+
+	//if timer event
+	if (channel.timer) {
+		timer_s* timer = (timer_s*)channel.param;
+#ifdef CY_SYS_WINDOWS
+		::timeKillEvent(timer->winmm_timer_id);
+#else
+		socket_api::close_socket(channel.fd);
+#endif
+		delete timer;
+	}
 	
 	//remove from active list to free list
-	//if (channel.)
 	channel.next = m_free_head;
 	m_free_head = id;
 }
@@ -214,6 +292,37 @@ Looper::event_id_t Looper::_get_free_slot(void)
 		}
 		//try again now...
 	}
+}
+
+#ifdef CY_SYS_WINDOWS
+//-------------------------------------------------------------------------------------
+void Looper::_on_windows_timer(UINT wTimerID, UINT msg, DWORD dwUser, DWORD dw1, DWORD dw2)
+{
+	(void)wTimerID;
+	(void)msg;
+	(void)dw1;
+	(void)dw2;
+
+	socket_t sfd = (socket_t)dwUser;
+	uint64_t touch = 0;
+	socket_api::write(sfd, (const char*)(&touch), sizeof(touch));
+}
+#endif
+
+//-------------------------------------------------------------------------------------
+bool Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param)
+{
+	(void)event;
+
+	timer_s* timer = (timer_s*)param;
+
+	uint64_t touch = 0;
+	socket_api::read(fd, &touch, sizeof(touch));
+
+	if (timer->on_timer) {
+		return timer->on_timer(id, timer->param);
+	}
+	return false;
 }
 
 }

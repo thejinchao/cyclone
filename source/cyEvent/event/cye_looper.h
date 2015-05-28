@@ -17,14 +17,15 @@ public:
 	typedef uint32_t event_id_t;
 	typedef uint32_t event_t;
 
+	//the value of event_t
 	enum {
 		kNone = 0,
 		kRead	= 1,
 		kWrite	= 1<<1,
-		kError	= 1<<2,
 	};
 
 	typedef bool(*event_callback)(event_id_t id, socket_t fd, event_t event, void* param);
+	typedef bool(*timer_callback)(event_id_t id, void* param);
 
 public:
 	//----------------------
@@ -37,6 +38,11 @@ public:
 		void* param, 
 		event_callback _on_read,
 		event_callback _on_write);
+
+	//// registe timer event
+	event_id_t register_timer_event(uint32_t milliSeconds,
+		void* param,
+		timer_callback _on_timer);
 
 	//// unregister event
 	void delete_event(event_id_t id);
@@ -79,6 +85,7 @@ protected:
 		event_t event;
 		void *param;
 		bool active;
+		bool timer;
 
 		event_callback on_read;
 		event_callback on_write;
@@ -101,6 +108,25 @@ protected:
 	/// Changes the interested I/O events.
 	virtual void _update_channel_add_event(channel_s& channel, event_t type) = 0;
 	virtual void _update_channel_remove_event(channel_s& channel, event_t type) = 0;
+
+	/// for timer
+	struct timer_s
+	{
+		timer_callback on_timer;
+		void* param;
+
+#ifdef CY_SYS_WINDOWS
+		Pipe pipe;
+		uint32_t winmm_timer_id;
+#else
+#endif
+	};
+	
+	static bool _on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param);
+
+#ifdef CY_SYS_WINDOWS
+	static void __stdcall _on_windows_timer(UINT wTimerID, UINT msg, DWORD dwUser, DWORD dw1, DWORD dw2);
+#endif
 
 private:
 	event_id_t _get_free_slot(void);
