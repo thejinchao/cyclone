@@ -37,6 +37,10 @@ public:
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
 
+	/// NOT thread safe, set and get param in work thread
+	void set_param(void* param) { m_param = param; }
+	void* get_param(void) const { return m_param; }
+
 public:
 	void established(void);
 	void shutdown(void);
@@ -57,6 +61,8 @@ private:
 	enum { kDefaultReadBufSize=1024, kDefaultWriteBufSize=1024 };
 	RingBuf m_readBuf;
 	RingBuf m_writeBuf;
+
+	void* m_param;
 
 private:
 	//// on socket read event

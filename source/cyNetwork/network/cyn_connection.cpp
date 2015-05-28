@@ -24,6 +24,7 @@ Connection::Connection(socket_t sfd,
 	, m_work_thread_index(work_thread_index)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
+	, m_param(0)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
