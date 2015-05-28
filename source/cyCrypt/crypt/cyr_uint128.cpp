@@ -11,7 +11,7 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 void uint128_t::make_rand(void)
 {
-	for (int i = 0; i < sizeof(uint64_t); i++)
+	for (size_t i = 0; i < sizeof(uint64_t); i++)
 	{
 		low |= ((uint64_t)(::rand() & 0xFF)) << (i * 8);
 		high |= ((uint64_t)(::rand() & 0xFF)) << (i * 8);
