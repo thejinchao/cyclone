@@ -63,7 +63,6 @@ int main(int argc, char* argv[])
 	server.set_message_callback(on_message_callback);
 
 	server.bind(Address(1978, false), true);
-	server.bind(Address(1979, false), true);
 
 	if (!server.start(2))
 		return 1;

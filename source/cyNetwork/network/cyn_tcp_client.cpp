@@ -19,6 +19,8 @@ TcpClient::TcpClient(Looper* looper)
 	, m_connection_cb(0)
 	, m_message_cb(0)
 	, m_close_cb(0)
+	, m_readBuf(kDefaultReadBufSize)
+	, m_writeBuf(kDefaultWriteBufSize)
 {
 	//looper muste be setted
 	assert(looper);
@@ -161,13 +163,33 @@ bool TcpClient::_on_socket_read(Looper::event_id_t id, socket_t fd, Looper::even
 	(void)fd;
 	(void)event;
 
+	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 	if (m_state == kConnecting)
 	{
 		_check_connect_status(false);
 	}
 	else if (m_state == kConnected) 
 	{
-		//TODO: read packet...
+		//read packet...
+		ssize_t len = m_readBuf.read_socket(m_socket);
+
+		if (len > 0)
+		{
+			//notify logic layer...
+			if (m_message_cb) {
+				m_message_cb(this);
+			}
+		}
+		else if (len == 0)
+		{
+			//the connection was closed by peer, close now!
+			_on_socket_close();
+		}
+		else
+		{
+			//error!
+			_on_socket_error();
+		}
 	}
 	return false;
 }
@@ -192,6 +214,108 @@ bool TcpClient::_on_socket_write(Looper::event_id_t id, socket_t fd, Looper::eve
 	return false;
 }
 
+//-------------------------------------------------------------------------------------
+void TcpClient::send(const char* buf, size_t len)
+{
+	if (thread_api::thread_get_current_id() == m_looper->get_thread_id())
+	{
+		_send(buf, len);
+	}
+	else
+	{
+		//TODO: write to output buf
+	}
+}
+
+//-------------------------------------------------------------------------------------
+void TcpClient::_send(const char* buf, size_t len)
+{
+	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
+	assert(m_state == kConnected);
+
+	bool faultError = false;
+	size_t remaining = len;
+	ssize_t nwrote = 0;
+
+	if (m_state != kConnected)
+	{
+		//TODO: log error, give up send message
+		CY_LOG(L_ERROR, "send message state error, state=%d", m_state);
+		return;
+	}
+
+	//nothing in write buf, send it diretly
+	if (!(m_looper->is_write(m_socket_event_id)) && m_writeBuf.empty())
+	{
+		nwrote = socket_api::write(m_socket, buf, len);
+		if (nwrote >= 0)
+		{
+			remaining = len - (size_t)nwrote;
+			if (remaining == 0)
+			{
+				//TODO: notify logic layer
+				//if (m_server && m_server->get_write_complete_callback()) {
+				//	m_server->get_write_complete_callback()(m_server, this);
+				//}
+			}
+		}
+		else
+		{
+			nwrote = 0;
+			int err = socket_api::get_lasterror();
+
+#ifdef CY_SYS_WINDOWS
+			if (err != WSAEWOULDBLOCK)
+#else
+			if (err != EWOULDBLOCK)
+#endif
+			{
+				CY_LOG(L_ERROR, "socket send error, err=%d", err);
+
+#ifdef CY_SYS_WINDOWS
+				if (err == WSAESHUTDOWN || err == WSAENETRESET)
+#else
+				if (err == EPIPE || err == ECONNRESET)
+#endif
+				{
+					faultError = true;
+				}
+			}
+		}
+	}
+
+	if (!faultError && remaining > 0)
+	{
+		//write to write buffer
+		m_writeBuf.memcpy_into(buf + nwrote, remaining);
+
+		//enable write event, wait socket ready
+		m_looper->enable_write(m_socket_event_id);
+	}
+}
+
+//-------------------------------------------------------------------------------------
+void TcpClient::_on_socket_close(void)
+{
+	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
+	assert(m_state == kConnected || m_state == kConnecting);
+
+	//disable all event
+	m_state = kDisconnected;
+	m_looper->disable_all(m_socket_event_id);
+	m_writeBuf.reset();
+
+	//logic callback
+	if (m_close_cb) {
+		m_close_cb(this);
+	}
+}
+
+//-------------------------------------------------------------------------------------
+void TcpClient::_on_socket_error(void)
+{
+	_on_socket_close();
+}
 
 }
 

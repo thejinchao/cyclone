@@ -18,6 +18,14 @@ public:
 	bool connect(const Address& addr, int32_t timeOutSeconds);
 	//// disconnect(NOT thread safe)
 	void disconnect(void);
+	//// get server address
+	Address get_server_address(void) const { return m_serverAddr; }
+
+	/// send message(thread safe)
+	void send(const char* buf, size_t len);
+
+	/// get input stream buf (NOT thread safe, call it in work thread)
+	RingBuf& get_input_buf(void) { return m_readBuf; }
 
 public:
 	typedef uint32_t(*on_connection_callback)(TcpClient* client, bool success);
@@ -50,6 +58,10 @@ private:
 	on_message_callback		m_message_cb;
 	on_close_callback		m_close_cb;
 
+	enum { kDefaultReadBufSize = 1024, kDefaultWriteBufSize = 1024 };
+	RingBuf m_readBuf;
+	RingBuf m_writeBuf;
+
 private:
 	/// on read/write callback function
 	static bool _on_socket_read_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
@@ -72,8 +84,15 @@ private:
 	}
 	bool _on_retry_connect_timer(Looper::event_id_t id);
 
+	//// on socket close
+	void _on_socket_close(void);
+
+	//// on socket error
+	void _on_socket_error(void);
+
 private:
 	void _check_connect_status(bool abort);
+	void _send(const char* buf, size_t len);
 
 public:
 	TcpClient(Looper* looper);
