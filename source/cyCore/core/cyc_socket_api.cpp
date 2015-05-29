@@ -143,11 +143,21 @@ bool connect(socket_t s, const struct sockaddr_in& addr)
 {
 #ifdef CY_SYS_WINDOWS
 	if (::connect(s, (const sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+	{
+		int lasterr = get_lasterror();
+		//non-block socket
+		if(lasterr == WSAEWOULDBLOCK) return true; 
 #else
 	if (::connect(s, (const sockaddr*)&addr, sizeof(addr)) <0 )
-#endif
 	{
-		CY_LOG(L_FATAL, "socket_api::connect");
+		int lasterr = get_lasterror();
+		//non-block socket
+		if (lasterr == EINPROGRESS ||
+			lasterr == EINTR ||
+			lasterr == EISCONN) return true; 
+#endif
+
+		CY_LOG(L_FATAL, "socket_api::connect, err=%d", get_lasterror());
 		return false;
 	}
 	return true;
@@ -241,6 +251,22 @@ bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t o
 }
 
 //-------------------------------------------------------------------------------------
+int get_socket_error(int sockfd)
+{
+	int optval;
+	socklen_t optlen = sizeof(optval);
+
+	if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*)&optval, &optlen) < 0)
+	{
+		return errno;
+	}
+	else
+	{
+		return optval;
+	}
+}
+
+//-------------------------------------------------------------------------------------
 socket_t accept(socket_t s, struct sockaddr_in* addr)
 {
 	socklen_t addrlen = static_cast<socklen_t>(sizeof(sockaddr_in));
@@ -322,6 +348,7 @@ int get_lasterror(void)
 //-------------------------------------------------------------------------------------
 bool is_lasterror_WOULDBLOCK(void)
 {
+	//This error is returned from operations on nonblocking sockets that cannot be completed immediately
 #ifdef CY_SYS_WINDOWS
 	return get_lasterror() == WSAEWOULDBLOCK;
 #else

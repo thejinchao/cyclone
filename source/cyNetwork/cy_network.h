@@ -10,5 +10,6 @@ Copyright(C) thecodeway.com
 #include <network/cyn_address.h>
 #include <network/cyn_tcp_server.h>
 #include <network/cyn_connection.h>
+#include <network/cyn_tcp_client.h>
 
 #endif
