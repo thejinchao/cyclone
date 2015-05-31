@@ -26,12 +26,15 @@ Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* pa
 	//set other socket option
 	m_socket.set_keep_alive(true);
 	m_socket.set_linger(false, 0);
+
+	//init write buf lock
+	m_writeBufLock = thread_api::mutex_create();
 }
 
 //-------------------------------------------------------------------------------------
 Connection::~Connection()
 {
-
+	thread_api::mutex_destroy(m_writeBufLock);
 }
 
 //-------------------------------------------------------------------------------------
@@ -73,8 +76,23 @@ void Connection::send(const char* buf, size_t len)
 	}
 	else
 	{
-		//TODO: write to output buf
+		//write to output buf
+		thread_api::auto_mutex lock(m_writeBufLock);
+
+		//write to write buffer
+		m_writeBuf.memcpy_into(buf, len);
+
+		//enable write event, wait socket ready
+		m_looper->enable_write(m_event_id);
+
 	}
+}
+
+//-------------------------------------------------------------------------------------
+bool Connection::_is_writeBuf_empty(void) const
+{
+	thread_api::auto_mutex lock(m_writeBufLock);
+	return  m_writeBuf.empty();
 }
 
 //-------------------------------------------------------------------------------------
@@ -95,7 +113,7 @@ void Connection::_send(const char* buf, size_t len)
 	}
 
 	//nothing in write buf, send it diretly
-	if (!(m_looper->is_write(m_event_id)) && m_writeBuf.empty())
+	if (!(m_looper->is_write(m_event_id)) && _is_writeBuf_empty())
 	{
 		nwrote = socket_api::write(m_socket.get_fd(), buf, len);
 		if (nwrote >= 0)
@@ -136,6 +154,8 @@ void Connection::_send(const char* buf, size_t len)
 
 	if (!faultError && remaining > 0)
 	{
+		thread_api::auto_mutex lock(m_writeBufLock);
+
 		//write to write buffer
 		m_writeBuf.memcpy_into(buf + nwrote, remaining);
 
@@ -154,7 +174,7 @@ void Connection::shutdown(void)
 	m_state = kDisconnecting;
 
 	//something still working? wait 
-	if (m_looper->is_write(m_event_id) && !m_writeBuf.empty()) return;
+	if (m_looper->is_write(m_event_id) && !_is_writeBuf_empty()) return;
 	
 	//ok, we can close the socket now
 	socket_api::shutdown(m_socket.get_fd());
@@ -196,6 +216,7 @@ bool Connection::_on_socket_write(void)
 	
 	if (m_looper->is_write(m_event_id))
 	{
+		thread_api::auto_mutex lock(m_writeBufLock);
 		assert(!m_writeBuf.empty());
 
 		ssize_t len = m_writeBuf.write_socket(m_socket.get_fd());

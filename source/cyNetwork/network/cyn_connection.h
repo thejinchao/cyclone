@@ -64,8 +64,11 @@ private:
 	Looper::event_id_t m_event_id;
 
 	enum { kDefaultReadBufSize=1024, kDefaultWriteBufSize=1024 };
+	
 	RingBuf m_readBuf;
+
 	RingBuf m_writeBuf;
+	thread_api::mutex_t m_writeBufLock;	//for multithread lock
 
 	event_callback m_callback;
 	void* m_param;
@@ -92,6 +95,9 @@ private:
 
 	/// send message (not thread safe, must int work thread)
 	void _send(const char* buf, size_t len);
+
+	//// is write buf empty(thread safe)
+	bool _is_writeBuf_empty(void) const;
 
 public:
 	Connection(socket_t sfd, Looper* looper, event_callback cb, void* param);
