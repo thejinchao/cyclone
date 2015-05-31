@@ -83,7 +83,7 @@ void _client_thread(void* param)
 	client_s* data = (client_s*)param;
 
 	Looper* looper = Looper::create_looper();
-	TcpClient client(looper);
+	TcpClient client(looper, data);
 	Address address(data->server_ip, data->port);
 
 	data->client = &client;

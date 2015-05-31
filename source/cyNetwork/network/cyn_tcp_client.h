@@ -25,6 +25,9 @@ public:
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
 
+	/// get callback param(thread safe)
+	const void* get_callback_param(void) const { return m_param; }
+
 public:
 	typedef uint32_t(*on_connection_callback)(TcpClient* client, bool success);
 	typedef void(*on_message_callback)(TcpClient* client, Connection* conn);
@@ -52,6 +55,7 @@ private:
 	on_close_callback		m_close_cb;
 
 	Connection* m_connection;
+	void* m_param;
 
 public:
 	//// called by connection(in work thread)
@@ -83,7 +87,7 @@ private:
 	void _check_connect_status(bool abort);
 
 public:
-	TcpClient(Looper* looper);
+	TcpClient(Looper* looper, void* param);
 	~TcpClient();
 };
 

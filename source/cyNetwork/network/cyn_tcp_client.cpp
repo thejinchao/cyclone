@@ -10,7 +10,7 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpClient::TcpClient(Looper* looper)
+TcpClient::TcpClient(Looper* looper, void* param)
 	: m_socket(0)
 	, m_socket_event_id(0)
 	, m_connect_timeout_ms(0)
@@ -19,6 +19,7 @@ TcpClient::TcpClient(Looper* looper)
 	, m_message_cb(0)
 	, m_close_cb(0)
 	, m_connection(0)
+	, m_param(param)
 {
 	//looper muste be setted
 	assert(looper);
