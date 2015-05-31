@@ -101,6 +101,8 @@ protected:
 
 	pid_t m_current_thread;
 
+	thread_api::mutex_t m_lock;
+
 	/// Polls the I/O events.
 	virtual void _poll(
 		channel_list& readChannelList,

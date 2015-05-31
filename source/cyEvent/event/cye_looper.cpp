@@ -22,11 +22,13 @@ Looper::Looper()
 	: m_free_head(INVALID_EVENT_ID)
 	, m_current_thread(thread_api::thread_get_current_id())
 {
+	m_lock = thread_api::mutex_create();
 }
 
 //-------------------------------------------------------------------------------------
 Looper::~Looper()
 {
+	thread_api::mutex_destroy(m_lock);
 }
 
 //-------------------------------------------------------------------------------------
@@ -36,7 +38,7 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	event_callback _on_read,
 	event_callback _on_write)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
 
 	//get a new channel slot
 	event_id_t id = _get_free_slot();
@@ -62,7 +64,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	void* param,
 	timer_callback _on_timer)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
 
 	//get a new channel slot
 	event_id_t id = _get_free_slot();
@@ -123,7 +125,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 //-------------------------------------------------------------------------------------
 void Looper::delete_event(event_id_t id)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
 	assert((size_t)id < m_channelBuffer.size());
 
 	//unpool it 
@@ -149,7 +151,8 @@ void Looper::delete_event(event_id_t id)
 //-------------------------------------------------------------------------------------
 void Looper::disable_read(event_id_t id)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -159,7 +162,8 @@ void Looper::disable_read(event_id_t id)
 //-------------------------------------------------------------------------------------
 void Looper::enable_read(event_id_t id)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -169,7 +173,8 @@ void Looper::enable_read(event_id_t id)
 //-------------------------------------------------------------------------------------
 bool Looper::is_read(event_id_t id) const
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	const channel_s& channel = m_channelBuffer[id];
@@ -179,7 +184,8 @@ bool Looper::is_read(event_id_t id) const
 //-------------------------------------------------------------------------------------
 void Looper::disable_write(event_id_t id)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -189,7 +195,8 @@ void Looper::disable_write(event_id_t id)
 //-------------------------------------------------------------------------------------
 void Looper::enable_write(event_id_t id)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -199,7 +206,8 @@ void Looper::enable_write(event_id_t id)
 //-------------------------------------------------------------------------------------
 bool Looper::is_write(event_id_t id) const
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	const channel_s& channel = m_channelBuffer[id];
@@ -209,7 +217,8 @@ bool Looper::is_write(event_id_t id) const
 //-------------------------------------------------------------------------------------
 void Looper::disable_all(event_id_t id)
 {
-	assert(thread_api::thread_get_current_id() == m_current_thread);
+	thread_api::auto_mutex lock(m_lock);
+
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
