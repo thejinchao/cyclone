@@ -11,8 +11,8 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 WorkThread::WorkThread(int32_t index, void* param)
 	: m_index(index)
-	, m_param(param)
 	, m_looper(0)
+	, m_param(param)
 {
 	m_thread_ready = thread_api::signal_create();
 

@@ -10,17 +10,17 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-	Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param)
+Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param)
 	: m_socket(sfd)
 	, m_state(kConnecting)
 	, m_local_addr(false, sfd) //create local address
 	, m_peer_addr(true, sfd) //create peer address
 	, m_looper(looper)
 	, m_event_id(0)
-	, m_param(param)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_callback(cb)
+	, m_param(param)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
