@@ -6,13 +6,13 @@ Copyright(C) thecodeway.com
 
 #include <cy_core.h>
 #include <cy_event.h>
+#include "cyn_connection.h"
 
 namespace cyclone
 {
 
 //pre-define
 class WorkThread;
-class Connection;
 
 class TcpServer
 {
@@ -46,17 +46,19 @@ public:
 	typedef void(*on_message_callback)(TcpServer* server, Connection* conn);
 	typedef void(*on_close_callback)(TcpServer* server, Connection* conn);
 
-	/// Set/Get connection callback. (NOT thread safe)
+	/// Set connection callback. (NOT thread safe)
 	void set_connection_callback(on_connection_callback cb) { m_connection_cb = cb; }
-	on_connection_callback get_connection_callback(void) { return m_connection_cb; }
 
 	/// Set message callback. (NOT thread safe)
 	void set_message_callback(on_message_callback cb)  { m_message_cb = cb; }
-	on_message_callback get_message_callback(void)  { return m_message_cb; }
 
 	//// Set close callback. (NOT thread safe)
 	void set_close_callback(on_close_callback cb)  { m_close_cb = cb; }
-	on_close_callback get_close_callback(void) { return m_close_cb; }
+
+public:
+	//// called by connection(in work thread)
+	static void _on_connection_event_entry(Connection::Event event, Connection* conn, void* param);
+	void _on_connection_event(Connection::Event event, Connection* conn);
 
 private:
 	enum { MAX_BIND_PORT_COUNTS = 128, MAX_WORK_THREAD_COUNTS = 32 };

@@ -13,6 +13,15 @@ namespace cyclone
 class Connection
 {
 public:
+	//connection  event
+	enum Event {
+		kOnConnection,
+		kOnMessage,
+		kOnClose
+	};
+	typedef void(*event_callback)(Event event, Connection* conn, void* param);
+
+public:
 	//connection state
 	//                         established()                         shutdown()
 	//  O ----> kConnecting ---------------------> kConnected ----------------------> kDisconnecting---
@@ -37,15 +46,13 @@ public:
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
 
-	/// NOT thread safe, set and get param in work thread
-	void set_param(void* param) { m_param = param; }
+	/// thread safe
 	void* get_param(void) const { return m_param; }
 
 public:
 	void established(void);
 	void shutdown(void);
 
-	int32_t get_work_thread_index(void) const { return m_work_thread_index;  }
 	Looper::event_id_t get_event_id(void) const { return m_event_id; }
 
 private:
@@ -55,13 +62,12 @@ private:
 	const Address m_peer_addr;
 	Looper* m_looper;
 	Looper::event_id_t m_event_id;
-	TcpServer* m_server;
-	const int32_t m_work_thread_index;
 
 	enum { kDefaultReadBufSize=1024, kDefaultWriteBufSize=1024 };
 	RingBuf m_readBuf;
 	RingBuf m_writeBuf;
 
+	event_callback m_callback;
 	void* m_param;
 
 private:
@@ -77,6 +83,7 @@ private:
 	}
 	bool _on_socket_write(void);
 
+private:
 	//// on socket close
 	void _on_socket_close(void);
 
@@ -87,10 +94,7 @@ private:
 	void _send(const char* buf, size_t len);
 
 public:
-	Connection(socket_t sfd, 
-		TcpServer* server,
-		int32_t work_thread_index,
-		Looper* looper);
+	Connection(socket_t sfd, Looper* looper, event_callback cb, void* param);
 	~Connection();
 };
 

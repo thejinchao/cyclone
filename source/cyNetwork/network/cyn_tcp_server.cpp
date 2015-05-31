@@ -115,7 +115,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	for (int32_t i = 0; i < m_work_thread_counts; i++)
 	{
 		//run the thread
-		m_work_thread_pool[i] = new WorkThread(this, i);
+		m_work_thread_pool[i] = new WorkThread(i, this);
 	}
 
 	//start listen thread
@@ -224,6 +224,41 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 }
 
 //-------------------------------------------------------------------------------------
+void TcpServer::_on_connection_event_entry(Connection::Event event, Connection* conn, void* param) 
+{
+	WorkThread* thread = (WorkThread*)param;
+	TcpServer*  pThis = (TcpServer*)(thread->get_param());
+
+	((TcpServer*)pThis)->_on_connection_event(event, conn);
+}
+
+//-------------------------------------------------------------------------------------
+void TcpServer::_on_connection_event(Connection::Event event, Connection* conn)
+{
+	switch (event) {
+	case Connection::kOnConnection:
+		if (m_connection_cb) {
+			m_connection_cb(this, conn);
+		}
+		break;
+
+	case Connection::kOnMessage:
+		if (m_message_cb) {
+			m_message_cb(this, conn);
+		}
+		break;
+
+	case Connection::kOnClose:
+		if (m_close_cb) {
+			m_close_cb(this, conn);
+		}
+		
+		//shutdown this connection
+		shutdown_connection(conn);
+	}
+}
+
+//-------------------------------------------------------------------------------------
 void TcpServer::_accept_thread(void)
 {
 	//create a event looper		
@@ -269,10 +304,7 @@ void TcpServer::shutdown_connection(Connection* conn)
 	assert(m_acceptor_socket);
 	assert(m_acceptor_thread);
 
-	int32_t work_index = conn->get_work_thread_index();
-	assert(work_index >= 0 && work_index < m_work_thread_counts);
-	
-	WorkThread* work = m_work_thread_pool[work_index];
+	WorkThread* work = (WorkThread*)(conn->get_param());
 
 	Pipe& cmd_pipe = work->get_cmd_port();
 

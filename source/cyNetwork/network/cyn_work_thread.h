@@ -17,13 +17,15 @@ public:
 	int32_t get_index(void) const { return m_index; }
 	/// wait thread to termeinate(thread safe)
 	thread_t get_thread(void) const { return m_thread; }
+	/// get param
+	void* get_param(void) const { return m_param; }
 
 private:
 	const int32_t	m_index;
-	TcpServer*		m_server;
 	thread_t		m_thread;
 	Looper*			m_looper;
 	Pipe			m_pipe;
+	void*			m_param;
 
 	typedef std::set< Connection* > ConnectionList;
 	ConnectionList	m_connections;
@@ -44,7 +46,7 @@ private:
 	bool _on_command(void);
 
 public:
-	WorkThread(TcpServer* server, int32_t index);
+	WorkThread(int32_t index, void* param);
 	~WorkThread();
 
 	//not-copyable

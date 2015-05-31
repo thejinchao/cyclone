@@ -10,21 +10,17 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(socket_t sfd,
-		TcpServer* server,
-		int32_t work_thread_index,
-		Looper* looper)
+	Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param)
 	: m_socket(sfd)
 	, m_state(kConnecting)
 	, m_local_addr(false, sfd) //create local address
 	, m_peer_addr(true, sfd) //create peer address
 	, m_looper(looper)
 	, m_event_id(0)
-	, m_server(server)
-	, m_work_thread_index(work_thread_index)
+	, m_param(param)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
-	, m_param(0)
+	, m_callback(cb)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
@@ -62,8 +58,8 @@ void Connection::established(void)
 		_on_socket_write_entry);
 
 	//logic callback
-	if (m_server && m_server->get_connection_callback()) {
-		m_server->get_connection_callback()(m_server, this);
+	if (m_callback) {
+		m_callback(kOnConnection, this, m_param);
 	}
 }
 
@@ -174,8 +170,8 @@ bool Connection::_on_socket_read(void)
 	if (len > 0)
 	{
 		//notify logic layer...
-		if (m_server && m_server->get_message_callback()) {
-			m_server->get_message_callback()(m_server, this);
+		if (m_callback) {
+			m_callback(kOnMessage, this, m_param);
 		}
 	}
 	else if (len == 0)
@@ -239,13 +235,9 @@ void Connection::_on_socket_close(void)
 	m_writeBuf.reset();
 
 	//logic callback
-	if (m_server && m_server->get_close_callback()) {
-		m_server->get_close_callback()(m_server, this);
+	if (m_callback) {
+		m_callback(kOnClose, this, m_param);
 	}
-
-	//shutdown this connection, this is the last time you see me.
-	if (m_server) 
-		m_server->shutdown_connection(this);
 }
 
 //-------------------------------------------------------------------------------------

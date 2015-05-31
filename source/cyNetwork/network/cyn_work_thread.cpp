@@ -9,9 +9,9 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-WorkThread::WorkThread(TcpServer* server, int32_t index)
+WorkThread::WorkThread(int32_t index, void* param)
 	: m_index(index)
-	, m_server(server)
+	, m_param(param)
 	, m_looper(0)
 {
 	m_thread_ready = thread_api::signal_create();
@@ -74,7 +74,7 @@ bool WorkThread::_on_command(void)
 		}
 
 		//create tcp connection 
-		Connection* conn = new Connection(sfd, m_server, get_index(), m_looper);
+		Connection* conn = new Connection(sfd, m_looper, TcpServer::_on_connection_event_entry, this);
 		m_connections.insert(conn);
 
 		//established the connection
