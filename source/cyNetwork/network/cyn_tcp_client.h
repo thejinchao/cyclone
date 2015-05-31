@@ -71,17 +71,17 @@ private:
 	}
 	bool _on_socket_read_write(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
+#ifdef CY_SYS_WINDOWS
 	static bool _on_connection_timer_entry(Looper::event_id_t id, void* param){
 		return ((TcpClient*)param)->_on_connection_timer(id);
 	}
 	bool _on_connection_timer(Looper::event_id_t id);
+#endif
 
-#ifdef CY_SYS_WINDOWS
 	static bool _on_retry_connect_timer_entry(Looper::event_id_t id, void* param){
 		return ((TcpClient*)param)->_on_retry_connect_timer(id);
 	}
 	bool _on_retry_connect_timer(Looper::event_id_t id);
-#endif
 
 private:
 	void _check_connect_status(bool abort);
