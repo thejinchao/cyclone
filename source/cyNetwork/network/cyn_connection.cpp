@@ -13,8 +13,6 @@ namespace cyclone
 Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param)
 	: m_socket(sfd)
 	, m_state(kConnecting)
-	, m_local_addr(false, sfd) //create local address
-	, m_peer_addr(true, sfd) //create peer address
 	, m_looper(looper)
 	, m_event_id(0)
 	, m_readBuf(kDefaultReadBufSize)
@@ -49,6 +47,9 @@ void Connection::established(void)
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 
 	m_state = kConnected;
+
+	m_local_addr = Address(false, m_socket.get_fd()); //create local address
+	m_peer_addr = Address(true, m_socket.get_fd()); //create peer address
 
 	//register socket event
 	m_event_id = m_looper->register_event(m_socket.get_fd(),

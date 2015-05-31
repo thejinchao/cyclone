@@ -9,11 +9,12 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
+//pre-define 
+class Connection;
+
 class TcpClient
 {
 public:
-	enum States { kDisconnected, kConnecting, kConnected };
-
 	//// connect to remote server(NOT thread safe)
 	bool connect(const Address& addr, int32_t timeOutSeconds);
 	//// disconnect(NOT thread safe)
@@ -24,29 +25,21 @@ public:
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
 
-	/// get input stream buf (NOT thread safe, call it in work thread)
-	RingBuf& get_input_buf(void) { return m_readBuf; }
-
 public:
 	typedef uint32_t(*on_connection_callback)(TcpClient* client, bool success);
-	typedef void(*on_message_callback)(TcpClient* client);
+	typedef void(*on_message_callback)(TcpClient* client, Connection* conn);
 	typedef void(*on_close_callback)(TcpClient* client);
 
 	/// Set/Get connection callback. (NOT thread safe)
 	void set_connection_callback(on_connection_callback cb) { m_connection_cb = cb; }
-	on_connection_callback get_connection_callback(void) { return m_connection_cb; }
 
 	/// Set message callback. (NOT thread safe)
 	void set_message_callback(on_message_callback cb)  { m_message_cb = cb; }
-	on_message_callback get_message_callback(void)  { return m_message_cb; }
 
 	//// Set close callback. (NOT thread safe)
 	void set_close_callback(on_close_callback cb)  { m_close_cb = cb; }
-	on_close_callback get_close_callback(void) { return m_close_cb; }
 
 private:
-	States	m_state;
-
 	socket_t m_socket;
 	Looper::event_id_t m_socket_event_id;
 
@@ -58,41 +51,36 @@ private:
 	on_message_callback		m_message_cb;
 	on_close_callback		m_close_cb;
 
-	enum { kDefaultReadBufSize = 1024, kDefaultWriteBufSize = 1024 };
-	RingBuf m_readBuf;
-	RingBuf m_writeBuf;
+	Connection* m_connection;
+
+public:
+	//// called by connection(in work thread)
+	static void _on_connection_event_entry(Connection::Event event, Connection* conn, void* param){
+		((TcpClient*)param)->_on_connection_event(event, conn);
+	}
+	void _on_connection_event(Connection::Event event, Connection* conn);
 
 private:
 	/// on read/write callback function
-	static bool _on_socket_read_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		return ((TcpClient*)param)->_on_socket_read(id, fd, event);
+	static bool _on_socket_read_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+		return ((TcpClient*)param)->_on_socket_read_write(id, fd, event);
 	}
-	bool _on_socket_read(Looper::event_id_t id, socket_t fd, Looper::event_t event);
-
-	static bool _on_socket_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		return ((TcpClient*)param)->_on_socket_write(id, fd, event);
-	}
-	bool _on_socket_write(Looper::event_id_t id, socket_t fd, Looper::event_t event);
+	bool _on_socket_read_write(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 	static bool _on_connection_timer_entry(Looper::event_id_t id, void* param){
 		return ((TcpClient*)param)->_on_connection_timer(id);
 	}
 	bool _on_connection_timer(Looper::event_id_t id);
 
+#ifdef CY_SYS_WINDOWS
 	static bool _on_retry_connect_timer_entry(Looper::event_id_t id, void* param){
 		return ((TcpClient*)param)->_on_retry_connect_timer(id);
 	}
 	bool _on_retry_connect_timer(Looper::event_id_t id);
-
-	//// on socket close
-	void _on_socket_close(void);
-
-	//// on socket error
-	void _on_socket_error(void);
+#endif
 
 private:
 	void _check_connect_status(bool abort);
-	void _send(const char* buf, size_t len);
 
 public:
 	TcpClient(Looper* looper);

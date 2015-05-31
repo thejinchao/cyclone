@@ -35,9 +35,9 @@ uint32_t on_connection_callback(TcpClient* client, bool success)
 }
 
 //-------------------------------------------------------------------------------------
-void on_message_callback(TcpClient* client)
+void on_message_callback(TcpClient* /*client*/, Connection* conn)
 {
-	RingBuf& buf = client->get_input_buf();
+	RingBuf& buf = conn->get_input_buf();
 
 	char temp[1024] = { 0 };
 	buf.memcpy_out(temp, 1024);

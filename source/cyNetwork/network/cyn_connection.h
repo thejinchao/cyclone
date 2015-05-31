@@ -58,8 +58,8 @@ public:
 private:
 	Socket m_socket;
 	State m_state;
-	const Address m_local_addr;
-	const Address m_peer_addr;
+	Address m_local_addr;
+	Address m_peer_addr;
 	Looper* m_looper;
 	Looper::event_id_t m_event_id;
 
