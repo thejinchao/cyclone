@@ -230,6 +230,9 @@ void Looper::loop(void)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
 
+	//register inner pipe first
+	register_event(m_inner_pipe.get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
+
 	channel_list readList;
 	channel_list writeList;
 
@@ -331,6 +334,26 @@ bool Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event,
 	if (timer->on_timer) {
 		return timer->on_timer(id, timer->param);
 	}
+	return false;
+}
+
+//-------------------------------------------------------------------------------------
+void Looper::_touch_inner_pipe(void)
+{
+	//just touch once!
+	if (m_inner_pipe_touched.get_and_set(1) != 0) return;
+
+	uint64_t touch = 0;
+	m_inner_pipe.write((const char*)&touch, sizeof(touch));
+}
+
+//-------------------------------------------------------------------------------------
+bool Looper::_on_inner_pipe_touched(event_id_t , socket_t fd, event_t , void* param)
+{
+	uint64_t touch = 0;
+	socket_api::read(fd, &touch, sizeof(touch));
+
+	((Looper*)param)->m_inner_pipe_touched.set(0);
 	return false;
 }
 

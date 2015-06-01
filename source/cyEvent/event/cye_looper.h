@@ -103,6 +103,9 @@ protected:
 
 	thread_api::mutex_t m_lock;
 
+	Pipe m_inner_pipe;	//pipe to push loop continue
+	atomic_uint32_t m_inner_pipe_touched;
+
 	/// Polls the I/O events.
 	virtual void _poll(
 		channel_list& readChannelList,
@@ -129,6 +132,10 @@ protected:
 #ifdef CY_SYS_WINDOWS
 	static void __stdcall _on_windows_timer(UINT wTimerID, UINT msg, DWORD dwUser, DWORD dw1, DWORD dw2);
 #endif
+
+	//inner pipe functions
+	void _touch_inner_pipe(void);
+	static bool _on_inner_pipe_touched(event_id_t id, socket_t fd, event_t event, void* param);
 
 private:
 	event_id_t _get_free_slot(void);

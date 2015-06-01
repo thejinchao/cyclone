@@ -190,6 +190,8 @@ void Looper_select::_update_channel_add_event(channel_s& channel, event_t event)
 		if (m_max_fd == INVALID_SOCKET || m_max_fd < fd)  m_max_fd = fd;
 #endif
 	}
+
+	_touch_inner_pipe();
 }
 
 //-------------------------------------------------------------------------------------

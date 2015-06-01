@@ -132,6 +132,8 @@ void Looper_epoll::_update_channel_add_event(channel_s& channel, event_t event)
 		channel.event |= event;
 		channel.active = true;
 	}
+
+	_touch_inner_pipe();
 }
 
 //-------------------------------------------------------------------------------------
