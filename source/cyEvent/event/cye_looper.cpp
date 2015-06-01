@@ -38,6 +38,7 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	event_callback _on_read,
 	event_callback _on_write)
 {
+	assert(thread_api::thread_get_current_id() == m_current_thread);
 	thread_api::auto_mutex lock(m_lock);
 
 	//get a new channel slot
@@ -64,6 +65,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	void* param,
 	timer_callback _on_timer)
 {
+	assert(thread_api::thread_get_current_id() == m_current_thread);
 	thread_api::auto_mutex lock(m_lock);
 
 	//get a new channel slot
@@ -125,6 +127,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 //-------------------------------------------------------------------------------------
 void Looper::delete_event(event_id_t id)
 {
+	assert(thread_api::thread_get_current_id() == m_current_thread);
 	thread_api::auto_mutex lock(m_lock);
 	assert((size_t)id < m_channelBuffer.size());
 
