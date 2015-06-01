@@ -77,6 +77,14 @@ void Connection::send(const char* buf, size_t len)
 	}
 	else
 	{
+		assert(get_state() == kConnected);
+		if (get_state() != kConnected)
+		{
+			//log error, give up send message
+			CY_LOG(L_ERROR, "send message state error, state=%d", m_state);
+			return;
+		}
+
 		//write to output buf
 		thread_api::auto_mutex lock(m_writeBufLock);
 

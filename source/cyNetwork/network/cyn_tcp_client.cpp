@@ -202,7 +202,7 @@ bool TcpClient::_on_socket_read_write(Looper::event_id_t /*id*/, socket_t /*fd*/
 //-------------------------------------------------------------------------------------
 void TcpClient::send(const char* buf, size_t len)
 {
-	if (m_connection) {
+	if (m_connection && m_connection->get_state()==Connection::kConnected) {
 		m_connection->send(buf, len);
 	}
 }
