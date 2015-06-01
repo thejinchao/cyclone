@@ -8,7 +8,6 @@ using namespace cyclone;
 struct client_s {
 	const char* server_ip;
 	uint16_t port;
-	Pipe cmd_pipe;
 	TcpClient* client;
 };
 
@@ -55,29 +54,6 @@ void on_close_callback(TcpClient* client)
 }
 
 //-------------------------------------------------------------------------------------
-static bool _on_command(Looper::event_id_t, socket_t, Looper::event_t, void* param)
-{
-	client_s* data = (client_s*)param;
-
-	size_t len;
-	//read cmd
-	if (sizeof(len) != data->cmd_pipe.read((char*)&len, sizeof(len)))
-	{//error
-		return false;
-	}
-
-	char message[MAX_MESSAGE_LEN];
-	if ((ssize_t)len != data->cmd_pipe.read(message, len))
-	{//error
-		return false;
-	}
-
-	data->client->send(message, len);
-
-	return false;
-}
-
-//-------------------------------------------------------------------------------------
 void _client_thread(void* param)
 {
 	client_s* data = (client_s*)param;
@@ -92,9 +68,7 @@ void _client_thread(void* param)
 	client.set_message_callback(on_message_callback);
 	client.set_close_callback(on_close_callback);
 
-	looper->register_event(data->cmd_pipe.get_read_port(), Looper::kRead, param, _on_command, 0);
-
-	client.connect(address, 1000 * 3);
+	client.connect(address, 1000 * 10);
 
 	looper->loop();
 }
@@ -127,8 +101,7 @@ int main(int argc, char* argv[])
 		size_t len = strlen(str_pos) + 1;
 		if (len >= MAX_MESSAGE_LEN) continue;
 
-		memcpy(temp, &len, sizeof(len));
-		client.cmd_pipe.write(temp, len+sizeof(len));
+		client.client->send(str_pos, len);
 	}
 	
 	return 0;
