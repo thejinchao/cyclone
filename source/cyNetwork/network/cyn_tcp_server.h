@@ -57,7 +57,7 @@ public:
 
 public:
 	//// called by connection(in work thread)
-	static void _on_connection_event_entry(Connection::Event event, Connection* conn, void* param);
+	static void _on_connection_event_entry(Connection::Event event, Connection* conn);
 	void _on_connection_event(Connection::Event event, Connection* conn);
 
 private:

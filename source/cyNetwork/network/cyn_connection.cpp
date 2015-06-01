@@ -10,7 +10,7 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param)
+Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param0, void* param1)
 	: m_socket(sfd)
 	, m_state(kConnecting)
 	, m_looper(looper)
@@ -18,7 +18,8 @@ Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* pa
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_callback(cb)
-	, m_param(param)
+	, m_param0(param0)
+	, m_param1(param1)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
@@ -63,7 +64,7 @@ void Connection::established(void)
 
 	//logic callback
 	if (m_callback) {
-		m_callback(kOnConnection, this, m_param);
+		m_callback(kOnConnection, this);
 	}
 }
 
@@ -192,7 +193,7 @@ bool Connection::_on_socket_read(void)
 	{
 		//notify logic layer...
 		if (m_callback) {
-			m_callback(kOnMessage, this, m_param);
+			m_callback(kOnMessage, this);
 		}
 	}
 	else if (len == 0)
@@ -258,7 +259,7 @@ void Connection::_on_socket_close(void)
 
 	//logic callback
 	if (m_callback) {
-		m_callback(kOnClose, this, m_param);
+		m_callback(kOnClose, this);
 	}
 }
 
@@ -266,6 +267,12 @@ void Connection::_on_socket_close(void)
 void Connection::_on_socket_error(void)
 {
 	_on_socket_close();
+}
+
+//-------------------------------------------------------------------------------------
+void Connection::set_param1(void* param)
+{
+	m_param1 = param;
 }
 
 }

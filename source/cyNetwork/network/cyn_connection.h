@@ -19,7 +19,7 @@ public:
 		kOnMessage,
 		kOnClose
 	};
-	typedef void(*event_callback)(Event event, Connection* conn, void* param);
+	typedef void(*event_callback)(Event event, Connection* conn);
 
 public:
 	//connection state
@@ -47,7 +47,11 @@ public:
 	void send(const char* buf, size_t len);
 
 	/// thread safe
-	void* get_param(void) const { return m_param; }
+	void* get_param0(void) const { return m_param0; }
+
+	/// set/get another param (NOT thread safe)(UGLY...)
+	void set_param1(void* param);
+	void* get_param1(void) const { return m_param1; }
 
 public:
 	void established(void);
@@ -71,7 +75,9 @@ private:
 	thread_api::mutex_t m_writeBufLock;	//for multithread lock
 
 	event_callback m_callback;
-	void* m_param;
+
+	void* m_param0;
+	void* m_param1;
 
 private:
 	//// on socket read event
@@ -100,7 +106,7 @@ private:
 	bool _is_writeBuf_empty(void) const;
 
 public:
-	Connection(socket_t sfd, Looper* looper, event_callback cb, void* param);
+	Connection(socket_t sfd, Looper* looper, event_callback cb, void* param0, void* param1);
 	~Connection();
 };
 

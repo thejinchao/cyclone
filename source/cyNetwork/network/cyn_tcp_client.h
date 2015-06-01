@@ -59,8 +59,8 @@ private:
 
 public:
 	//// called by connection(in work thread)
-	static void _on_connection_event_entry(Connection::Event event, Connection* conn, void* param){
-		((TcpClient*)param)->_on_connection_event(event, conn);
+	static void _on_connection_event_entry(Connection::Event event, Connection* conn){
+		((TcpClient*)(conn->get_param0()))->_on_connection_event(event, conn);
 	}
 	void _on_connection_event(Connection::Event event, Connection* conn);
 

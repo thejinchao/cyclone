@@ -224,9 +224,9 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_connection_event_entry(Connection::Event event, Connection* conn, void* param) 
+void TcpServer::_on_connection_event_entry(Connection::Event event, Connection* conn) 
 {
-	WorkThread* thread = (WorkThread*)param;
+	WorkThread* thread = (WorkThread*)(conn->get_param0());
 	TcpServer*  pThis = (TcpServer*)(thread->get_param());
 
 	((TcpServer*)pThis)->_on_connection_event(event, conn);
@@ -304,7 +304,7 @@ void TcpServer::shutdown_connection(Connection* conn)
 	assert(m_acceptor_socket);
 	assert(m_acceptor_thread);
 
-	WorkThread* work = (WorkThread*)(conn->get_param());
+	WorkThread* work = (WorkThread*)(conn->get_param0());
 
 	Pipe& cmd_pipe = work->get_cmd_port();
 

@@ -74,7 +74,7 @@ bool WorkThread::_on_command(void)
 		}
 
 		//create tcp connection 
-		Connection* conn = new Connection(sfd, m_looper, TcpServer::_on_connection_event_entry, this);
+		Connection* conn = new Connection(sfd, m_looper, TcpServer::_on_connection_event_entry, this, 0);
 		m_connections.insert(conn);
 
 		//established the connection
