@@ -41,6 +41,7 @@ struct DiskLogFile
 		
 		//get host name
 		char host_name[256];
+		socket_api::global_init();
 		::gethostname(host_name, 256);
 
 		//get process id

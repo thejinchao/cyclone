@@ -10,6 +10,10 @@ namespace cyclone
 {
 namespace socket_api
 {
+
+//// init global socket data( call WSAStartup at windows system)
+void global_init(void);
+
 /// Creates a blocking socket file descriptor, return INVALID_SOCKET if failed
 socket_t create_socket(void);
 

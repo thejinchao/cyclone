@@ -33,7 +33,16 @@ static const _auto_init_win_socke_s& AUTO_INIT_WIN_SOCKET()
 	static _auto_init_win_socke_s s;
 	return s;
 }
+
 #endif
+
+//-------------------------------------------------------------------------------------
+void global_init(void)
+{
+#ifdef CY_SYS_WINDOWS
+	AUTO_INIT_WIN_SOCKET();
+#endif
+}
 
 //-------------------------------------------------------------------------------------
 socket_t create_socket(void)
