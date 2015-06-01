@@ -23,17 +23,24 @@ TcpClient::TcpClient(Looper* looper, void* param)
 {
 	//looper muste be setted
 	assert(looper);
+
+	m_connection_lock = thread_api::mutex_create();
 }
 
 //-------------------------------------------------------------------------------------
 TcpClient::~TcpClient()
 {
+	thread_api::mutex_destroy(m_connection_lock);
+	m_connection_lock = 0;
 
+	m_looper->disable_all(m_connection->get_event_id());
 }
 
 //-------------------------------------------------------------------------------------
 bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
 {
+	thread_api::auto_mutex lock(m_connection_lock);
+
 	//check status
 	if (m_connection != 0) return false;
 
@@ -82,7 +89,7 @@ bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
 //-------------------------------------------------------------------------------------
 bool TcpClient::_on_connection_timer(Looper::event_id_t id)
 {
-	if (m_connection && m_connection->get_state() == Connection::kConnecting){
+	if (get_connection_state() == Connection::kConnecting){
 		//is still waiting connect? abort!
 		_check_connect_status(true);
 	}
@@ -94,6 +101,15 @@ bool TcpClient::_on_connection_timer(Looper::event_id_t id)
 	return false;
 }
 #endif
+
+//-------------------------------------------------------------------------------------
+Connection::State TcpClient::get_connection_state(void) const
+{
+	thread_api::auto_mutex lock(m_connection_lock);
+
+	if (m_connection) return m_connection->get_state();
+	else return Connection::kDisconnected;
+}
 
 //-------------------------------------------------------------------------------------
 void TcpClient::_check_connect_status(bool abort)
@@ -117,9 +133,12 @@ void TcpClient::_check_connect_status(bool abort)
 		}
 
 		//remove connection
-		delete m_connection; 
-		m_connection = 0;
+		{
+			thread_api::auto_mutex lock(m_connection_lock);
 
+			delete m_connection;
+			m_connection = 0;
+		}
 	}
 	else
 	{
@@ -143,7 +162,7 @@ void TcpClient::_check_connect_status(bool abort)
 //-------------------------------------------------------------------------------------
 void TcpClient::disconnect(void)
 {
-	//TODO: disconnect...
+	m_connection->shutdown();
 }
 
 //-------------------------------------------------------------------------------------
@@ -192,7 +211,7 @@ bool TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 //-------------------------------------------------------------------------------------
 bool TcpClient::_on_socket_read_write(Looper::event_id_t /*id*/, socket_t /*fd*/, Looper::event_t /*event*/)
 {
-	if (m_connection && m_connection->get_state() == Connection::kConnecting)
+	if (get_connection_state() == Connection::kConnecting)
 	{
 		_check_connect_status(false);
 	}
@@ -202,7 +221,7 @@ bool TcpClient::_on_socket_read_write(Looper::event_id_t /*id*/, socket_t /*fd*/
 //-------------------------------------------------------------------------------------
 void TcpClient::send(const char* buf, size_t len)
 {
-	if (m_connection && m_connection->get_state()==Connection::kConnected) {
+	if (get_connection_state() == Connection::kConnected) {
 		m_connection->send(buf, len);
 	}
 }

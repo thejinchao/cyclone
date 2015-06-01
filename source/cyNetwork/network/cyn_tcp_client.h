@@ -21,12 +21,12 @@ public:
 	void disconnect(void);
 	//// get server address
 	Address get_server_address(void) const { return m_serverAddr; }
-
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
-
 	/// get callback param(thread safe)
 	const void* get_callback_param(void) const { return m_param; }
+	/// get current connection state(thread safe);
+	Connection::State get_connection_state(void) const;
 
 public:
 	typedef uint32_t(*on_connection_callback)(TcpClient* client, bool success);
@@ -54,8 +54,10 @@ private:
 	on_message_callback		m_message_cb;
 	on_close_callback		m_close_cb;
 
-	Connection* m_connection;
 	void* m_param;
+
+	Connection* m_connection;
+	thread_api::mutex_t m_connection_lock;  //it's UGLY!
 
 public:
 	//// called by connection(in work thread)
