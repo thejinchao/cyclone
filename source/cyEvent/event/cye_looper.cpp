@@ -128,6 +128,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 void Looper::delete_event(event_id_t id)
 {
 	assert(thread_api::thread_get_current_id() == m_current_thread);
+	if (id == INVALID_EVENT_ID) return;
 	thread_api::auto_mutex lock(m_lock);
 	assert((size_t)id < m_channelBuffer.size());
 
@@ -155,7 +156,7 @@ void Looper::delete_event(event_id_t id)
 void Looper::disable_read(event_id_t id)
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return;
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -166,7 +167,7 @@ void Looper::disable_read(event_id_t id)
 void Looper::enable_read(event_id_t id)
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return;
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -177,7 +178,7 @@ void Looper::enable_read(event_id_t id)
 bool Looper::is_read(event_id_t id) const
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return false;
 	assert((size_t)id < m_channelBuffer.size());
 
 	const channel_s& channel = m_channelBuffer[id];
@@ -188,7 +189,7 @@ bool Looper::is_read(event_id_t id) const
 void Looper::disable_write(event_id_t id)
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return;
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -199,7 +200,7 @@ void Looper::disable_write(event_id_t id)
 void Looper::enable_write(event_id_t id)
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return;
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
@@ -210,7 +211,7 @@ void Looper::enable_write(event_id_t id)
 bool Looper::is_write(event_id_t id) const
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return false;
 	assert((size_t)id < m_channelBuffer.size());
 
 	const channel_s& channel = m_channelBuffer[id];
@@ -221,7 +222,7 @@ bool Looper::is_write(event_id_t id) const
 void Looper::disable_all(event_id_t id)
 {
 	thread_api::auto_mutex lock(m_lock);
-
+	if (id == INVALID_EVENT_ID) return;
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];

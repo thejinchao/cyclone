@@ -16,6 +16,7 @@ class Looper
 public:
 	typedef uint32_t event_id_t;
 	typedef uint32_t event_t;
+	static const event_id_t INVALID_EVENT_ID;
 
 	//the value of event_t
 	enum {
@@ -76,7 +77,6 @@ public:
 	//----------------------
 protected:
 	enum { DEFAULT_CHANNEL_BUF_COUNTS = 16 };
-	static const event_id_t INVALID_EVENT_ID;
 
 	struct channel_s
 	{
