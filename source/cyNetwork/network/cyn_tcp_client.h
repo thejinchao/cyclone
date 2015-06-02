@@ -59,6 +59,8 @@ private:
 	Connection* m_connection;
 	thread_api::mutex_t m_connection_lock;  //it's UGLY!
 
+	Looper::event_id_t m_retry_timer_id;
+
 public:
 	//// called by connection(in work thread)
 	static void _on_connection_event_entry(Connection::Event event, Connection* conn){
@@ -78,6 +80,7 @@ private:
 		return ((TcpClient*)param)->_on_connection_timer(id);
 	}
 	bool _on_connection_timer(Looper::event_id_t id);
+	Looper::event_id_t m_connection_timer_id;
 #endif
 
 	static bool _on_retry_connect_timer_entry(Looper::event_id_t id, void* param){
