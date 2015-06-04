@@ -6,14 +6,19 @@ Copyright(C) thecodeway.com
 
 #ifdef CY_SYS_WINDOWS
 #include <Shlwapi.h>
+#include <direct.h>
 #elif defined(CY_SYS_MACOS)
 #include <libproc.h>
 #else
 #include <stdarg.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 namespace cyclone
 {
+
+#define LOG_PATH		"./logs/"
 
 //-------------------------------------------------------------------------------------
 struct DiskLogFile
@@ -26,6 +31,7 @@ struct DiskLogFile
 	thread_api::mutex_t lock;
 	const char* level_name[L_MAXIMUM_LEVEL];
 	LOG_LEVEL level_threshold;
+	bool logpath_created;
 
 	DiskLogFile() 
 	{
@@ -47,7 +53,7 @@ struct DiskLogFile
 		//get process id
 		DWORD process_id = ::GetCurrentProcessId();
 
-		snprintf(file_name, _MAX_PATH, "%s.%04d%02d%02d-%02d%02d%02d.%s.%d.log",
+		snprintf(file_name, _MAX_PATH, LOG_PATH"%s.%04d%02d%02d-%02d%02d%02d.%s.%d.log",
 			process_name, 
 			time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond,
 			host_name, process_id);
@@ -80,7 +86,7 @@ struct DiskLogFile
 		char host_name[256] = { 0 };
 		::gethostname(host_name, sizeof(host_name));
 
-		snprintf(file_name, _MAX_PATH, "%s.%s.%s.%d.log",
+		snprintf(file_name, _MAX_PATH, LOG_PATH"%s.%s.%s.%d.log",
 			process_name, timebuf, host_name, process_id);
 
 #endif
@@ -89,6 +95,9 @@ struct DiskLogFile
 
 		//default level(all level will be writed)
 		level_threshold = L_TRACE;
+
+		//log path didn't created
+		logpath_created = false;
 
 		//set level name
 		level_name[L_TRACE] = "TRACE";
@@ -130,6 +139,22 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 
 	//check the level
 	if (level < thefile.level_threshold) return;
+
+	//check dir
+	if (!thefile.logpath_created) {
+		if (
+#ifdef CY_SYS_WINDOWS
+			_mkdir(LOG_PATH)
+#else
+			mkdir(LOG_PATH, 0755)
+#endif
+			 != 0)
+		{
+			//create log path failed!
+			return;
+		}
+		thefile.logpath_created = true;
+	}
 
 	FILE* fp = fopen(thefile.file_name, "a");
 	if (fp == 0) {
