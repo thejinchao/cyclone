@@ -141,14 +141,13 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	if (level < thefile.level_threshold) return;
 
 	//check dir
-	if (!thefile.logpath_created) {
-		if (
 #ifdef CY_SYS_WINDOWS
-			_mkdir(LOG_PATH)
+	if (!thefile.logpath_created && PathFileExists(LOG_PATH)!=TRUE) {
+		if (0 == CreateDirectory(LOG_PATH, NULL)) 
 #else
-			mkdir(LOG_PATH, 0755)
+	if (!thefile.logpath_created && access(LOG_PATH, F_OK)!=0) {
+		if (mkdir(LOG_PATH, 0755) != 0) 
 #endif
-			 != 0)
 		{
 			//create log path failed!
 			return;
