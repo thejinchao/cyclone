@@ -7,7 +7,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class WorkThread
+class WorkThread : public Connection::Listener
 {
 public:
 	enum { kNewConnectionCmd=1, kCloseConnectionCmd=2, kShutdownCmd=3 };
@@ -17,20 +17,22 @@ public:
 	int32_t get_index(void) const { return m_index; }
 	/// wait thread to termeinate(thread safe)
 	thread_t get_thread(void) const { return m_thread; }
-	/// get param
-	void* get_param(void) const { return m_param; }
 
 private:
 	const int32_t	m_index;
 	thread_t		m_thread;
 	Looper*			m_looper;
 	Pipe			m_pipe;
-	void*			m_param;
+	TcpServer*		m_server;
 
 	typedef std::set< Connection* > ConnectionList;
 	ConnectionList	m_connections;
 
 	thread_api::signal_t	m_thread_ready;
+
+public:
+	//// called by connection(in work thread)
+	virtual void on_connection_event(Connection::Event event, Connection* conn);
 
 private:
 	/// work thread function
@@ -46,7 +48,7 @@ private:
 	bool _on_command(void);
 
 public:
-	WorkThread(int32_t index, void* param);
+	WorkThread(int32_t index, TcpServer* server);
 	~WorkThread();
 
 	//not-copyable

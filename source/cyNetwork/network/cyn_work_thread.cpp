@@ -9,10 +9,10 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-WorkThread::WorkThread(int32_t index, void* param)
+WorkThread::WorkThread(int32_t index, TcpServer* server)
 	: m_index(index)
 	, m_looper(0)
-	, m_param(param)
+	, m_server(server)
 {
 	m_thread_ready = thread_api::signal_create();
 
@@ -74,7 +74,7 @@ bool WorkThread::_on_command(void)
 		}
 
 		//create tcp connection 
-		Connection* conn = new Connection(sfd, m_looper, TcpServer::_on_connection_event_entry, this, 0);
+		Connection* conn = new Connection(sfd, m_looper, this);
 		m_connections.insert(conn);
 
 		//established the connection
@@ -135,6 +135,36 @@ bool WorkThread::_on_command(void)
 	}
 
 	return false;
+}
+
+//-------------------------------------------------------------------------------------
+void WorkThread::on_connection_event(Connection::Event event, Connection* conn)
+{
+	assert(m_server);
+
+	TcpServer::Listener* server_listener = m_server->get_listener();
+	switch (event) {
+	case Connection::kOnConnection:
+		if (server_listener) {
+			server_listener->on_connection_callback(m_server, conn);
+		}
+		break;
+
+	case Connection::kOnMessage:
+		if (server_listener) {
+			server_listener->on_message_callback(m_server, conn);
+		}
+		break;
+
+	case Connection::kOnClose:
+		if (server_listener) {
+			server_listener->on_close_callback(m_server, conn);
+		}
+
+		//shutdown this connection
+		m_server->shutdown_connection(conn);
+		break;
+	}
 }
 
 }

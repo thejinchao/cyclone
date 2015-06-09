@@ -13,60 +13,60 @@ struct client_s {
 
 #define MAX_MESSAGE_LEN (256)
 
-//-------------------------------------------------------------------------------------
-uint32_t on_connection_callback(TcpClient* client, bool success)
+class ClientListener : public TcpClient::Listener
 {
-	CY_LOG(L_DEBUG, "connect to %s:%d %s.", 
-		client->get_server_address().get_ip(), 
-		client->get_server_address().get_port(), 
-		success ? "OK" : "FAILED");
-
-	if (success)
+public:
+	//-------------------------------------------------------------------------------------
+	virtual uint32_t on_connection_callback(TcpClient* client, bool success)
 	{
-		return 0;
+		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
+			client->get_server_address().get_ip(),
+			client->get_server_address().get_port(),
+			success ? "OK" : "FAILED");
+
+		if (success)
+		{
+			return 0;
+		}
+		else
+		{
+			uint32_t retry_time = 1000 * 5;
+			printf("connect failed!, retry after %d milli seconds...\n", retry_time);
+			return 1000 * 5;
+		}
 	}
-	else
+
+	//-------------------------------------------------------------------------------------
+	virtual void on_message_callback(TcpClient* /*client*/, Connection* conn)
 	{
-		uint32_t retry_time = 1000 * 5;
-		printf("connect failed!, retry after %d milli seconds...\n", retry_time);
-		return 1000 * 5;
+		RingBuf& buf = conn->get_input_buf();
+
+		char temp[1024] = { 0 };
+		buf.memcpy_out(temp, 1024);
+
+		CY_LOG(L_INFO, "receive:%s", temp);
 	}
-}
 
-//-------------------------------------------------------------------------------------
-void on_message_callback(TcpClient* /*client*/, Connection* conn)
-{
-	RingBuf& buf = conn->get_input_buf();
+	//-------------------------------------------------------------------------------------
+	virtual void on_close_callback(TcpClient* client)
+	{
+		(void)client;
 
-	char temp[1024] = { 0 };
-	buf.memcpy_out(temp, 1024);
-
-	CY_LOG(L_INFO, "receive:%s", temp);
-}
-
-//-------------------------------------------------------------------------------------
-void on_close_callback(TcpClient* client)
-{
-	(void)client;
-
-	CY_LOG(L_INFO, "socket close");
-	exit(0);
-}
+		CY_LOG(L_INFO, "socket close");
+		exit(0);
+	}
+};
 
 //-------------------------------------------------------------------------------------
 void _client_thread(void* param)
 {
 	client_s* data = (client_s*)param;
-
+	ClientListener listener;
 	Looper* looper = Looper::create_looper();
-	TcpClient client(looper, data);
+	TcpClient client(looper, &listener, data);
 	Address address(data->server_ip, data->port);
 
 	data->client = &client;
-
-	client.set_connection_callback(on_connection_callback);
-	client.set_message_callback(on_message_callback);
-	client.set_close_callback(on_close_callback);
 
 	client.connect(address, 1000 * 10);
 

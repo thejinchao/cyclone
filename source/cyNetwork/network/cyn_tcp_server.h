@@ -35,30 +35,19 @@ public:
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(Connection* conn); 
 
-	/// get callback param(thread safe)
-	const void* get_callback_param(void) const { return m_callback_param; }
-
 	/// get bind address, if index is invalid return default Address value
 	Address get_bind_address(int index);
 
 public:
-	typedef void(*on_connection_callback)(TcpServer* server, Connection* conn);
-	typedef void(*on_message_callback)(TcpServer* server, Connection* conn);
-	typedef void(*on_close_callback)(TcpServer* server, Connection* conn);
+	class Listener
+	{
+	public:
+		virtual void on_connection_callback(TcpServer* server, Connection* conn) = 0;
+		virtual void on_message_callback(TcpServer* server, Connection* conn) = 0;
+		virtual void on_close_callback(TcpServer* server, Connection* conn) = 0;
+	};
 
-	/// Set connection callback. (NOT thread safe)
-	void set_connection_callback(on_connection_callback cb) { m_connection_cb = cb; }
-
-	/// Set message callback. (NOT thread safe)
-	void set_message_callback(on_message_callback cb)  { m_message_cb = cb; }
-
-	//// Set close callback. (NOT thread safe)
-	void set_close_callback(on_close_callback cb)  { m_close_cb = cb; }
-
-public:
-	//// called by connection(in work thread)
-	static void _on_connection_event_entry(Connection::Event event, Connection* conn);
-	void _on_connection_event(Connection::Event event, Connection* conn);
+	Listener* get_listener(void) { 	return m_listener; }
 
 private:
 	enum { MAX_BIND_PORT_COUNTS = 128, MAX_WORK_THREAD_COUNTS = 32 };
@@ -75,11 +64,7 @@ private:
 		return m_next_work = (m_next_work + 1) % m_work_thread_counts;
 	}
 
-	const void*				m_callback_param;
-
-	on_connection_callback	m_connection_cb;
-	on_message_callback		m_message_cb;
-	on_close_callback		m_close_cb;
+	Listener* m_listener;
 
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
@@ -98,7 +83,7 @@ private:
 	bool _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(void* cb_param);
+	TcpServer(Listener* listener);
 	~TcpServer();
 };
 

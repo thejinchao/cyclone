@@ -10,16 +10,14 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(socket_t sfd, Looper* looper, event_callback cb, void* param0, void* param1)
+Connection::Connection(socket_t sfd, Looper* looper, Listener* listener)
 	: m_socket(sfd)
 	, m_state(kConnecting)
 	, m_looper(looper)
 	, m_event_id(0)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
-	, m_callback(cb)
-	, m_param0(param0)
-	, m_param1(param1)
+	, m_listener(listener)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
@@ -63,8 +61,8 @@ void Connection::established(void)
 		_on_socket_write_entry);
 
 	//logic callback
-	if (m_callback) {
-		m_callback(kOnConnection, this);
+	if (m_listener) {
+		m_listener->on_connection_event(kOnConnection, this);
 	}
 }
 
@@ -200,8 +198,8 @@ bool Connection::_on_socket_read(void)
 	if (len > 0)
 	{
 		//notify logic layer...
-		if (m_callback) {
-			m_callback(kOnMessage, this);
+		if (m_listener) {
+			m_listener->on_connection_event(kOnMessage, this);
 		}
 	}
 	else if (len == 0)
@@ -266,8 +264,8 @@ void Connection::_on_socket_close(void)
 	m_writeBuf.reset();
 
 	//logic callback
-	if (m_callback) {
-		m_callback(kOnClose, this);
+	if (m_listener) {
+		m_listener->on_connection_event(kOnClose, this);
 	}
 }
 
@@ -278,9 +276,15 @@ void Connection::_on_socket_error(void)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::set_param1(void* param)
+void Connection::set_proxy(void* proxy)
 {
-	m_param1 = param;
+	m_proxy.set(proxy);
+}
+
+//-------------------------------------------------------------------------------------
+void* Connection::get_proxy(void)
+{
+	return m_proxy.get();
 }
 
 }

@@ -12,7 +12,7 @@ namespace cyclone
 //pre-define 
 class Connection;
 
-class TcpClient
+class TcpClient : public Connection::Listener
 {
 public:
 	//// connect to remote server(NOT thread safe)
@@ -29,18 +29,16 @@ public:
 	Connection::State get_connection_state(void) const;
 
 public:
-	typedef uint32_t(*on_connection_callback)(TcpClient* client, bool success);
-	typedef void(*on_message_callback)(TcpClient* client, Connection* conn);
-	typedef void(*on_close_callback)(TcpClient* client);
+public:
+	class Listener
+	{
+	public:
+		virtual uint32_t on_connection_callback(TcpClient* client, bool success) = 0;
+		virtual void on_message_callback(TcpClient* client, Connection* conn) = 0;
+		virtual void on_close_callback(TcpClient* client) = 0;
+	};
 
-	/// Set/Get connection callback. (NOT thread safe)
-	void set_connection_callback(on_connection_callback cb) { m_connection_cb = cb; }
-
-	/// Set message callback. (NOT thread safe)
-	void set_message_callback(on_message_callback cb)  { m_message_cb = cb; }
-
-	//// Set close callback. (NOT thread safe)
-	void set_close_callback(on_close_callback cb)  { m_close_cb = cb; }
+	Listener* get_listener(void) { return m_listener; }
 
 private:
 	socket_t m_socket;
@@ -50,9 +48,7 @@ private:
 	uint32_t m_connect_timeout_ms;
 	Looper*	m_looper;
 
-	on_connection_callback	m_connection_cb;
-	on_message_callback		m_message_cb;
-	on_close_callback		m_close_cb;
+	Listener* m_listener;
 
 	void* m_param;
 
@@ -63,10 +59,7 @@ private:
 
 public:
 	//// called by connection(in work thread)
-	static void _on_connection_event_entry(Connection::Event event, Connection* conn){
-		((TcpClient*)(conn->get_param0()))->_on_connection_event(event, conn);
-	}
-	void _on_connection_event(Connection::Event event, Connection* conn);
+	virtual void on_connection_event(Connection::Event event, Connection* conn);
 
 private:
 	/// on read/write callback function
@@ -92,7 +85,7 @@ private:
 	void _check_connect_status(bool abort);
 
 public:
-	TcpClient(Looper* looper, void* param);
+	TcpClient(Looper* looper, Listener* listener, void* param);
 	~TcpClient();
 };
 

@@ -11,14 +11,11 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(void* cb_param)
+TcpServer::TcpServer(Listener* listener)
 	: m_acceptor_thread(0)
 	, m_work_thread_counts(0)
 	, m_next_work(0)
-	, m_callback_param(cb_param)
-	, m_connection_cb(0)
-	, m_message_cb(0)
-	, m_close_cb(0)
+	, m_listener(listener)
 {
 	//zero accept socket 
 	memset(m_acceptor_socket, 0, sizeof(Socket*)*MAX_BIND_PORT_COUNTS);
@@ -224,41 +221,6 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_connection_event_entry(Connection::Event event, Connection* conn) 
-{
-	WorkThread* thread = (WorkThread*)(conn->get_param0());
-	TcpServer*  pThis = (TcpServer*)(thread->get_param());
-
-	((TcpServer*)pThis)->_on_connection_event(event, conn);
-}
-
-//-------------------------------------------------------------------------------------
-void TcpServer::_on_connection_event(Connection::Event event, Connection* conn)
-{
-	switch (event) {
-	case Connection::kOnConnection:
-		if (m_connection_cb) {
-			m_connection_cb(this, conn);
-		}
-		break;
-
-	case Connection::kOnMessage:
-		if (m_message_cb) {
-			m_message_cb(this, conn);
-		}
-		break;
-
-	case Connection::kOnClose:
-		if (m_close_cb) {
-			m_close_cb(this, conn);
-		}
-		
-		//shutdown this connection
-		shutdown_connection(conn);
-	}
-}
-
-//-------------------------------------------------------------------------------------
 void TcpServer::_accept_thread(void)
 {
 	//create a event looper		
@@ -304,7 +266,7 @@ void TcpServer::shutdown_connection(Connection* conn)
 	assert(m_acceptor_socket);
 	assert(m_acceptor_thread);
 
-	WorkThread* work = (WorkThread*)(conn->get_param0());
+	WorkThread* work = (WorkThread*)(conn->get_listener());
 
 	Pipe& cmd_pipe = work->get_cmd_port();
 

@@ -19,7 +19,12 @@ public:
 		kOnMessage,
 		kOnClose
 	};
-	typedef void(*event_callback)(Event event, Connection* conn);
+
+	class Listener
+	{
+	public:
+		virtual void on_connection_event(Event event, Connection* conn) = 0;
+	};
 
 public:
 	//connection state
@@ -46,12 +51,12 @@ public:
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
 
-	/// thread safe
-	void* get_param0(void) const { return m_param0; }
+	/// set/get proxy param (thread safe)
+	void set_proxy(void* param);
+	void* get_proxy(void);
 
-	/// set/get another param (NOT thread safe)(UGLY...)
-	void set_param1(void* param);
-	void* get_param1(void) const { return m_param1; }
+	/// get listener
+	Listener* get_listener(void) { return m_listener; }
 
 public:
 	void established(void);
@@ -74,10 +79,8 @@ private:
 	RingBuf m_writeBuf;
 	thread_api::mutex_t m_writeBufLock;	//for multithread lock
 
-	event_callback m_callback;
-
-	void* m_param0;
-	void* m_param1;
+	Listener* m_listener;
+	atomic_t<void*> m_proxy;
 
 private:
 	//// on socket read event
@@ -106,7 +109,7 @@ private:
 	bool _is_writeBuf_empty(void) const;
 
 public:
-	Connection(socket_t sfd, Looper* looper, event_callback cb, void* param0, void* param1);
+	Connection(socket_t sfd, Looper* looper, Listener* listener);
 	~Connection();
 };
 

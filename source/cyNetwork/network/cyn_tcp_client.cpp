@@ -10,14 +10,12 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpClient::TcpClient(Looper* looper, void* param)
+TcpClient::TcpClient(Looper* looper, Listener* listener, void* param)
 	: m_socket(0)
 	, m_socket_event_id(Looper::INVALID_EVENT_ID)
 	, m_connect_timeout_ms(0)
 	, m_looper(looper)
-	, m_connection_cb(0)
-	, m_message_cb(0)
-	, m_close_cb(0)
+	, m_listener(listener)
 	, m_param(param)
 	, m_connection(0)
 	, m_retry_timer_id(Looper::INVALID_EVENT_ID)
@@ -96,7 +94,7 @@ bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
 	m_socket = sfd;
 	m_serverAddr = addr;
 	m_connect_timeout_ms = timeOutSeconds;
-	m_connection = new Connection(sfd, m_looper, TcpClient::_on_connection_event_entry, this, 0);
+	m_connection = new Connection(sfd, m_looper, this);
 
 #ifdef CY_SYS_WINDOWS
 	//for select mode in windows, the non-block fd of connect socket wouldn't be readable or writeable if connection failed
@@ -144,8 +142,8 @@ void TcpClient::_check_connect_status(bool abort)
 		m_socket_event_id = 0;
 
 		//logic callback
-		if (m_connection_cb) {
-			uint32_t retry_sleep_ms = m_connection_cb(this, false);
+		if (m_listener) {
+			uint32_t retry_sleep_ms = m_listener->on_connection_callback(this, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {
@@ -175,8 +173,8 @@ void TcpClient::_check_connect_status(bool abort)
 		m_connection->established();
 
 		//logic callback
-		if (m_connection_cb) {
-			m_connection_cb(this, true);
+		if (m_listener) {
+			m_listener->on_connection_callback(this, true);
 		}
 	}
 }
@@ -188,21 +186,21 @@ void TcpClient::disconnect(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpClient::_on_connection_event(Connection::Event event, Connection* conn)
+void TcpClient::on_connection_event(Connection::Event event, Connection* conn)
 {
 	switch (event) {
 	case Connection::kOnConnection:
 		break;
 
 	case Connection::kOnMessage:
-		if (m_message_cb) {
-			m_message_cb(this, conn);
+		if (m_listener) {
+			m_listener->on_message_callback(this, conn);
 		}
 		break;
 
 	case Connection::kOnClose:
-		if (m_close_cb) {
-			m_close_cb(this);
+		if (m_listener) {
+			m_listener->on_close_callback(this);
 		}
 	}
 }
@@ -219,8 +217,8 @@ bool TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 	if (!connect(m_serverAddr, m_connect_timeout_ms))
 	{
 		//failed at once!, logic callback
-		if (m_connection_cb) {
-			uint32_t retry_sleep_ms = m_connection_cb(this, false);
+		if (m_listener) {
+			uint32_t retry_sleep_ms = m_listener->on_connection_callback(this, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {
