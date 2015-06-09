@@ -48,6 +48,10 @@ Copyright(C) thecodeway.com
 	#include <arpa/inet.h>
 #endif
 
+#if defined (__LP64__) || defined (__64BIT__) || defined (_LP64) || (__WORDSIZE == 64) || defined(_WIN64)
+	#define CY_64BIT 1
+#endif
+
 #ifdef CY_SYS_WINDOWS
 	typedef SOCKET	socket_t;
 	typedef uint32_t pid_t;
