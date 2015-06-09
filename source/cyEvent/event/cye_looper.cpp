@@ -312,7 +312,7 @@ Looper::event_id_t Looper::_get_free_slot(void)
 
 #ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
-void Looper::_on_windows_timer(UINT wTimerID, UINT msg, DWORD dwUser, DWORD dw1, DWORD dw2)
+void Looper::_on_windows_timer(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 {
 	(void)wTimerID;
 	(void)msg;
