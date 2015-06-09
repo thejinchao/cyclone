@@ -272,7 +272,7 @@ uint32_t get_cpu_counts(void)
 	return cpu_counts;
 #else
 	long int cpu_counts = 0;
-	if ((ncpus = sysconf(_SC_NPROCESSORS_ONLN)) == -1){
+	if ((cpu_counts = sysconf(_SC_NPROCESSORS_ONLN)) == -1){
 		CY_LOG(L_ERROR, "get cpu counts \"sysconf(_SC_NPROCESSORS_ONLN)\" error, use default(2)");
 		return DEFAULT_CPU_COUNTS;
 	}
