@@ -232,5 +232,53 @@ void signal_notify(signal_t s)
 #endif
 }
 
+//-------------------------------------------------------------------------------------
+uint32_t get_cpu_counts(void)
+{
+	const uint32_t DEFAULT_CPU_COUNTS = 2;
+
+#ifdef CY_SYS_WINDOWS
+	//use GetLogicalProcessorInformation
+
+	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = NULL;
+	DWORD returnLength = 0;
+	while (FALSE == GetLogicalProcessorInformation(buffer, &returnLength))
+	{
+		if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+		{
+			if (buffer) free(buffer);
+			buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc(returnLength);
+		}
+		else
+		{
+			if (buffer) free(buffer);
+			return DEFAULT_CPU_COUNTS;
+		}
+	}
+
+	uint32_t cpu_counts = 0;
+
+	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION p = buffer;
+	DWORD byteOffset = 0;
+	while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= returnLength)
+	{
+		if (p->Relationship == RelationProcessorCore) {
+			cpu_counts++;
+		}
+		byteOffset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+		p++;
+	}
+	free(buffer);
+	return cpu_counts;
+#else
+	long int cpu_counts = 0;
+	if ((ncpus = sysconf(_SC_NPROCESSORS_ONLN)) == -1){
+		CY_LOG(L_ERROR, "get cpu counts \"sysconf(_SC_NPROCESSORS_ONLN)\" error, use default(2)");
+		return DEFAULT_CPU_COUNTS;
+	}
+	return (uint32_t)cpu_counts;
+#endif
+}
+
 }
 }

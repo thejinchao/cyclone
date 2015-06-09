@@ -90,6 +90,11 @@ void signal_wait(signal_t s);
 //// light the signal
 void signal_notify(signal_t s);
 
+//----------------------
+// utility functions
+//----------------------
+uint32_t get_cpu_counts(void);
+
 }
 }
 #endif
