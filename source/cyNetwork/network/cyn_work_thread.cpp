@@ -91,6 +91,8 @@ bool WorkThread::_on_command(void)
 		}
 
 		Connection* conn = (Connection*)conn_ptr;
+		if (m_connections.find(conn) == m_connections.end()) return false;
+
 		Connection::State curr_state = conn->get_state();
 
 		if (curr_state == Connection::kConnected)
