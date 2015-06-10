@@ -181,6 +181,7 @@ struct signal_s
 {
 	pthread_mutex_t mutex;
 	pthread_cond_t	cond;
+	atomic_int32_t  predicate;
 };
 #endif
 
@@ -217,7 +218,12 @@ void signal_wait(signal_t s)
 	::WaitForSingleObject(s, INFINITE);
 #else
 	signal_s* sig = (signal_s*)s;
-	pthread_cond_wait(&(sig->cond), &(sig->mutex));
+	pthread_mutex_lock(&(sig->mutex));
+	while (0==sig->predicate.get()) {
+		pthread_cond_wait(&(sig->cond), &(sig->mutex));
+	}
+	sig->predicate.set(0);
+	pthread_mutex_unlock(&(sig->mutex));
 #endif
 }
 
@@ -228,7 +234,10 @@ void signal_notify(signal_t s)
 	::SetEvent(s);
 #else
 	signal_s* sig = (signal_s*)s;
+	pthread_mutex_lock(&(sig->mutex));
+	sig->predicate.set(1);
 	pthread_cond_signal(&(sig->cond));
+	pthread_mutex_unlock(&(sig->mutex));
 #endif
 }
 

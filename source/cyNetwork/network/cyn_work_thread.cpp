@@ -21,13 +21,12 @@ WorkThread::WorkThread(int32_t index, TcpServer* server)
 
 	//wait work thread ready signal
 	thread_api::signal_wait(m_thread_ready);
-	thread_api::signal_destroy(m_thread_ready);
 }
 
 //-------------------------------------------------------------------------------------
 WorkThread::~WorkThread()
 {
-
+	thread_api::signal_destroy(m_thread_ready);
 }
 
 //-------------------------------------------------------------------------------------
