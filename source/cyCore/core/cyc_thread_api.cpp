@@ -18,11 +18,21 @@ namespace thread_api
 {
 
 //-------------------------------------------------------------------------------------
+#define MAX_THREAD_NAME_LENGTH	(128)
+
+#ifdef CY_SYS_WINDOWS
+	static __declspec(thread) char s_thread_name[MAX_THREAD_NAME_LENGTH] = { 0 };
+#else
+	static __thread char s_thread_name[MAX_THREAD_NAME_LENGTH] = { 0 };
+#endif
+
+//-------------------------------------------------------------------------------------
 struct thread_data_s
 {
 	atomic_t<pid_t> tid;
 	thread_function entry_func;
 	void* param;
+	char name[MAX_THREAD_NAME_LENGTH];
 #ifdef CY_SYS_WINDOWS
 	HANDLE handle;
 #else
@@ -52,7 +62,13 @@ pid_t thread_get_id(thread_t t)
 static unsigned int __stdcall __win32_thread_entry(void* param)
 {
 	thread_data_s* data = (thread_data_s*)param;
-	if (data && data->entry_func)
+
+	if (data->name[0] != 0)
+		strncpy(s_thread_name, data->name, MAX_THREAD_NAME_LENGTH);
+	else
+		snprintf(s_thread_name, MAX_THREAD_NAME_LENGTH, "thread%08x", thread_get_current_id());
+
+	if (data->entry_func)
 		data->entry_func(data->param);
 	free(data);
 	return 0;
@@ -62,8 +78,13 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 static void* __pthread_thread_entry(void* param)
 {
 	thread_data_s* data = (thread_data_s*)param;
+	if (data->name[0] != 0)
+		strncpy(s_thread_name, data->name, MAX_THREAD_NAME_LENGTH);
+	else
+		snprintf(s_thread_name, MAX_THREAD_NAME_LENGTH, "thread%08x", thread_get_current_id());
+
 	data->tid.set(thread_get_current_id());
-	if (data && data->entry_func)
+	if (data->entry_func)
 		data->entry_func(data->param);
 	free(data);
 	return 0;
@@ -71,13 +92,17 @@ static void* __pthread_thread_entry(void* param)
 #endif
 
 //-------------------------------------------------------------------------------------
-thread_t thread_create(thread_function func, void* param)
+thread_t thread_create(thread_function func, void* param, const char* name)
 {
 	thread_data_s* data = (thread_data_s*)malloc(sizeof(*data));
 	data->tid.set(0);
 	data->param = param;
 	data->entry_func = func;
 	data->handle = 0;
+	if (name != 0)
+		strncpy(data->name, name, MAX_THREAD_NAME_LENGTH);
+	else
+		data->name[0] = 0;
 
 #ifdef CY_SYS_WINDOWS
 	unsigned int thread_id;
@@ -127,6 +152,12 @@ void thread_join(thread_t thread)
 #else
 	pthread_join(data->handle, 0);
 #endif
+}
+
+//-------------------------------------------------------------------------------------
+const char* thread_get_current_name(void)
+{
+	return s_thread_name;
 }
 
 //-------------------------------------------------------------------------------------

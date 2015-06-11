@@ -17,7 +17,10 @@ WorkThread::WorkThread(int32_t index, TcpServer* server)
 	m_thread_ready = thread_api::signal_create();
 
 	//run the work thread
-	m_thread = thread_api::thread_create(_work_thread_entry, this);
+	char thread_name[128] = { 0 };
+	snprintf(thread_name, 128, "server_worker_%d", m_index);
+
+	m_thread = thread_api::thread_create(_work_thread_entry, this, thread_name);
 
 	//wait work thread ready signal
 	thread_api::signal_wait(m_thread_ready);

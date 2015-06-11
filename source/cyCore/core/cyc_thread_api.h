@@ -31,13 +31,16 @@ pid_t thread_get_current_id(void);
 pid_t thread_get_id(thread_t t);
 
 //// create a new thread
-thread_t thread_create(thread_function func, void* param);
+thread_t thread_create(thread_function func, void* param, const char* name);
 
 //// sleep in current thread
 void thread_sleep(int32_t msec);
 
 //// wait the thread to terminate
 void thread_join(thread_t t);
+
+//// get current thread name
+const char* thread_get_current_name(void);
 
 //----------------------
 // mutex functions

@@ -116,7 +116,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//start listen thread
-	m_acceptor_thread = thread_api::thread_create(_accept_thread_entry, this);
+	m_acceptor_thread = thread_api::thread_create(_accept_thread_entry, this, "accept");
 	return true;
 }
 
