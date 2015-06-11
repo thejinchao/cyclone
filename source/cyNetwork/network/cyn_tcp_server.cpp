@@ -85,6 +85,7 @@ bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 		return false;
 	}
 
+	CY_LOG(L_TRACE, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
 	m_acceptor_socket[index] = acceptor_socket;
 	return true;
 }
@@ -210,13 +211,16 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	}
 
 	//send it to one of work thread		
-	WorkThread* work = m_work_thread_pool[_get_next_work_thread()];
+	int32_t index = _get_next_work_thread();
+	WorkThread* work = m_work_thread_pool[index];
 	Pipe& cmd_pipe = work->get_cmd_port();
 
-	//write new connection command(cmd, socket_t, sockaddr_in)		
+	//write new connection command(cmd, socket_t)		
 	int32_t cmd = WorkThread::kNewConnectionCmd;
 	cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
 	cmd_pipe.write((const char*)&(connfd), sizeof(connfd));
+
+	CY_LOG(L_TRACE, "accept a socket, send to work thread %d ", index);
 	return false;
 }
 
@@ -227,7 +231,8 @@ void TcpServer::_accept_thread(void)
 	Looper* looper = Looper::create_looper();
 
 	//registe listen event	
-	for (int i = 0; i < MAX_BIND_PORT_COUNTS; i++)
+	int32_t counts = 0;
+	for (int32_t i = 0; i < MAX_BIND_PORT_COUNTS; i++)
 	{
 		if(m_acceptor_socket[i] == 0) break;
 
@@ -241,8 +246,10 @@ void TcpServer::_accept_thread(void)
 
 		//begin listen
 		socket_api::listen(sfd);
+		counts++;
 	}
 
+	CY_LOG(L_TRACE, "accept thread run, listen %d port(s)", counts);
 	looper->loop();
 
 	//it's time to disppear...
