@@ -18,12 +18,10 @@ namespace thread_api
 {
 
 //-------------------------------------------------------------------------------------
-#define MAX_THREAD_NAME_LENGTH	(128)
-
 #ifdef CY_SYS_WINDOWS
-	static __declspec(thread) char s_thread_name[MAX_THREAD_NAME_LENGTH] = { 0 };
+	static __declspec(thread) char s_thread_name[MAX_PATH] = { 0 };
 #else
-	static __thread char s_thread_name[MAX_THREAD_NAME_LENGTH] = { 0 };
+	static __thread char s_thread_name[MAX_PATH] = { 0 };
 #endif
 
 //-------------------------------------------------------------------------------------
@@ -32,7 +30,7 @@ struct thread_data_s
 	atomic_t<pid_t> tid;
 	thread_function entry_func;
 	void* param;
-	char name[MAX_THREAD_NAME_LENGTH];
+	char name[MAX_PATH];
 #ifdef CY_SYS_WINDOWS
 	HANDLE handle;
 #else
@@ -95,7 +93,7 @@ thread_t thread_create(thread_function func, void* param, const char* name)
 	data->entry_func = func;
 	data->handle = 0;
 	if (name != 0)
-		strncpy(data->name, name, MAX_THREAD_NAME_LENGTH);
+		strncpy(data->name, name, MAX_PATH);
 	else
 		data->name[0] = 0;
 
@@ -159,9 +157,9 @@ const char* thread_get_current_name(void)
 void thread_set_current_name(const char* name)
 {
 	if (name && name[0] != 0)
-		strncpy(s_thread_name, name, MAX_THREAD_NAME_LENGTH);
+		strncpy(s_thread_name, name, MAX_PATH);
 	else
-		snprintf(s_thread_name, MAX_THREAD_NAME_LENGTH, "thread%08x", thread_get_current_id());
+		snprintf(s_thread_name, MAX_PATH, "thread%08x", thread_get_current_id());
 }
 
 //-------------------------------------------------------------------------------------

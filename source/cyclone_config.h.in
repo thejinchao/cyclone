@@ -68,6 +68,10 @@ Copyright(C) thecodeway.com
 	#endif
 #endif
 
+#ifndef MAX_PATH
+	#define MAX_PATH	(260)
+#endif
+
 #ifdef CY_SYS_WINDOWS
 #define snprintf _snprintf 
 #endif
