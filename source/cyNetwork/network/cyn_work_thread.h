@@ -30,6 +30,8 @@ private:
 
 	thread_api::signal_t	m_thread_ready;
 
+	char		m_name[MAX_PATH];
+
 public:
 	//// called by connection(in work thread)
 	virtual void on_connection_event(Connection::Event event, Connection* conn);
@@ -48,7 +50,7 @@ private:
 	bool _on_command(void);
 
 public:
-	WorkThread(int32_t index, TcpServer* server);
+	WorkThread(int32_t index, TcpServer* server, const char* name);
 	~WorkThread();
 
 	//not-copyable

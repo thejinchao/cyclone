@@ -69,6 +69,8 @@ private:
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
 
+	char	m_name[MAX_PATH];
+
 private:
 	/// accept thread function
 	static void _accept_thread_entry(void* param){
@@ -83,7 +85,7 @@ private:
 	bool _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(Listener* listener);
+	TcpServer(Listener* listener, const char* name);
 	~TcpServer();
 };
 

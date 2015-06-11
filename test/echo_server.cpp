@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 
 	ServerListener listener;
 
-	TcpServer server(&listener);
+	TcpServer server(&listener, "echo");
 	server.bind(Address(1978, false), true);
 
 	if (!server.start(2))

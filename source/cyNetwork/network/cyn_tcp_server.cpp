@@ -11,7 +11,7 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(Listener* listener)
+TcpServer::TcpServer(Listener* listener, const char* name)
 	: m_acceptor_thread(0)
 	, m_work_thread_counts(0)
 	, m_next_work(0)
@@ -22,6 +22,9 @@ TcpServer::TcpServer(Listener* listener)
 
 	//zero work thread pool
 	memset(m_work_thread_pool, 0, sizeof(m_work_thread_pool[0])*MAX_WORK_THREAD_COUNTS);
+
+	//set server name
+	strncpy(m_name, name ? name : "server", MAX_PATH);
 }
 
 //-------------------------------------------------------------------------------------
@@ -113,7 +116,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	for (int32_t i = 0; i < m_work_thread_counts; i++)
 	{
 		//run the thread
-		m_work_thread_pool[i] = new WorkThread(i, this);
+		m_work_thread_pool[i] = new WorkThread(i, this, m_name);
 	}
 
 	//start listen thread
