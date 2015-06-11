@@ -80,7 +80,6 @@ struct DiskLogFile
 
 		char timebuf[32];
 		strftime(timebuf, sizeof(timebuf), "%Y%m%d-%H%M%S", &tm_now);
-		//filename += timebuf;
 
 		//host name
 		char host_name[256] = { 0 };
@@ -162,12 +161,29 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	}
 	if (fp == 0) return;
 
+	char timebuf[32] = { 0 };
+#ifdef CY_SYS_WINDOWS
+	//current time
+	SYSTEMTIME time;
+	::GetLocalTime(&time);
+
+	snprintf(timebuf, sizeof(timebuf), "%04d_%02d_%02d-%02d:%02d:%02d",
+		time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
+#else
+	time_t t = time(0);
+	struct tm tm_now;
+	localtime_r(&t, &tm_now);
+
+	strftime(timebuf, sizeof(timebuf), "%Y_%m_%d-%H:%M:%S", &tm_now);
+#endif
+
 	char szTemp[1024] = { 0 };
 	va_list ptr; va_start(ptr, message);
 	vsnprintf(szTemp, 1024, message, ptr);
 	va_end(ptr);
 
-	fprintf(fp, "%s\t%s\n",
+	fprintf(fp, "%s\t%s\t%s\n",
+		timebuf,
 		thefile.level_name[level],
 		szTemp);
 	fclose(fp);
