@@ -60,6 +60,8 @@ int main(int argc, char* argv[])
 	(void)argc; 
 	(void)argv;
 
+	thread_api::thread_set_current_name("main");
+
 	ServerListener listener;
 
 	TcpServer server(&listener);

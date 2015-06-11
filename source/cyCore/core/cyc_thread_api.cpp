@@ -63,10 +63,7 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 {
 	thread_data_s* data = (thread_data_s*)param;
 
-	if (data->name[0] != 0)
-		strncpy(s_thread_name, data->name, MAX_THREAD_NAME_LENGTH);
-	else
-		snprintf(s_thread_name, MAX_THREAD_NAME_LENGTH, "thread%08x", thread_get_current_id());
+	thread_set_current_name(data->name);
 
 	if (data->entry_func)
 		data->entry_func(data->param);
@@ -78,10 +75,8 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 static void* __pthread_thread_entry(void* param)
 {
 	thread_data_s* data = (thread_data_s*)param;
-	if (data->name[0] != 0)
-		strncpy(s_thread_name, data->name, MAX_THREAD_NAME_LENGTH);
-	else
-		snprintf(s_thread_name, MAX_THREAD_NAME_LENGTH, "thread%08x", thread_get_current_id());
+
+	thread_set_current_name(data->name);
 
 	data->tid.set(thread_get_current_id());
 	if (data->entry_func)
@@ -158,6 +153,15 @@ void thread_join(thread_t thread)
 const char* thread_get_current_name(void)
 {
 	return s_thread_name;
+}
+
+//-------------------------------------------------------------------------------------
+void thread_set_current_name(const char* name)
+{
+	if (name && name[0] != 0)
+		strncpy(s_thread_name, name, MAX_THREAD_NAME_LENGTH);
+	else
+		snprintf(s_thread_name, MAX_THREAD_NAME_LENGTH, "thread%08x", thread_get_current_id());
 }
 
 //-------------------------------------------------------------------------------------
