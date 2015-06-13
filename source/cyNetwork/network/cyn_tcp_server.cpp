@@ -5,7 +5,7 @@ Copyright(C) thecodeway.com
 #include <cy_event.h>
 #include <cy_network.h>
 #include "cyn_tcp_server.h"
-#include "cyn_work_thread.h"
+#include "cyn_server_work_thread.h"
 
 namespace cyclone
 {
