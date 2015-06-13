@@ -9,91 +9,93 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-WorkThread::WorkThread(int32_t index, TcpServer* server, const char* name)
+ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name)
 	: m_index(index)
-	, m_looper(0)
 	, m_server(server)
+	, m_next_connection_id(0)
 {
-	m_thread_ready = thread_api::signal_create();
 
 	//run the work thread
 	snprintf(m_name, MAX_PATH, "%s_%d", (name ? name : "worker"), m_index);
 
-	m_thread = thread_api::thread_create(_work_thread_entry, this, m_name);
-
-	//wait work thread ready signal
-	thread_api::signal_wait(m_thread_ready);
+	//run work thread
+	m_work_thread = new WorkThread();
+	m_work_thread->start(m_name, this);
 }
 
 //-------------------------------------------------------------------------------------
-WorkThread::~WorkThread()
+ServerWorkThread::~ServerWorkThread()
 {
-	thread_api::signal_destroy(m_thread_ready);
+	delete m_work_thread;
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::_work_thread(void)
+void ServerWorkThread::send_message(uint16_t id, uint16_t size, const char* message)
 {
-	//create work event looper
-	m_looper = Looper::create_looper();
+	assert(m_work_thread);
 
-	//register pipe read event
-	m_looper->register_event(m_pipe.get_read_port(), Looper::kRead, this,
-		_on_command_entry, 0);
-
-	// set work thread ready signal
-	thread_api::signal_notify(m_thread_ready);
-
-	//enter loop ...
-	m_looper->loop();
-
-	//delete the looper
-	Looper::destroy_looper(m_looper);
-	m_looper = 0;
+	m_work_thread->send_message(id, size, message);
 }
 
 //-------------------------------------------------------------------------------------
-bool WorkThread::_on_command(void)
+void ServerWorkThread::send_message(Packet* message)
 {
-	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
+	assert(m_work_thread);
+	m_work_thread->send_message(message);
+}
 
-	int32_t cmd;
-	//read cmd
-	if (sizeof(cmd) != m_pipe.read((char*)&cmd, sizeof(cmd)))
-	{//error
-		return false;
-	}
+//-------------------------------------------------------------------------------------
+bool ServerWorkThread::is_in_workthread(void) const
+{
+	return thread_api::thread_get_current_id() == m_work_thread->get_looper()->get_thread_id();
+}
 
-	if (cmd == kNewConnectionCmd)
+//-------------------------------------------------------------------------------------
+Connection* ServerWorkThread::get_connection(int32_t connection_id)
+{
+	assert(is_in_workthread());
+
+	ConnectionMap::iterator it = m_connections.find(connection_id);
+	if (it == m_connections.end()) return 0;
+	return it->second;
+}
+
+//-------------------------------------------------------------------------------------
+void ServerWorkThread::on_workthread_start(void)
+{
+	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name);
+}
+
+//-------------------------------------------------------------------------------------
+bool ServerWorkThread::on_workthread_message(Packet* message)
+{
+	assert(is_in_workthread());
+	assert(message);
+
+	uint16_t msg_id = message->get_packet_id();
+	if (msg_id == NewConnectionCmd::ID)
 	{
-		//get new connection
-		socket_t sfd;
-
-		if (sizeof(sfd) != m_pipe.read((char*)&sfd, sizeof(sfd)))
-		{	//error
-			return false;
-		}
+		assert(message->get_packet_size() == sizeof(NewConnectionCmd));
+		NewConnectionCmd newConnectionCmd;
+		memcpy(&newConnectionCmd, message->get_packet_content(), sizeof(NewConnectionCmd));
 
 		//create tcp connection 
-		Connection* conn = new Connection(sfd, m_looper, this);
-		m_connections.insert(conn);
+		Connection* conn = new Connection(get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
+		m_connections.insert(std::make_pair(conn->get_id(), conn));
 
 		//established the connection
 		conn->established();
 	}
-	else if (cmd == kCloseConnectionCmd)
+	else if (msg_id == CloseConnectionCmd::ID)
 	{
-		intptr_t conn_ptr;
-		int32_t shutdown_ing;
-		if (sizeof(conn_ptr) != m_pipe.read((char*)&conn_ptr, sizeof(conn_ptr)) ||
-			sizeof(shutdown_ing) != m_pipe.read((char*)&shutdown_ing, sizeof(shutdown_ing)))
-		{//error
-			return false;
-		}
+		assert(message->get_packet_size() == sizeof(CloseConnectionCmd));
+		CloseConnectionCmd closeConnectionCmd;
+		memcpy(&closeConnectionCmd, message->get_packet_content(), sizeof(CloseConnectionCmd));
 
-		Connection* conn = (Connection*)conn_ptr;
-		if (m_connections.find(conn) == m_connections.end()) return false;
+		ConnectionMap::iterator it = m_connections.find(closeConnectionCmd.conn_id);
+		if (it == m_connections.end()) return false;
 
+		Connection* conn = it->second;
 		Connection::State curr_state = conn->get_state();
 
 		if (curr_state == Connection::kConnected)
@@ -104,10 +106,10 @@ bool WorkThread::_on_command(void)
 		else if (curr_state == Connection::kDisconnected)
 		{
 			//delete the event channel
-			m_looper->delete_event(conn->get_event_id());
+			m_work_thread->get_looper()->delete_event(conn->get_event_id());
 
 			//delete the connection object
-			m_connections.erase(conn);
+			m_connections.erase(conn->get_id());
 			delete conn;
 		}
 		else
@@ -117,18 +119,18 @@ bool WorkThread::_on_command(void)
 		}
 
 		//if all connection is shutdown, and server is in shutdown process, quit the loop
-		if (m_connections.empty() && shutdown_ing>0) return true;
+		if (m_connections.empty() && closeConnectionCmd.shutdown_ing>0) return true;
 	}
-	else if (cmd == kShutdownCmd)
+	else if (msg_id == ShutdownCmd::ID)
 	{
 		//all connection is disconnect, just quit the loop
 		if (m_connections.empty()) return true;
 
 		//send shutdown command to all connection
-		ConnectionList::iterator it, end = m_connections.end();
+		ConnectionMap::iterator it, end = m_connections.end();
 		for (it = m_connections.begin(); it != end; ++it)
 		{
-			Connection* conn = *it;
+			Connection* conn = it->second;
 			if (conn->get_state() == Connection::kConnected)
 			{
 				conn->shutdown();
@@ -136,38 +138,52 @@ bool WorkThread::_on_command(void)
 		}
 		//just wait...
 	}
-
+	else
+	{
+		//extra message
+		TcpServer::Listener* server_listener = m_server->get_listener();
+		if (server_listener) {
+			server_listener->on_extra_workthread_msg(m_server, get_index(), message);
+		}
+	}
 	return false;
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::on_connection_event(Connection::Event event, Connection* conn)
+void ServerWorkThread::on_connection_event(Connection::Event event, Connection* conn)
 {
+	assert(is_in_workthread());
 	assert(m_server);
 
 	TcpServer::Listener* server_listener = m_server->get_listener();
 	switch (event) {
 	case Connection::kOnConnection:
 		if (server_listener) {
-			server_listener->on_connection_callback(m_server, conn);
+			server_listener->on_connection_callback(m_server, get_index(), conn);
 		}
 		break;
 
 	case Connection::kOnMessage:
 		if (server_listener) {
-			server_listener->on_message_callback(m_server, conn);
+			server_listener->on_message_callback(m_server, get_index(), conn);
 		}
 		break;
 
 	case Connection::kOnClose:
 		if (server_listener) {
-			server_listener->on_close_callback(m_server, conn);
+			server_listener->on_close_callback(m_server, get_index(), conn);
 		}
 
 		//shutdown this connection
 		m_server->shutdown_connection(conn);
 		break;
 	}
+}
+
+//-------------------------------------------------------------------------------------
+void ServerWorkThread::join(void)
+{
+	m_work_thread->join();
 }
 
 }

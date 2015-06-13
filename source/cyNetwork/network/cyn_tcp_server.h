@@ -12,7 +12,7 @@ namespace cyclone
 {
 
 //pre-define
-class WorkThread;
+class ServerWorkThread;
 
 class TcpServer
 {
@@ -38,13 +38,20 @@ public:
 	/// get bind address, if index is invalid return default Address value
 	Address get_bind_address(int index);
 
+	/// send work message to one of work thread(thread safe)
+	void send_work_message(int32_t work_thread_index, Packet* message);
+
+	/// get connection (NOT thread safe, MUST call in the work thread)
+	Connection* get_connection(int32_t work_thread_index, int32_t conn_id);
+
 public:
 	class Listener
 	{
 	public:
-		virtual void on_connection_callback(TcpServer* server, Connection* conn) = 0;
-		virtual void on_message_callback(TcpServer* server, Connection* conn) = 0;
-		virtual void on_close_callback(TcpServer* server, Connection* conn) = 0;
+		virtual void on_connection_callback(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
+		virtual void on_message_callback(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
+		virtual void on_close_callback(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
+		virtual void on_extra_workthread_msg(TcpServer* server, int32_t thread_index, Packet* msg) = 0;
 	};
 
 	Listener* get_listener(void) { 	return m_listener; }
@@ -56,12 +63,12 @@ private:
 
 	thread_t		m_acceptor_thread;
 
-	WorkThread*		m_work_thread_pool[MAX_WORK_THREAD_COUNTS];
+	ServerWorkThread*	m_work_thread_pool[MAX_WORK_THREAD_COUNTS];
 	int32_t			m_work_thread_counts;
-	int32_t			m_next_work;
+	atomic_int32_t	m_next_work;
 
 	int32_t _get_next_work_thread(void) { 
-		return m_next_work = (m_next_work + 1) % m_work_thread_counts;
+		return m_next_work.get_and_add(1) % m_work_thread_counts;
 	}
 
 	Listener* m_listener;

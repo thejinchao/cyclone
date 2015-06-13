@@ -94,7 +94,7 @@ bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
 	m_socket = sfd;
 	m_serverAddr = addr;
 	m_connect_timeout_ms = timeOutSeconds;
-	m_connection = new Connection(sfd, m_looper, this);
+	m_connection = new Connection(0, sfd, m_looper, this);
 
 #ifdef CY_SYS_WINDOWS
 	//for select mode in windows, the non-block fd of connect socket wouldn't be readable or writeable if connection failed

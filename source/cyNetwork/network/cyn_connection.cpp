@@ -10,8 +10,9 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(socket_t sfd, Looper* looper, Listener* listener)
-	: m_socket(sfd)
+Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* listener)
+	: m_id(id)
+	, m_socket(sfd)
 	, m_state(kConnecting)
 	, m_looper(looper)
 	, m_event_id(0)

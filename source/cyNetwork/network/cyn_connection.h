@@ -36,6 +36,9 @@ public:
 	//
 	enum State { kDisconnected, kConnecting, kConnected, kDisconnecting };
 
+	/// get id(thread safe)
+	int32_t get_id(void) const { return m_id; }
+
 	/// get current state(thread safe)
 	State get_state(void) const;
 
@@ -65,6 +68,7 @@ public:
 	Looper::event_id_t get_event_id(void) const { return m_event_id; }
 
 private:
+	int32_t m_id;
 	Socket m_socket;
 	State m_state;
 	Address m_local_addr;
@@ -109,7 +113,7 @@ private:
 	bool _is_writeBuf_empty(void) const;
 
 public:
-	Connection(socket_t sfd, Looper* looper, Listener* listener);
+	Connection(int32_t id, socket_t sfd, Looper* looper, Listener* listener);
 	~Connection();
 };
 

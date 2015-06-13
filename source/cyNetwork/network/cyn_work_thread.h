@@ -1,61 +1,87 @@
 /*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_NETWORK_WORK_THREAD_H_
-#define _CYCLONE_NETWORK_WORK_THREAD_H_
+#ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
+#define _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
+
+#include <hash_map>
 
 namespace cyclone
 {
 
-class WorkThread : public Connection::Listener
+class ServerWorkThread 
+	: public Connection::Listener
+	, public WorkThread::Listener
 {
 public:
-	enum { kNewConnectionCmd=1, kCloseConnectionCmd=2, kShutdownCmd=3 };
-	//// thread safe
-	Pipe& get_cmd_port(void) { return m_pipe; }
+	enum { kNewConnectionCmdID=1, kCloseConnectionCmdID, kShutdownCmdID };
+	struct NewConnectionCmd
+	{
+		enum { ID = kNewConnectionCmdID };
+		socket_t sfd;
+	};
+
+	struct CloseConnectionCmd
+	{
+		enum { ID = kCloseConnectionCmdID };
+		int32_t conn_id;
+		int32_t shutdown_ing;
+	};
+
+	struct ShutdownCmd
+	{
+		enum { ID = kShutdownCmdID };
+	};
+
+public:
+	//// send message to this work thread (thread safe)
+	void send_message(uint16_t id, uint16_t size, const char* message);
+	void send_message(Packet* message);
 	//// get work thread index in work thread pool (thread safe)
 	int32_t get_index(void) const { return m_index; }
-	/// wait thread to termeinate(thread safe)
-	thread_t get_thread(void) const { return m_thread; }
+	//// is current thread in work thread (thread safe)
+	bool is_in_workthread(void) const;
+	//// join work thread(thread safe)
+	void join(void);
+	//// get connection(NOT thread safe, MUST call in work thread)
+	Connection* get_connection(int32_t connection_id);
 
 private:
 	const int32_t	m_index;
-	thread_t		m_thread;
-	Looper*			m_looper;
-	Pipe			m_pipe;
 	TcpServer*		m_server;
+	WorkThread*		m_work_thread;
 
-	typedef std::set< Connection* > ConnectionList;
-	ConnectionList	m_connections;
+#ifdef CY_SYS_WINDOWS
+	typedef std::hash_map< int32_t, Connection* > ConnectionMap;
+#else
+	typedef __gnu_cxx::hash_map< int32_t, Connection*> ConnectionMap;
+#endif	
 
-	thread_api::signal_t	m_thread_ready;
+	ConnectionMap	m_connections;
 
 	char		m_name[MAX_PATH];
-
-public:
-	//// called by connection(in work thread)
-	virtual void on_connection_event(Connection::Event event, Connection* conn);
+	
+	int32_t		m_next_connection_id;
 
 private:
-	/// work thread function
-	static void _work_thread_entry(void* param){
-		((WorkThread*)param)->_work_thread();
+	int32_t get_next_connection_id(void) {
+		return ++m_next_connection_id;
 	}
-	void _work_thread(void);
 
-	//// on work thread receive new connection
-	static bool _on_command_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		return ((WorkThread*)param)->_on_command();
-	}
-	bool _on_command(void);
+private:
+	//// called by connection(in work thread)
+	virtual void on_connection_event(Connection::Event event, Connection* conn);
+	//// called by message port (in work thread)
+	virtual void on_workthread_start(void);
+	virtual bool on_workthread_message(Packet*);
 
 public:
-	WorkThread(int32_t index, TcpServer* server, const char* name);
-	~WorkThread();
+	ServerWorkThread(int32_t index, TcpServer* server, const char* name);
+	~ServerWorkThread();
 
 	//not-copyable
 private:
-	WorkThread & operator=(const WorkThread &) { return *this; }
+	ServerWorkThread & operator=(const ServerWorkThread &) { return *this; }
 };
 
 }

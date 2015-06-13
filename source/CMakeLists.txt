@@ -34,12 +34,16 @@ set(CY_EVENT_INCLUDE_FILES
 	cyEvent/cy_event.h
 	cyEvent/event/cye_looper.h
 	cyEvent/event/cye_pipe.h
+	cyEvent/event/cye_work_thread.h
+	cyEvent/event/cye_packet.h
 )
 source_group("cyEvent" FILES ${CY_EVENT_INCLUDE_FILES})
 
 set(CY_EVENT_SOURCE_FILES
 	cyEvent/event/cye_looper.cpp
 	cyEvent/event/cye_pipe.cpp
+	cyEvent/event/cye_work_thread.cpp
+	cyEvent/event/cye_packet.cpp
 )
 source_group("cyEvent" FILES ${CY_EVENT_SOURCE_FILES})
 

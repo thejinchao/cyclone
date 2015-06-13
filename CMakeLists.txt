@@ -84,7 +84,7 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MD /W4")
 	endif()
 else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings")
+	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
 endif()
 
 ########

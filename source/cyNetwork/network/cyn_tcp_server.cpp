@@ -14,7 +14,6 @@ namespace cyclone
 TcpServer::TcpServer(Listener* listener, const char* name)
 	: m_acceptor_thread(0)
 	, m_work_thread_counts(0)
-	, m_next_work(0)
 	, m_listener(listener)
 {
 	//zero accept socket 
@@ -116,7 +115,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	for (int32_t i = 0; i < m_work_thread_counts; i++)
 	{
 		//run the thread
-		m_work_thread_pool[i] = new WorkThread(i, this, m_name);
+		m_work_thread_pool[i] = new ServerWorkThread(i, this, m_name);
 	}
 
 	//start listen thread
@@ -144,9 +143,10 @@ void TcpServer::stop(void)
 	if (m_running.get() == 0) return;
 
 	//this function can't run in work thread
-	for (int32_t i = 0; i < m_work_thread_counts; i++){
-		WorkThread* work = m_work_thread_pool[i];
-		if (thread_api::thread_get_id(work->get_thread()) == thread_api::thread_get_current_id())
+	for (int32_t i = 0; i < m_work_thread_counts; i++)
+	{
+		ServerWorkThread* work = m_work_thread_pool[i];
+		if (work->is_in_workthread())
 		{
 			CY_LOG(L_ERROR, "you can't stop server in work thread.");
 			return;
@@ -164,18 +164,15 @@ void TcpServer::stop(void)
 
 	//first shutdown all connection
 	for (int32_t i = 0; i < m_work_thread_counts; i++){
-		WorkThread* work = m_work_thread_pool[i];
-		Pipe& cmd_pipe = work->get_cmd_port();
+		ServerWorkThread* work = m_work_thread_pool[i];
 
-		int32_t cmd = WorkThread::kShutdownCmd;
-		cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
+		work->send_message(ServerWorkThread::ShutdownCmd::ID, 0, 0);
 	}
 
 	//wait all thread quit
 	for (int32_t i = 0; i < m_work_thread_counts; i++){
-		WorkThread* work = m_work_thread_pool[i];
-
-		thread_api::thread_join(work->get_thread());
+		ServerWorkThread* work = m_work_thread_pool[i];
+		work->join();
 		delete work;
 	}
 
@@ -215,13 +212,12 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 
 	//send it to one of work thread		
 	int32_t index = _get_next_work_thread();
-	WorkThread* work = m_work_thread_pool[index];
-	Pipe& cmd_pipe = work->get_cmd_port();
-
+	ServerWorkThread* work = m_work_thread_pool[index];
+	
 	//write new connection command(cmd, socket_t)		
-	int32_t cmd = WorkThread::kNewConnectionCmd;
-	cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
-	cmd_pipe.write((const char*)&(connfd), sizeof(connfd));
+	ServerWorkThread::NewConnectionCmd newConnectionCmd;
+	newConnectionCmd.sfd = connfd;
+	work->send_message(ServerWorkThread::NewConnectionCmd::ID, sizeof(newConnectionCmd), (const char*)&newConnectionCmd);
 
 	CY_LOG(L_TRACE, "accept a socket, send to work thread %d ", index);
 	return false;
@@ -276,18 +272,31 @@ void TcpServer::shutdown_connection(Connection* conn)
 	assert(m_acceptor_socket);
 	assert(m_acceptor_thread);
 
-	WorkThread* work = (WorkThread*)(conn->get_listener());
+	ServerWorkThread* work = (ServerWorkThread*)(conn->get_listener());
 
-	Pipe& cmd_pipe = work->get_cmd_port();
+	ServerWorkThread::CloseConnectionCmd closeConnectionCmd;
+	closeConnectionCmd.conn_id = conn->get_id();
+	closeConnectionCmd.shutdown_ing = m_shutdown_ing.get();;
+	work->send_message(ServerWorkThread::CloseConnectionCmd::ID, sizeof(closeConnectionCmd), (const char*)&closeConnectionCmd);
+}
 
-	intptr_t conn_ptr = (intptr_t)conn;
-	int32_t shutdown_ing = m_shutdown_ing.get();
+//-------------------------------------------------------------------------------------
+void TcpServer::send_work_message(int32_t work_thread_index, Packet* message)
+{
+	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
 
-	//write close conn command
-	int32_t cmd = WorkThread::kCloseConnectionCmd;
-	cmd_pipe.write((const char*)&(cmd), sizeof(int32_t));
-	cmd_pipe.write((const char*)&(conn_ptr), sizeof(conn_ptr));
-	cmd_pipe.write((const char*)&(shutdown_ing), sizeof(shutdown_ing));
+	ServerWorkThread* work = m_work_thread_pool[work_thread_index];
+	work->send_message(message);
+}
+
+//-------------------------------------------------------------------------------------
+Connection* TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id)
+{
+	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
+	ServerWorkThread* work = m_work_thread_pool[work_thread_index];
+	assert(work->is_in_workthread());
+
+	return work->get_connection(conn_id);
 }
 
 }
