@@ -40,9 +40,17 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 			break;
 		if ((handles[1] = socket_api::create_socket()) == INVALID_SOCKET) 
 			break;
+		if (!socket_api::set_nonblock(handles[1], true))
+			break;
+		if (!socket_api::set_close_onexec(handles[1], true))
+			break;
 		if (!socket_api::connect(handles[1], serv_addr)) 
 			break;
 		if ((handles[0] = socket_api::accept(s, 0)) == INVALID_SOCKET) 
+			break;
+		if (!socket_api::set_nonblock(handles[0], true))
+			break;
+		if (!socket_api::set_close_onexec(handles[0], true))
 			break;
 
 		socket_api::close_socket(s);
@@ -76,7 +84,7 @@ Pipe::Pipe()
 #ifdef CY_SYS_WINDOWS
 	if (!_construct_pipe_windows(m_pipe_fd))
 #else
-	if(::pipe(m_pipe_fd)<0)
+	if(::pipe2(m_pipe_fd, O_NONBLOCK|O_CLOEXEC)<0)
 #endif
 	{
 		CY_LOG(L_FATAL, "create pipe failed!");
