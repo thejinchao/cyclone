@@ -82,14 +82,19 @@ bool WorkThread::_on_message(void)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	Packet message;
-	if (!message.build(MESSAGE_HEAD_SIZE, m_pipe)) return false;
+	ssize_t len = m_message_buf.read_socket(m_pipe.get_read_port());
+	assert(len > 0);
 
-	//call
-	if (m_listener) {
-		return m_listener->on_workthread_message(&message);
+	for (;;)
+	{
+		Packet message;
+		if (!message.build(MESSAGE_HEAD_SIZE, m_message_buf)) break;
+
+		//call listener
+		if (m_listener->on_workthread_message(&message)) {
+			return true;
+		}
 	}
-
 	return false;
 }
 
@@ -106,6 +111,12 @@ void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 void WorkThread::send_message(Packet* message)
 {
 	m_pipe.write(message->get_memory_buf(), message->get_memory_size());
+}
+
+//-------------------------------------------------------------------------------------
+void WorkThread::send_message(uint16_t size, const char* message)
+{
+	m_pipe.write(message, size);
 }
 
 //-------------------------------------------------------------------------------------
