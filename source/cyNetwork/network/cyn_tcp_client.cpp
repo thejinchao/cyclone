@@ -37,7 +37,13 @@ TcpClient::~TcpClient()
 	thread_api::mutex_destroy(m_connection_lock);
 	m_connection_lock = 0;
 
-	m_looper->disable_all(m_connection->get_event_id());
+	if (m_connection) {
+		m_looper->disable_all(m_connection->get_event_id());
+		m_looper->delete_event(m_connection->get_event_id());
+
+		delete m_connection;
+		m_connection = 0;
+	}
 
 #ifdef CY_SYS_WINDOWS
 	//close connection wait timer(if we close client before wait timer happen)
