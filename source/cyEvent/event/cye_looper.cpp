@@ -237,7 +237,7 @@ void Looper::loop(void)
 
 	//register inner pipe first
 	m_inner_pipe = new Pipe();
-	register_event(m_inner_pipe->get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
+	Looper::event_id_t inner_event_id = register_event(m_inner_pipe->get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
 
 	channel_list readList;
 	channel_list writeList;
@@ -277,8 +277,8 @@ void Looper::loop(void)
 		if (quit_cmd) break;
 	}
 
-	disable_all(m_inner_pipe->get_read_port());
-	delete_event(m_inner_pipe->get_read_port());
+	disable_all(inner_event_id);
+	delete_event(inner_event_id);
 	delete m_inner_pipe; m_inner_pipe = 0;
 }
 
