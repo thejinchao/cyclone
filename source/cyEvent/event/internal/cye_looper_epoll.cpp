@@ -54,7 +54,7 @@ void Looper_epoll::_poll(
 	{
 		const epoll_event& event = m_events[i];
 		uint32_t revents = event.events;
-		channel_s* channel = (channel_s*)event.data.ptr;
+		channel_s* channel = &(m_channelBuffer[event.data.u32]);
 
 		if (revents & (EPOLLERR | EPOLLHUP)) {
 			//error fd, log something...
@@ -101,7 +101,7 @@ bool Looper_epoll::_set_event(channel_s& channel, int operation, uint32_t events
 	if (operation != EPOLL_CTL_DEL)
 	{
 		event.events =  events;
-		event.data.ptr = &channel;
+		event.data.u32 = channel.id;
 	}
 
 	if (::epoll_ctl(m_eoll_fd, operation, channel.fd, &event) < 0) {
