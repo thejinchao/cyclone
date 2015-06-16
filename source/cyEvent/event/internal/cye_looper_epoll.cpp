@@ -27,14 +27,15 @@ Looper_epoll::~Looper_epoll()
 //-------------------------------------------------------------------------------------
 void Looper_epoll::_poll(
 	channel_list& readChannelList,
-	channel_list& writeChannelList)
+	channel_list& writeChannelList,
+	bool block)
 {
 
 	int num_events = 0;
 	do {
 		num_events = ::epoll_wait(m_eoll_fd,
 			&*m_events.begin(), static_cast<int>(m_events.size()),
-			-1);
+			block ? -1 : 0);
 	}while (num_events < 0 && socket_api::get_lasterror() == EINTR); //gdb may cause interrupted system call
 
 	if (num_events < 0)

@@ -50,6 +50,8 @@ public:
 
 	//// main loop(reactor process)
 	void loop(void);
+	//// reactor step
+	void step(void);
 
 	//// update event
 	void disable_read(event_id_t id);
@@ -103,13 +105,14 @@ protected:
 
 	thread_api::mutex_t m_lock;
 
-	Pipe m_inner_pipe;	//pipe to push loop continue
+	Pipe* m_inner_pipe;	//pipe to push loop continue
 	atomic_uint32_t m_inner_pipe_touched;
 
 	/// Polls the I/O events.
 	virtual void _poll(
 		channel_list& readChannelList,
-		channel_list& writeChannelList) = 0;
+		channel_list& writeChannelList,
+		bool block) = 0;
 	/// Changes the interested I/O events.
 	virtual void _update_channel_add_event(channel_s& channel, event_t type) = 0;
 	virtual void _update_channel_remove_event(channel_s& channel, event_t type) = 0;

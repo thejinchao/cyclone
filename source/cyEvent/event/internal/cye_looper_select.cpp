@@ -31,7 +31,8 @@ Looper_select::~Looper_select()
 //-------------------------------------------------------------------------------------
 void Looper_select::_poll(
 	channel_list& readChannelList, 
-	channel_list& writeChannelList)
+	channel_list& writeChannelList,
+	bool block)
 {
 #ifndef CY_SYS_WINDOWS
 	if (m_max_fd == INVALID_SOCKET)
@@ -56,13 +57,15 @@ void Looper_select::_poll(
 	int ready = 0;
 	if (m_max_read_counts > 0 || m_max_write_counts>0)
 	{
+		timeval time_out = { 0, 0 };
 		ready = ::select(
 #ifdef CY_SYS_WINDOWS
 			0,
 #else
 			(int)(m_max_fd+1), 
 #endif
-			&m_work_read_fd_set, &m_work_write_fd_set, 0, 0);
+			&m_work_read_fd_set, &m_work_write_fd_set, 0, 
+			block ? 0 : &time_out);
 	}
 	else 
 	{

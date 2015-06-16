@@ -21,6 +21,7 @@ const Looper::event_id_t Looper::INVALID_EVENT_ID = (Looper::event_id_t)(~0);
 Looper::Looper()
 	: m_free_head(INVALID_EVENT_ID)
 	, m_current_thread(thread_api::thread_get_current_id())
+	, m_inner_pipe(0)
 {
 	m_lock = thread_api::mutex_create();
 }
@@ -235,7 +236,8 @@ void Looper::loop(void)
 	assert(thread_api::thread_get_current_id() == m_current_thread);
 
 	//register inner pipe first
-	register_event(m_inner_pipe.get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
+	m_inner_pipe = new Pipe();
+	register_event(m_inner_pipe->get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
 
 	channel_list readList;
 	channel_list writeList;
@@ -246,7 +248,7 @@ void Looper::loop(void)
 		writeList.clear();
 
 		//wait in kernel...
-		_poll(readList, writeList);
+		_poll(readList, writeList, true);
 		
 		bool quit_cmd = false;
 
@@ -274,6 +276,41 @@ void Looper::loop(void)
 		//it's the time to shutdown everything...
 		if (quit_cmd) break;
 	}
+
+	disable_all(m_inner_pipe->get_read_port());
+	delete_event(m_inner_pipe->get_read_port());
+	delete m_inner_pipe; m_inner_pipe = 0;
+}
+
+//-------------------------------------------------------------------------------------
+void Looper::step(void)
+{
+	assert(thread_api::thread_get_current_id() == m_current_thread);
+	assert(m_inner_pipe==0);
+
+	channel_list readList;
+	channel_list writeList;
+
+	//wait in kernel...
+	_poll(readList, writeList, false);
+
+	//reactor
+	for (size_t i = 0; i < readList.size(); i++)
+	{
+		channel_s* c = readList[i];
+		if (c->on_read == 0 || (c->event & kRead) == 0) continue;
+
+		c->on_read(c->id, c->fd, kRead, c->param);
+	}
+
+	for (size_t i = 0; i < writeList.size(); i++)
+	{
+		channel_s* c = writeList[i];
+		if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
+
+		c->on_write(c->id, c->fd, kWrite, c->param);
+	}
+
 }
 
 //-------------------------------------------------------------------------------------
@@ -344,11 +381,13 @@ bool Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event,
 //-------------------------------------------------------------------------------------
 void Looper::_touch_inner_pipe(void)
 {
+	if (m_inner_pipe==0) return;
+
 	//just touch once!
 	if (m_inner_pipe_touched.get_and_set(1) != 0) return;
 
 	uint64_t touch = 0;
-	m_inner_pipe.write((const char*)&touch, sizeof(touch));
+	m_inner_pipe->write((const char*)&touch, sizeof(touch));
 }
 
 //-------------------------------------------------------------------------------------
