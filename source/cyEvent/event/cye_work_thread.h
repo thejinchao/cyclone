@@ -27,7 +27,7 @@ public:
 
 	//// send message to this work thread (thread safe)
 	void send_message(uint16_t id, uint16_t size, const char* message);
-	void send_message(Packet* message);
+	void send_message(const Packet* message);
 	void send_message(uint16_t size, const char* message);
 
 	//// get work thread looper (thread safe)

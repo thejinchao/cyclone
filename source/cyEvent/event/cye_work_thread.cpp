@@ -108,7 +108,7 @@ void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::send_message(Packet* message)
+void WorkThread::send_message(const Packet* message)
 {
 	m_pipe.write(message->get_memory_buf(), message->get_memory_size());
 }
