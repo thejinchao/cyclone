@@ -76,7 +76,6 @@ void Connection::send(const char* buf, size_t len)
 	}
 	else
 	{
-		assert(get_state() == kConnected);
 		if (get_state() != kConnected)
 		{
 			//log error, give up send message
@@ -107,7 +106,6 @@ bool Connection::_is_writeBuf_empty(void) const
 void Connection::_send(const char* buf, size_t len)
 {
 	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
-	assert(m_state == kConnected);
 
 	bool faultError = false;
 	size_t remaining = len;
@@ -115,7 +113,7 @@ void Connection::_send(const char* buf, size_t len)
 
 	if (m_state != kConnected)
 	{
-		//TODO: log error, give up send message
+		//log error, give up send message
 		CY_LOG(L_ERROR, "send message state error, state=%d", m_state);
 		return;
 	}
