@@ -8,7 +8,6 @@ Copyright(C) thecodeway.com
 
 #include <crypt/cyr_adler32.h>
 #include <crypt/cyr_aes.h>
-#include <crypt/cyr_uint128.h>
 #include <crypt/cyr_dhexchange.h>
 
 #endif

@@ -4,40 +4,25 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_CRYPT_DH_EXCHANGE_H_
 #define _CYCLONE_CRYPT_DH_EXCHANGE_H_
 
-#include "cyr_uint128.h"
-
 namespace cyclone
 {
 
 //Diffie-Hellman key exchange 
-class DHExchange
-{
-public:
-	uint128_t getPublicKey(void) const { return m_publicKey; }
-	uint128_t getPairKey(const uint128_t& anotherKey);
+#define DH_KEY_LENGTH	(16)
 
-private:
-	// P =  2^128-159 = 0xffffffffffffffffffffffffffffff61 (The biggest 64bit prime)
-	// INVERT_P = ~P+1 = 159
-	// G = 5
-	static uint128_t P, INVERT_P, G;
+typedef union _dhkey_t {
+struct _dq {
+		uint64_t low;
+		uint64_t high;
+	} dq;
+	uint8_t bytes[DH_KEY_LENGTH];
+} dhkey_t;
 
-	// r = a^b % P
-	void _powmodp(uint128_t& r, uint128_t a, uint128_t b);
-	// r = a^b % P (reduce)
-	void _powmodp_r(uint128_t& r, const uint128_t& a, const uint128_t& b);
-	// r = a*b % P
-	void _mulmodp(uint128_t& r, uint128_t a, uint128_t b);
 
-private:
-	uint128_t m_privateKey;
-	uint128_t m_publicKey;
-	uint128_t m_pairKey;
+void DH_generate_key_pair(dhkey_t& public_key, dhkey_t& private_key);
 
-public:
-	DHExchange();
-	~DHExchange();
-};
+void DH_generate_key_secret(dhkey_t& secret_key, const dhkey_t& my_private, const dhkey_t& another_public);
+
 
 }
 

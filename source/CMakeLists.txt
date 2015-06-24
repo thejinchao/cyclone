@@ -89,7 +89,6 @@ set(CY_CRYPT_INCLUDE_FILES
 	cyCrypt/crypt/cyr_adler32.h
 	cyCrypt/crypt/cyr_aes.h
 	cyCrypt/crypt/cyr_dhexchange.h
-	cyCrypt/crypt/cyr_uint128.h
 )
 source_group("cyCrypt" FILES ${CY_CRYPT_INCLUDE_FILES})
 
@@ -97,7 +96,6 @@ set(CY_CRYPT_SOURCE_FILES
 	cyCrypt/crypt/cyr_adler32.cpp
 	cyCrypt/crypt/cyr_aes.cpp
 	cyCrypt/crypt/cyr_dhexchange.cpp
-	cyCrypt/crypt/cyr_uint128.cpp
 )
 source_group("cyCrypt" FILES ${CY_CRYPT_SOURCE_FILES})
 
