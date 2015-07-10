@@ -97,6 +97,13 @@ void signal_wait(signal_t s);
 void signal_notify(signal_t s);
 
 //----------------------
+// time functions
+//----------------------
+
+//// get time in microseconds(second*1000*1000) from Epoch
+int64_t time_now(void);
+
+//----------------------
 // utility functions
 //----------------------
 uint32_t get_cpu_counts(void);

@@ -8,9 +8,10 @@ Copyright(C) thecodeway.com
 #include <process.h>
 #else
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <pthread.h>
-#include <time.h>
 #endif
+#include <time.h>
 
 namespace cyclone
 {
@@ -271,6 +272,35 @@ void signal_notify(signal_t s)
 	sig->predicate.set(1);
 	pthread_cond_signal(&(sig->cond));
 	pthread_mutex_unlock(&(sig->mutex));
+#endif
+}
+
+//-------------------------------------------------------------------------------------
+int64_t time_now(void)
+{
+	const int64_t kMicroSecondsPerSecond = 1000ll * 1000ll;
+
+#ifdef CY_SYS_WINDOWS
+	SYSTEMTIME ltm;
+	GetLocalTime(&ltm);
+
+	struct tm t;
+	t.tm_year = ltm.wYear - 1900;
+	t.tm_mon = ltm.wMonth - 1;
+	t.tm_mday = ltm.wDay;
+	t.tm_hour = ltm.wHour;
+	t.tm_min = ltm.wMinute;
+	t.tm_sec = ltm.wSecond;
+	t.tm_isdst = -1;
+
+	int64_t seconds = (int64_t)mktime(&t);
+	return seconds*kMicroSecondsPerSecond + ltm.wMilliseconds * 1000;
+
+#else
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	int64_t seconds = tv.tv_sec;
+	return seconds * kMicroSecondsPerSecond + tv.tv_usec;
 #endif
 }
 
