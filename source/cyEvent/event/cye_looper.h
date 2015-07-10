@@ -103,7 +103,7 @@ protected:
 
 	pid_t m_current_thread;
 
-	thread_api::mutex_t m_lock;
+	sys_api::mutex_t m_lock;
 
 	Pipe* m_inner_pipe;	//pipe to push loop continue
 	atomic_uint32_t m_inner_pipe_touched;

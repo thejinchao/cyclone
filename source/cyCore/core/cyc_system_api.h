@@ -14,7 +14,7 @@ typedef void* thread_t;
 
 namespace cyclone
 {
-namespace thread_api
+namespace sys_api
 {
 
 //----------------------

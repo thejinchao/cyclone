@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 	client.server_ip = server_ip;
 	client.port = server_port;
 
-	cyclone::thread_api::thread_create(_client_thread, &client, "client");
+	cyclone::sys_api::thread_create(_client_thread, &client, "client");
 
 	for (;;)
 	{

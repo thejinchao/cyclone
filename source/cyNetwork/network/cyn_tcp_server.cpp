@@ -119,7 +119,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//start listen thread
-	m_acceptor_thread = thread_api::thread_create(_accept_thread_entry, this, "accept");
+	m_acceptor_thread = sys_api::thread_create(_accept_thread_entry, this, "accept");
 	return true;
 }
 
@@ -177,7 +177,7 @@ void TcpServer::stop(void)
 	}
 
 	//wait accept thread quit
-	thread_api::thread_join(m_acceptor_thread);
+	sys_api::thread_join(m_acceptor_thread);
 
 	//close the listen socket
 	for (int i = 0; i < MAX_BIND_PORT_COUNTS; i++)
@@ -263,7 +263,7 @@ void TcpServer::join(void)
 	assert(m_acceptor_thread);
 
 	//join accept thread
-	thread_api::thread_join(m_acceptor_thread);
+	sys_api::thread_join(m_acceptor_thread);
 }
 
 //-------------------------------------------------------------------------------------

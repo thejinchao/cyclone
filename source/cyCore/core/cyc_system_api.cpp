@@ -2,7 +2,7 @@
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
-#include "cyc_thread_api.h"
+#include "cyc_system_api.h"
 
 #ifdef CY_SYS_WINDOWS
 #include <process.h>
@@ -14,7 +14,7 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
-namespace thread_api
+namespace sys_api
 {
 
 //-------------------------------------------------------------------------------------

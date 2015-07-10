@@ -26,15 +26,15 @@ TcpClient::TcpClient(Looper* looper, Listener* listener, void* param)
 	//looper muste be setted
 	assert(looper);
 
-	m_connection_lock = thread_api::mutex_create();
+	m_connection_lock = sys_api::mutex_create();
 }
 
 //-------------------------------------------------------------------------------------
 TcpClient::~TcpClient()
 {
-	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
+	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	thread_api::mutex_destroy(m_connection_lock);
+	sys_api::mutex_destroy(m_connection_lock);
 	m_connection_lock = 0;
 
 	if (m_connection) {
@@ -64,7 +64,7 @@ TcpClient::~TcpClient()
 //-------------------------------------------------------------------------------------
 bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
 {
-	thread_api::auto_mutex lock(m_connection_lock);
+	sys_api::auto_mutex lock(m_connection_lock);
 
 	//check status
 	if (m_connection != 0) return false;
@@ -130,7 +130,7 @@ bool TcpClient::_on_connection_timer(Looper::event_id_t id)
 //-------------------------------------------------------------------------------------
 Connection::State TcpClient::get_connection_state(void) const
 {
-	thread_api::auto_mutex lock(m_connection_lock);
+	sys_api::auto_mutex lock(m_connection_lock);
 
 	if (m_connection) return m_connection->get_state();
 	else return Connection::kDisconnected;
@@ -160,7 +160,7 @@ void TcpClient::_check_connect_status(bool abort)
 
 		//remove connection
 		{
-			thread_api::auto_mutex lock(m_connection_lock);
+			sys_api::auto_mutex lock(m_connection_lock);
 
 			delete m_connection;
 			m_connection = 0;

@@ -81,7 +81,7 @@ private:
 	RingBuf m_readBuf;
 
 	RingBuf m_writeBuf;
-	thread_api::mutex_t m_writeBufLock;	//for multithread lock
+	sys_api::mutex_t m_writeBufLock;	//for multithread lock
 
 	Listener* m_listener;
 	atomic_t<void*> m_proxy;

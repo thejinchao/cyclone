@@ -53,7 +53,7 @@ private:
 	void* m_param;
 
 	Connection* m_connection;
-	thread_api::mutex_t m_connection_lock;  //it's UGLY!
+	sys_api::mutex_t m_connection_lock;  //it's UGLY!
 
 	Looper::event_id_t m_retry_timer_id;
 

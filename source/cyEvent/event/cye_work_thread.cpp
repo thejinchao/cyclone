@@ -36,10 +36,10 @@ void WorkThread::start(const char* name, Listener* listener)
 
 	//run the work thread
 	strncpy(m_name, (name ? name : "worker"), MAX_PATH);
-	m_thread = thread_api::thread_create(_work_thread_entry, &param, m_name);
+	m_thread = sys_api::thread_create(_work_thread_entry, &param, m_name);
 
 	//wait work thread ready signal
-	while (param._ready.get() == 0) thread_api::thread_sleep(1);	//BUSY LOOP!
+	while (param._ready.get() == 0) sys_api::thread_sleep(1);	//BUSY LOOP!
 }
 
 //-------------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ void WorkThread::_work_thread(work_thread_param* param)
 //-------------------------------------------------------------------------------------
 bool WorkThread::_on_message(void)
 {
-	assert(thread_api::thread_get_current_id() == m_looper->get_thread_id());
+	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
 	ssize_t len = m_message_buf.read_socket(m_pipe.get_read_port());
 	assert(len > 0);
@@ -122,7 +122,7 @@ void WorkThread::send_message(uint16_t size, const char* message)
 //-------------------------------------------------------------------------------------
 void WorkThread::join(void)
 {
-	thread_api::thread_join(m_thread);
+	sys_api::thread_join(m_thread);
 }
 
 

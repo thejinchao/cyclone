@@ -28,7 +28,7 @@ struct DiskLogFile
 #endif
 
 	char file_name[_MAX_PATH];
-	thread_api::mutex_t lock;
+	sys_api::mutex_t lock;
 	const char* level_name[L_MAXIMUM_LEVEL];
 	LOG_LEVEL level_threshold;
 	bool logpath_created;
@@ -90,7 +90,7 @@ struct DiskLogFile
 
 #endif
 		//create lock
-		lock = thread_api::mutex_create();
+		lock = sys_api::mutex_create();
 
 		//default level(all level will be writed)
 		level_threshold = L_TRACE;
@@ -122,7 +122,7 @@ void set_log_threshold(LOG_LEVEL level)
 	if (level < 0 || level > L_MAXIMUM_LEVEL)return;
 
 	DiskLogFile& thefile = _get_disk_log();
-	thread_api::auto_mutex guard(thefile.lock);
+	sys_api::auto_mutex guard(thefile.lock);
 
 	thefile.level_threshold = level;
 }
@@ -134,7 +134,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	if (level < 0 || level >= L_MAXIMUM_LEVEL)return;
 
 	DiskLogFile& thefile = _get_disk_log();
-	thread_api::auto_mutex guard(thefile.lock);
+	sys_api::auto_mutex guard(thefile.lock);
 
 	//check the level
 	if (level < thefile.level_threshold) return;
@@ -185,7 +185,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	fprintf(fp, "%s %s [%s] %s\n",
 		timebuf, 
 		thefile.level_name[level],
-		thread_api::thread_get_current_name(),
+		sys_api::thread_get_current_name(),
 		szTemp);
 	fclose(fp);
 
@@ -193,7 +193,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	fprintf(level >= L_ERROR ? stderr : stdout, "%s %s [%s] %s\n",
 		timebuf,
 		thefile.level_name[level],
-		thread_api::thread_get_current_name(),
+		sys_api::thread_get_current_name(),
 		szTemp);
 }
 

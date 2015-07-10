@@ -12,7 +12,7 @@ set(CY_CORE_INCLUDE_FILES
 	cyCore/cy_core.h
 	cyCore/core/cyc_logger.h
 	cyCore/core/cyc_socket_api.h
-	cyCore/core/cyc_thread_api.h
+	cyCore/core/cyc_system_api.h
 	cyCore/core/cyc_ring_buf.h
 	cyCore/core/cyc_atomic.h
 )
@@ -21,7 +21,7 @@ source_group("cyCore" FILES ${CY_CORE_INCLUDE_FILES})
 set(CY_CORE_SOURCE_FILES 
 	cyCore/core/cyc_logger.cpp
 	cyCore/core/cyc_socket_api.cpp
-	cyCore/core/cyc_thread_api.cpp
+	cyCore/core/cyc_system_api.cpp
 	cyCore/core/cyc_ring_buf.cpp
 )
 source_group("cyCore" FILES ${CY_CORE_SOURCE_FILES})
