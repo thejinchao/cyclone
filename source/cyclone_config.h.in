@@ -39,6 +39,7 @@ Copyright(C) thecodeway.com
 #include <set>
 
 #ifdef CY_SYS_WINDOWS
+	#define FD_SETSIZE (1024)
 	#include <WinSock2.h>
 	#include <Ws2tcpip.h>
 	#include <Windows.h>
