@@ -177,16 +177,35 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	strftime(timebuf, sizeof(timebuf), "%Y_%m_%d-%H:%M:%S", &tm_now);
 #endif
 
-	char szTemp[1024] = { 0 };
+	static const int32_t STATIC_BUF_LENGTH = 2048;
+
+	char szTemp[STATIC_BUF_LENGTH] = { 0 };
+	char* p = szTemp;
 	va_list ptr; va_start(ptr, message);
-	vsnprintf(szTemp, 1024, message, ptr);
+	int len = vsnprintf(p, STATIC_BUF_LENGTH, message, ptr);
+	if (len < 0) {
+		va_start(ptr, message);
+		len = vsnprintf(0, 0, message, ptr);
+		if (len > 0) {
+			p = new char[len + 1];
+			va_start(ptr, message);
+			vsnprintf(p, len + 1, message, ptr);
+			p[len] = 0;
+		}
+	}
+	else if (len >= STATIC_BUF_LENGTH) {
+		p = new char[len + 1];
+		va_start(ptr, message);
+		vsnprintf(p, len + 1, message, ptr);
+		p[len] = 0;
+	}
 	va_end(ptr);
 
 	fprintf(fp, "%s %s [%s] %s\n",
 		timebuf, 
 		thefile.level_name[level],
 		sys_api::thread_get_current_name(),
-		szTemp);
+		p);
 	fclose(fp);
 
 	//print to stand output last
@@ -194,7 +213,11 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		timebuf,
 		thefile.level_name[level],
 		sys_api::thread_get_current_name(),
-		szTemp);
+		p);
+
+	if (p != szTemp) {
+		delete[] p;
+	}
 }
 
 
