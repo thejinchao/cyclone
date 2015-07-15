@@ -105,7 +105,7 @@ void Looper_select::_poll(
 				assert(channel.event & kRead);
 				assert(channel.on_read);
 
-				readChannelList.push_back(&channel);
+				readChannelList.push_back(i);
 			}
 
 			if (FD_ISSET(channel.fd, &m_work_write_fd_set))
@@ -113,7 +113,7 @@ void Looper_select::_poll(
 				assert(channel.event & kWrite);
 				assert(channel.on_write);
 
-				writeChannelList.push_back(&channel);
+				writeChannelList.push_back(i);
 			}
 
 			i = channel.next;

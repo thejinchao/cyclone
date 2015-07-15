@@ -258,7 +258,7 @@ void Looper::loop(void)
 		//reactor
 		for (size_t i = 0; i < readList.size(); i++)
 		{
-			channel_s* c = readList[i];
+			channel_s* c = &(m_channelBuffer[readList[i]]);
 			if (c->on_read == 0 || (c->event & kRead) == 0) continue;
 
 			if (c->on_read(c->id, c->fd, kRead, c->param)) {
@@ -268,7 +268,7 @@ void Looper::loop(void)
 
 		for (size_t i = 0; i < writeList.size(); i++)
 		{
-			channel_s* c = writeList[i];
+			channel_s* c = &(m_channelBuffer[writeList[i]]);
 			if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
 
 			if (c->on_write(c->id, c->fd, kWrite, c->param)){
@@ -300,7 +300,7 @@ void Looper::step(void)
 	//reactor
 	for (size_t i = 0; i < readList.size(); i++)
 	{
-		channel_s* c = readList[i];
+		channel_s* c = &(m_channelBuffer[readList[i]]);
 		if (c->on_read == 0 || (c->event & kRead) == 0) continue;
 
 		c->on_read(c->id, c->fd, kRead, c->param);
@@ -308,7 +308,7 @@ void Looper::step(void)
 
 	for (size_t i = 0; i < writeList.size(); i++)
 	{
-		channel_s* c = writeList[i];
+		channel_s* c = &(m_channelBuffer[writeList[i]]);
 		if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
 
 		c->on_write(c->id, c->fd, kWrite, c->param);

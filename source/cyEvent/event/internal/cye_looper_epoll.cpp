@@ -76,13 +76,13 @@ void Looper_epoll::_poll(
 		if ((revents & EPOLLIN) && channel->active && channel->on_read != 0)
 		{
 			//read event
-			readChannelList.push_back(channel);
+			readChannelList.push_back(channel->id);
 		}
 		
 		if ((revents & EPOLLOUT) && channel->active && channel->on_write != 0)
 		{
 			//read event
-			writeChannelList.push_back(channel);
+			writeChannelList.push_back(channel->id);
 		}
 	}
 	

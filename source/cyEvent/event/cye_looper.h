@@ -96,7 +96,7 @@ protected:
 		event_id_t prev;	//only used in select looper
 	};
 	typedef std::vector< channel_s > channel_buffer;
-	typedef std::vector< channel_s* > channel_list;
+	typedef std::vector< event_id_t > channel_list;
 
 	channel_buffer m_channelBuffer;	//all event buf
 	event_id_t m_free_head;			//free list head in event buf
