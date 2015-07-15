@@ -125,7 +125,7 @@ protected:
 
 #ifdef CY_SYS_WINDOWS
 		Pipe pipe;
-		uint32_t winmm_timer_id;
+		HANDLE  htimer;
 #else
 #endif
 	};
@@ -133,7 +133,7 @@ protected:
 	static bool _on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param);
 
 #ifdef CY_SYS_WINDOWS
-	static void __stdcall _on_windows_timer(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+	static void __stdcall _on_windows_timer(PVOID param, BOOLEAN timer_or_wait_fired);
 #endif
 
 	//inner pipe functions

@@ -87,10 +87,13 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	channel.on_read = _on_timer_event_callback;
 	channel.on_write = 0;
 
-	//create mmsystem timer
-	timer->winmm_timer_id = ::timeSetEvent(milliSeconds, 1, 
-		_on_windows_timer, (DWORD_PTR)(timer->pipe.get_write_port()), 
-		TIME_CALLBACK_FUNCTION|TIME_PERIODIC);
+	//create windows timer queue
+	if (!CreateTimerQueueTimer(&(timer->htimer), 0, _on_windows_timer, timer, milliSeconds, milliSeconds, WT_EXECUTEINTIMERTHREAD))
+	{
+		//TODO: error...
+		CY_LOG(L_FATAL, "CreateTimerQueueTimer Failed");
+		return 0;
+	}
 #else
 	channel.id = id;
 	channel.event = 0;
@@ -141,7 +144,7 @@ void Looper::delete_event(event_id_t id)
 	if (channel.timer) {
 		timer_s* timer = (timer_s*)channel.param;
 #ifdef CY_SYS_WINDOWS
-		::timeKillEvent(timer->winmm_timer_id);
+		::DeleteTimerQueueTimer(0, timer->htimer, INVALID_HANDLE_VALUE);
 #else
 		socket_api::close_socket(channel.fd);
 #endif
@@ -349,14 +352,11 @@ Looper::event_id_t Looper::_get_free_slot(void)
 
 #ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
-void Looper::_on_windows_timer(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+void Looper::_on_windows_timer(PVOID param, BOOLEAN timer_or_wait_fired)
 {
-	(void)wTimerID;
-	(void)msg;
-	(void)dw1;
-	(void)dw2;
-
-	socket_t sfd = (socket_t)dwUser;
+	(void)timer_or_wait_fired;
+	timer_s* timer = (timer_s*)param;
+	socket_t sfd = (socket_t)(timer->pipe.get_write_port());
 	uint64_t touch = 0;
 	socket_api::write(sfd, (const char*)(&touch), sizeof(touch));
 }
