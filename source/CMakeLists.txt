@@ -108,6 +108,7 @@ include_directories(
 	${CY_SOURCE_CRYPT_PATH}
 )
 
+
 add_library(cyclone 
 	${CY_CORE_SOURCE_FILES} 
 	${CY_CORE_INCLUDE_FILES} 
@@ -119,6 +120,11 @@ add_library(cyclone
 	${CY_CRYPT_INCLUDE_FILES}
 	${CY_CRYPT_SOURCE_FILES}
 )
+
+if (MSVC)
+target_compile_options(cyclone PRIVATE "/Fd${PROJECT_BINARY_DIR}/source/$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>/cyclone.pdb") 
+endif()
+
 
 ########
 #INSTALL
@@ -140,6 +146,15 @@ install(TARGETS cyclone
 install(TARGETS cyclone
 	DESTINATION lib/Debug
 	CONFIGURATIONS Debug)	
+	
+install(FILES ${PROJECT_BINARY_DIR}/source/Debug/cyclone.pdb
+	DESTINATION lib/Debug
+	CONFIGURATIONS Debug)	
+
+install(FILES ${PROJECT_BINARY_DIR}/source/Release/cyclone.pdb
+	DESTINATION lib/Release
+	CONFIGURATIONS Release)	
+
 else()
 
 install(TARGETS cyclone
