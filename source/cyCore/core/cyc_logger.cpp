@@ -116,6 +116,13 @@ static DiskLogFile& _get_disk_log(void)
 }
 
 //-------------------------------------------------------------------------------------
+const char* get_logfile_name(void)
+{
+	DiskLogFile& thefile = _get_disk_log();
+	return thefile.file_name;
+}
+
+//-------------------------------------------------------------------------------------
 void set_log_threshold(LOG_LEVEL level)
 {
 	assert(level >= 0 && level <= L_MAXIMUM_LEVEL);

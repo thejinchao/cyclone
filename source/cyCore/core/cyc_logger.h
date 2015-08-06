@@ -31,6 +31,9 @@ enum LOG_LEVEL
 // the time part is the time(LOCAL) of first log be written
 void disk_log(LOG_LEVEL level, const char* message, ...);
 
+//get current log filename
+const char* get_logfile_name(void);
+
 //set the a global log level, default is L_TRACE, 
 //all the log message lower than this level will be ignored
 void set_log_threshold(LOG_LEVEL level);
