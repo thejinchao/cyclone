@@ -14,6 +14,7 @@ WorkThread::WorkThread()
 	: m_listener(0)
 	, m_thread(0)
 	, m_looper(0)
+	, m_message_queue_lock(0)
 {
 }
 
@@ -33,6 +34,8 @@ void WorkThread::start(const char* name, Listener* listener)
 
 	work_thread_param param;
 	param._this = this;
+
+	m_message_queue_lock = sys_api::mutex_create();
 
 	//run the work thread
 	strncpy(m_name, (name ? name : "worker"), MAX_PATH);
@@ -81,19 +84,23 @@ void WorkThread::_work_thread(work_thread_param* param)
 bool WorkThread::_on_message(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-
-	ssize_t len = m_message_buf.read_socket(m_pipe.get_read_port());
-	assert(len > 0);
-
 	for (;;)
 	{
-		Packet message;
-		if (!message.build(MESSAGE_HEAD_SIZE, m_message_buf)) break;
+		uint16_t size;
+		if (m_pipe.read((char*)&size, sizeof(size)) <= 0) break;
 
+		Packet* packet = 0;
+		{
+			sys_api::auto_mutex lock(m_message_queue_lock);
+			packet = m_message_queue.front();
+			m_message_queue.pop_front();
+		}
 		//call listener
-		if (m_listener->on_workthread_message(&message)) {
+		if (m_listener->on_workthread_message(packet)) {
 			return true;
 		}
+
+		delete packet;
 	}
 	return false;
 }
@@ -101,22 +108,29 @@ bool WorkThread::_on_message(void)
 //-------------------------------------------------------------------------------------
 void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 {
-	Packet message;
-	message.build(MESSAGE_HEAD_SIZE, id, size, msg);
+	Packet* message = new Packet();
+	message->build(MESSAGE_HEAD_SIZE, id, size, msg);
 
-	m_pipe.write(message.get_memory_buf(), message.get_memory_size());
+	{
+		sys_api::auto_mutex lock(this->m_message_queue_lock);
+		m_message_queue.push_back(message);
+		
+		m_pipe.write((const char*)&size, sizeof(size));
+	}
 }
 
 //-------------------------------------------------------------------------------------
 void WorkThread::send_message(const Packet* message)
 {
-	m_pipe.write(message->get_memory_buf(), message->get_memory_size());
-}
+	Packet* packet = new Packet(*message);
+	uint16_t size = message->get_packet_size();
 
-//-------------------------------------------------------------------------------------
-void WorkThread::send_message(uint16_t size, const char* message)
-{
-	m_pipe.write(message, size);
+	{
+		sys_api::auto_mutex lock(this->m_message_queue_lock);
+		m_message_queue.push_back(packet);
+
+		m_pipe.write((const char*)&size, sizeof(size));
+	}
 }
 
 //-------------------------------------------------------------------------------------

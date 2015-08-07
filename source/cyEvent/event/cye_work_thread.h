@@ -28,7 +28,6 @@ public:
 	//// send message to this work thread (thread safe)
 	void send_message(uint16_t id, uint16_t size, const char* message);
 	void send_message(const Packet* message);
-	void send_message(uint16_t size, const char* message);
 
 	//// get work thread looper (thread safe)
 	Looper* get_looper(void) const { return m_looper; }
@@ -45,7 +44,10 @@ private:
 	thread_t		m_thread;
 	Looper*			m_looper;
 	Pipe			m_pipe;
-	RingBuf			m_message_buf;
+
+	typedef std::list<Packet*> MessageQueue;
+	MessageQueue		m_message_queue;
+	sys_api::mutex_t	m_message_queue_lock;
 
 private:
 	/// work thread param
