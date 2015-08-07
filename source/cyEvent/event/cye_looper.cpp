@@ -356,9 +356,9 @@ void Looper::_on_windows_timer(PVOID param, BOOLEAN timer_or_wait_fired)
 {
 	(void)timer_or_wait_fired;
 	timer_s* timer = (timer_s*)param;
-	socket_t sfd = (socket_t)(timer->pipe.get_write_port());
+
 	uint64_t touch = 0;
-	socket_api::write(sfd, (const char*)(&touch), sizeof(touch));
+	timer->pipe.write((const char*)(&touch), sizeof(touch));
 }
 #endif
 
