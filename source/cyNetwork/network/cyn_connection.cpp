@@ -168,6 +168,12 @@ void Connection::_send(const char* buf, size_t len)
 		//enable write event, wait socket ready
 		m_looper->enable_write(m_event_id);
 	}
+
+	//shutdown if socket work with fault
+	if (faultError) {
+		m_looper->disable_all(m_event_id);
+		shutdown();
+	}
 }
 
 //-------------------------------------------------------------------------------------
