@@ -118,7 +118,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	ts.tv_nsec = (milliSeconds%1000) * 1000*1000;
 
 	newValue.it_value = ts;
-	newValue.it_interval.tv_sec=1; //set non-zero for repeated timer
+	newValue.it_interval=ts; //set non-zero for repeated timer
 	::timerfd_settime(channel.fd, 0, &newValue, &oldValue);
 
 #endif
