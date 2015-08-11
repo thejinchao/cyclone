@@ -42,9 +42,6 @@ void thread_join(thread_t t);
 //// get current thread name
 const char* thread_get_current_name(void);
 
-//// set current rhead name
-void thread_set_current_name(const char* name);
-
 //----------------------
 // mutex functions
 //----------------------

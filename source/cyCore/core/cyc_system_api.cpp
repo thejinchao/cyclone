@@ -19,13 +19,6 @@ namespace sys_api
 {
 
 //-------------------------------------------------------------------------------------
-#ifdef CY_SYS_WINDOWS
-	static __declspec(thread) char s_thread_name[MAX_PATH] = { 0 };
-#else
-	static __thread char s_thread_name[MAX_PATH] = { 0 };
-#endif
-
-//-------------------------------------------------------------------------------------
 struct thread_data_s
 {
 	atomic_t<pid_t> tid;
@@ -40,12 +33,19 @@ struct thread_data_s
 };
 
 //-------------------------------------------------------------------------------------
+#ifdef CY_SYS_WINDOWS
+	static __declspec(thread) thread_data_s* s_thread_data = 0;
+#else
+	static __thread thread_data_s* s_thread_data = 0;
+#endif
+
+//-------------------------------------------------------------------------------------
 pid_t thread_get_current_id(void)
 {
 #ifdef CY_SYS_WINDOWS
-	return ::GetCurrentThreadId();
+	return s_thread_data == 0 ? ::GetCurrentThreadId() : s_thread_data->tid.get();
 #else
-	return static_cast<pid_t>(::syscall(SYS_gettid));
+	return s_thread_data == 0 ? static_cast<pid_t>(::syscall(SYS_gettid)) : s_thread_data->tid.get();
 #endif
 }
 
@@ -61,11 +61,12 @@ pid_t thread_get_id(thread_t t)
 static unsigned int __stdcall __win32_thread_entry(void* param)
 {
 	thread_data_s* data = (thread_data_s*)param;
-
-	thread_set_current_name(data->name);
+	s_thread_data = data;
 
 	if (data->entry_func)
 		data->entry_func(data->param);
+
+	s_thread_data = 0;
 	free(data);
 	return 0;
 }
@@ -74,12 +75,14 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 static void* __pthread_thread_entry(void* param)
 {
 	thread_data_s* data = (thread_data_s*)param;
+	s_thread_data = data;
 
-	thread_set_current_name(data->name);
+	data->tid.set(static_cast<pid_t>(::syscall(SYS_gettid)));
 
-	data->tid.set(thread_get_current_id());
 	if (data->entry_func)
 		data->entry_func(data->param);
+
+	s_thread_data = 0;
 	free(data);
 	return 0;
 }
@@ -151,16 +154,7 @@ void thread_join(thread_t thread)
 //-------------------------------------------------------------------------------------
 const char* thread_get_current_name(void)
 {
-	return s_thread_name;
-}
-
-//-------------------------------------------------------------------------------------
-void thread_set_current_name(const char* name)
-{
-	if (name && name[0] != 0)
-		strncpy(s_thread_name, name, MAX_PATH);
-	else
-		snprintf(s_thread_name, MAX_PATH, "thread%08x", thread_get_current_id());
+	return s_thread_data == 0 ? "<UNNAME>" : s_thread_data->name;
 }
 
 //-------------------------------------------------------------------------------------
