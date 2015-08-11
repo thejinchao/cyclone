@@ -45,6 +45,7 @@ check_include_file(crypt.h			CY_HAVE_CRYPT_H)
 check_include_file(sys/prctl.h		CY_HAVE_SYS_PRCTL_H)
 check_include_file(sys/vfs.h		CY_HAVE_SYS_VFS_H)
 check_include_file(sys/uio.h		CY_HAVE_SYS_UIO_H)
+check_include_file(sys/eventfd.h		CY_HAVE_SYS_EVENTFD_H)
 
 ########
 #check functions
