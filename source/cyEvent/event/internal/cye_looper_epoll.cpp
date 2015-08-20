@@ -58,8 +58,8 @@ void Looper_epoll::_poll(
 		channel_s* channel = &(m_channelBuffer[event.data.u32]);
 
 		if (revents & (EPOLLERR | EPOLLHUP)) {
-			//error fd, log something...
-			CY_LOG(L_ERROR, "got error event, err=0x%x", revents);
+			//error fd, it's not necessary to log it
+			//CY_LOG(L_ERROR, "got error event, err=0x%x", revents);
 		}
 
 		if ((revents & (EPOLLERR | EPOLLHUP)) 
