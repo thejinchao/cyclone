@@ -70,37 +70,21 @@ bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
 	if (m_connection != 0) return false;
 
 	//create socket
-	socket_t sfd = socket_api::create_socket();
-	if (sfd == INVALID_SOCKET) {
-		CY_LOG(L_ERROR, "create socket error");
-		return false;
-	}
-
-	//set socket to non-block mode
-	if (!socket_api::set_nonblock(sfd, true)) {
-		//the process should be stop		
-		CY_LOG(L_ERROR, "set socket to non block mode error");
-		return false;
-	}
-
-	//set socket close on exe flag, the file  descriptor will be closed open across an execve.
-	socket_api::set_close_onexec(sfd, true);
+	m_socket = socket_api::create_socket();
+	m_serverAddr = addr;
+	m_connect_timeout_ms = timeOutSeconds;
+	m_connection = new Connection(0, m_socket, m_looper, this);
 
 	//set event callback
-	m_socket_event_id = m_looper->register_event(sfd, Looper::kRead | Looper::kWrite, this,
+	m_socket_event_id = m_looper->register_event(m_socket, Looper::kRead | Looper::kWrite, this,
 		_on_socket_read_write_entry, _on_socket_read_write_entry);
 
 	//start connect to server
-	if (!socket_api::connect(sfd, addr.get_sockaddr_in()))
+	if (!socket_api::connect(m_socket, addr.get_sockaddr_in()))
 	{
 		CY_LOG(L_ERROR, "connect to server error");
 		return false;
 	}
-
-	m_socket = sfd;
-	m_serverAddr = addr;
-	m_connect_timeout_ms = timeOutSeconds;
-	m_connection = new Connection(0, sfd, m_looper, this);
 
 #ifdef CY_SYS_WINDOWS
 	//for select mode in windows, the non-block fd of connect socket wouldn't be readable or writeable if connection failed
@@ -143,8 +127,6 @@ void TcpClient::_check_connect_status(bool abort)
 	{
 		// abort
 		m_looper->disable_all(m_socket_event_id);
-		socket_api::close_socket(m_socket);
-		m_socket = 0;
 		m_socket_event_id = 0;
 
 		//logic callback
@@ -163,6 +145,7 @@ void TcpClient::_check_connect_status(bool abort)
 			sys_api::auto_mutex lock(m_connection_lock);
 
 			delete m_connection;
+			m_socket = 0;
 			m_connection = 0;
 		}
 	}
