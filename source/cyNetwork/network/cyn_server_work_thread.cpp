@@ -12,7 +12,6 @@ namespace cyclone
 ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name)
 	: m_index(index)
 	, m_server(server)
-	, m_next_connection_id(0)
 {
 
 	//run the work thread
@@ -80,7 +79,7 @@ bool ServerWorkThread::on_workthread_message(Packet* message)
 		memcpy(&newConnectionCmd, message->get_packet_content(), sizeof(NewConnectionCmd));
 
 		//create tcp connection 
-		Connection* conn = new Connection(get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
+		Connection* conn = new Connection(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
 		m_connections.insert(std::make_pair(conn->get_id(), conn));
 
 		//established the connection

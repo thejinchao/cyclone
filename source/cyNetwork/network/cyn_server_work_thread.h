@@ -61,13 +61,6 @@ private:
 
 	char		m_name[MAX_PATH];
 	
-	int32_t		m_next_connection_id;
-
-private:
-	int32_t get_next_connection_id(void) {
-		return ++m_next_connection_id;
-	}
-
 private:
 	//// called by connection(in work thread)
 	virtual void on_connection_event(Connection::Event event, Connection* conn);

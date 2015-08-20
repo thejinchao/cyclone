@@ -44,6 +44,13 @@ public:
 	/// get connection (NOT thread safe, MUST call in the work thread)
 	Connection* get_connection(int32_t work_thread_index, int32_t conn_id);
 
+	/// get work thread counts
+	int32_t get_work_thread_counts(void) const { return m_work_thread_counts; }
+
+	int32_t get_next_connection_id(void) {
+		return m_next_connection_id.get_and_add(1);
+	}
+
 public:
 	class Listener
 	{
@@ -75,6 +82,8 @@ private:
 
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
+
+	atomic_uint32_t m_next_connection_id;
 
 	char	m_name[MAX_PATH];
 

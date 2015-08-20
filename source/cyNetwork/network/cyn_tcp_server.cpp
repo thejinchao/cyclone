@@ -24,6 +24,9 @@ TcpServer::TcpServer(Listener* listener, const char* name)
 
 	//set server name
 	strncpy(m_name, name ? name : "server", MAX_PATH);
+
+	//set connection id from 1
+	m_next_connection_id.set(1);
 }
 
 //-------------------------------------------------------------------------------------
