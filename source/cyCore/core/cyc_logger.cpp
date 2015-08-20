@@ -99,12 +99,12 @@ struct DiskLogFile
 		logpath_created = false;
 
 		//set level name
-		level_name[L_TRACE] = "TRACE";
-		level_name[L_DEBUG] = "DEBUG";
-		level_name[L_INFO] = "INFO";
-		level_name[L_WARN] = "WARN";
-		level_name[L_ERROR] = "ERROR";
-		level_name[L_FATAL] = "FATAL";
+		level_name[L_TRACE] = "[T]";
+		level_name[L_DEBUG] = "[D]";
+		level_name[L_INFO]  = "[I]";
+		level_name[L_WARN]  = "[W]";
+		level_name[L_ERROR] = "[E]";
+		level_name[L_FATAL] = "[F]";
 	}
 };
 
