@@ -42,6 +42,9 @@ void thread_join(thread_t t);
 //// get current thread name
 const char* thread_get_current_name(void);
 
+//// yield the processor
+void thread_yield(void);
+
 //----------------------
 // mutex functions
 //----------------------

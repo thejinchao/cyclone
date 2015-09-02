@@ -10,6 +10,7 @@ Copyright(C) thecodeway.com
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <sched.h>
 #endif
 #include <time.h>
 
@@ -155,6 +156,16 @@ void thread_join(thread_t thread)
 const char* thread_get_current_name(void)
 {
 	return s_thread_data == 0 ? "<UNNAME>" : s_thread_data->name;
+}
+
+//-------------------------------------------------------------------------------------
+void thread_yield(void)
+{
+#ifdef CY_SYS_WINDOWS
+	Sleep(0);
+#else
+	sched_yield();
+#endif
 }
 
 //-------------------------------------------------------------------------------------
