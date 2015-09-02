@@ -59,6 +59,7 @@ public:
 	bool cas(T oldV, T newV);
 
 	atomic_t() : value_(0) {}
+	atomic_t(T x) : value_(x) {}
 protected:
 	volatile T value_;
 };
