@@ -54,6 +54,10 @@ public:
 		decrement_and_get();
 	}
 
+	//compare and swap, if the current value is oldV, then write newV into self
+	//return true if the comparison is successful and newV was written
+	bool cas(T oldV, T newV);
+
 	atomic_t() : value_(0) {}
 protected:
 	volatile T value_;
@@ -80,6 +84,10 @@ inline int32_t atomic_t<int32_t>::get_and_set(int32_t x){
 	return InterlockedExchange((LONG volatile *)&value_, x);
 }
 
+inline bool atomic_t<int32_t>::cas(int32_t oldV, int32_t newV) {
+	return (InterlockedCompareExchange((LONG volatile *)&value_, (LONG)newV, (LONG)oldV) == (LONG)oldV);
+}
+
 //--------------
 
 inline int64_t atomic_t<int64_t>::get(void){
@@ -94,6 +102,10 @@ inline int64_t atomic_t<int64_t>::get_and_set(int64_t x){
 	return InterlockedExchange64((LONGLONG volatile *)&value_, x);
 }
 
+inline bool atomic_t<int64_t>::cas(int64_t oldV, int64_t newV) {
+	return (InterlockedCompareExchange64((LONGLONG volatile *)&value_, (LONGLONG)newV, (LONGLONG)oldV) == (LONGLONG)oldV);
+}
+
 //--------------
 inline uint32_t atomic_t<uint32_t>::get(void) {
 	return InterlockedCompareExchange((LONG volatile *)&value_, (LONG)0, (LONG)0);
@@ -105,6 +117,10 @@ inline uint32_t atomic_t<uint32_t>::get_and_add(uint32_t x)	{
 
 inline uint32_t atomic_t<uint32_t>::get_and_set(uint32_t x){
 	return InterlockedExchange((LONG volatile *)&value_, x);
+}
+
+inline bool atomic_t<uint32_t>::cas(uint32_t oldV, uint32_t newV) {
+	return (InterlockedCompareExchange((LONG volatile *)&value_, (LONG)newV, (LONG)oldV) == (LONG)oldV);
 }
 
 //--------------
@@ -121,6 +137,9 @@ inline uint64_t atomic_t<uint64_t>::get_and_set(uint64_t x){
 	return InterlockedExchange64((LONGLONG volatile *)&value_, x);
 }
 
+inline bool atomic_t<uint64_t>::cas(uint64_t oldV, uint64_t newV) {
+	return (InterlockedCompareExchange64((LONGLONG volatile *)&value_, (LONGLONG)newV, (LONGLONG)oldV) == (LONGLONG)oldV);
+}
 //--------------
 #ifdef CY_64BIT
 inline void* atomic_t<void*>::get(void) {
@@ -134,6 +153,11 @@ inline void* atomic_t<void*>::get_and_add(void* x)	{
 inline void* atomic_t<void*>::get_and_set(void* x){
 	return (void*)InterlockedExchange64((LONGLONG volatile *)&value_, (int64_t)x);
 }
+
+inline bool atomic_t<void*>::cas(void* oldV, void* newV) {
+	return (InterlockedCompareExchange64((LONGLONG volatile *)&value_, (LONGLONG)newV, (LONGLONG)oldV) == (LONGLONG)oldV);
+}
+
 #else
 inline void* atomic_t<void*>::get(void) {
 	return (void*)(INT_PTR)InterlockedCompareExchange((LONG volatile *)&value_, (LONG)0, (LONG)0);
@@ -146,6 +170,11 @@ inline void* atomic_t<void*>::get_and_add(void* x)	{
 inline void* atomic_t<void*>::get_and_set(void* x){
 	return (void*)(INT_PTR)InterlockedExchange((LONG volatile *)&value_, (UINT)(UINT_PTR)x);
 }
+
+inline bool atomic_t<void*>::cas(void* oldV, void* newV) {
+	return (InterlockedCompareExchange((LONG volatile *)&value_, (LONG)newV, (LONG)oldV) == (LONG)oldV);
+}
+
 #endif
 
 #else
@@ -166,6 +195,11 @@ template<typename T>
 T atomic_t<T>::get_and_set(T x) {
 	// in gcc >= 4.7: __atomic_store_n(&value, x, __ATOMIC_SEQ_CST)
 	return __sync_lock_test_and_set(&value_, x);
+}
+
+template<typename T>
+bool atomic_t<T>::cas(T oldV, T newV) {
+	return __sync_bool_compare_and_swap(&value_, oldV, newV);
 }
 
 #endif
