@@ -11,10 +11,11 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(Listener* listener, const char* name)
+TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debuger)
 	: m_acceptor_thread(0)
 	, m_work_thread_counts(0)
 	, m_listener(listener)
+	, m_debuger(debuger)
 {
 	//zero accept socket 
 	memset(m_acceptor_socket, 0, sizeof(Socket*)*MAX_BIND_PORT_COUNTS);
@@ -118,11 +119,18 @@ bool TcpServer::start(int32_t work_thread_counts)
 	for (int32_t i = 0; i < m_work_thread_counts; i++)
 	{
 		//run the thread
-		m_work_thread_pool[i] = new ServerWorkThread(i, this, m_name);
+		m_work_thread_pool[i] = new ServerWorkThread(i, this, m_name, m_debuger);
 	}
 
 	//start listen thread
 	m_acceptor_thread = sys_api::thread_create(_accept_thread_entry, this, "accept");
+
+	//write debug variable
+	if (m_debuger && m_debuger->is_enable()) {
+		char key_value[256] = { 0 };
+		snprintf(key_value, 256, "TcpServer:%s:thread_counts", m_name);
+		m_debuger->set_debug_value(key_value, m_work_thread_counts);
+	}
 	return true;
 }
 
@@ -300,6 +308,18 @@ Connection* TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id
 	assert(work->is_in_workthread());
 
 	return work->get_connection(conn_id);
+}
+
+//-------------------------------------------------------------------------------------
+void TcpServer::debug(void)
+{
+	ServerWorkThread::DebugCmd cmd;
+
+	for (int32_t i = 0; i < m_work_thread_counts; i++)
+	{
+		ServerWorkThread* work = m_work_thread_pool[i];
+		work->send_message(ServerWorkThread::DebugCmd::ID, sizeof(cmd), (const char*)&cmd);
+	}
 }
 
 }

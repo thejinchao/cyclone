@@ -130,6 +130,8 @@ void Looper_epoll::_update_channel_add_event(channel_s& channel, event_t event)
 
 	if (_set_event(channel, operation, event_to_set))
 	{
+		if(!channel.active) m_active_channel_counts++;
+
 		channel.event |= event;
 		channel.active = true;
 	}
@@ -160,6 +162,8 @@ void Looper_epoll::_update_channel_remove_event(channel_s& channel, event_t even
 	{
 		if (_set_event(channel, EPOLL_CTL_DEL, 0))
 		{
+			if(channel.active) m_active_channel_counts--;
+
 			channel.event = kNone;
 			channel.active = false;
 		}

@@ -20,6 +20,7 @@ const Looper::event_id_t Looper::INVALID_EVENT_ID = (Looper::event_id_t)(~0);
 //-------------------------------------------------------------------------------------
 Looper::Looper()
 	: m_free_head(INVALID_EVENT_ID)
+	, m_active_channel_counts(0)
 	, m_current_thread(sys_api::thread_get_current_id())
 	, m_inner_pipe(0)
 {
@@ -398,6 +399,20 @@ bool Looper::_on_inner_pipe_touched(event_id_t , socket_t fd, event_t , void* pa
 
 	((Looper*)param)->m_inner_pipe_touched.set(0);
 	return false;
+}
+
+//-------------------------------------------------------------------------------------
+void Looper::debug(DebugInterface* debuger, const char* name)
+{
+	if (!debuger || !(debuger->is_enable())) return;
+
+	char key_temp[256] = { 0 };
+
+	snprintf(key_temp, 256, "Looper:%s:channel_buffer_size", name);
+	debuger->set_debug_value(key_temp, (int32_t)m_channelBuffer.size());
+
+	snprintf(key_temp, 256, "Looper:%s:active_channel_size", name);
+	debuger->set_debug_value(key_temp, m_active_channel_counts);
 }
 
 }

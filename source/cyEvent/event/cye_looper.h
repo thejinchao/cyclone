@@ -66,6 +66,8 @@ public:
 
 	pid_t get_thread_id(void) const { return m_current_thread; }
 
+	void debug(DebugInterface* debuger, const char* name);
+
 protected:
 	Looper();
 	virtual ~Looper();
@@ -100,6 +102,7 @@ protected:
 
 	channel_buffer m_channelBuffer;	//all event buf
 	event_id_t m_free_head;			//free list head in event buf
+	int32_t m_active_channel_counts;
 
 	pid_t m_current_thread;
 

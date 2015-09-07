@@ -9,9 +9,10 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name)
+ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name, DebugInterface* debuger)
 	: m_index(index)
 	, m_server(server)
+	, m_debuger(debuger)
 {
 
 	//run the work thread
@@ -107,6 +108,9 @@ bool ServerWorkThread::on_workthread_message(Packet* message)
 			//delete the event channel
 			m_work_thread->get_looper()->delete_event(conn->get_event_id());
 
+			//del debug value
+			conn->del_debug_value(m_debuger);
+
 			//delete the connection object
 			m_connections.erase(conn->get_id());
 			delete conn;
@@ -136,6 +140,14 @@ bool ServerWorkThread::on_workthread_message(Packet* message)
 			}
 		}
 		//just wait...
+	}
+	else if (msg_id == DebugCmd::ID)
+	{
+		assert(message->get_packet_size() == sizeof(DebugCmd));
+		DebugCmd debugCmd;
+		memcpy(&debugCmd, message->get_packet_content(), sizeof(DebugCmd));
+
+		_debug(debugCmd);
 	}
 	else
 	{
@@ -183,6 +195,33 @@ void ServerWorkThread::on_connection_event(Connection::Event event, Connection* 
 void ServerWorkThread::join(void)
 {
 	m_work_thread->join();
+}
+
+//-------------------------------------------------------------------------------------
+void ServerWorkThread::_debug(DebugCmd&)
+{
+	assert(is_in_workthread());
+	assert(m_server);
+
+	if (!m_debuger || !(m_debuger->is_enable())) return;
+
+	char key_temp[256] = { 0 };
+
+	//Debug ConnectionMap
+	snprintf(key_temp, 256, "ServerWorkThread:%s:connection_map_counts", m_name);
+	m_debuger->set_debug_value(key_temp, (int32_t)m_connections.size());
+
+	//Debug Looper
+	Looper* looper = m_work_thread->get_looper();
+	looper->debug(m_debuger, m_name);
+
+	//Debug all connections
+	int index = 0;
+	ConnectionMap::iterator it, end = m_connections.end();
+	for (it = m_connections.begin(); it != end; ++it, ++index) {
+		it->second->debug(m_debuger);
+	}
+
 }
 
 }

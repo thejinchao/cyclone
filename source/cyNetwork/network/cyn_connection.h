@@ -58,8 +58,16 @@ public:
 	void set_proxy(void* param);
 	void* get_proxy(void);
 
+	/// set/get connection debug name(NOT thread safe)
+	void set_name(const char* name);
+	const char* get_name(void) const { return m_name; }
+
 	/// get listener
 	Listener* get_listener(void) { return m_listener; }
+
+	/// debug
+	void debug(DebugInterface* debuger);
+	void del_debug_value(DebugInterface* debuger);
 
 public:
 	void established(void);
@@ -85,6 +93,10 @@ private:
 
 	Listener* m_listener;
 	atomic_t<void*> m_proxy;
+
+	char m_name[MAX_PATH];
+
+	size_t m_max_sendbuf_len;
 
 private:
 	//// on socket read event

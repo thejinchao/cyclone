@@ -14,7 +14,7 @@ class ServerWorkThread
 	, public WorkThread::Listener
 {
 public:
-	enum { kNewConnectionCmdID=1, kCloseConnectionCmdID, kShutdownCmdID };
+	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID, kDebugCmdID };
 	struct NewConnectionCmd
 	{
 		enum { ID = kNewConnectionCmdID };
@@ -31,6 +31,11 @@ public:
 	struct ShutdownCmd
 	{
 		enum { ID = kShutdownCmdID };
+	};
+
+	struct DebugCmd
+	{
+		enum { ID = kDebugCmdID };
 	};
 
 public:
@@ -59,8 +64,9 @@ private:
 
 	ConnectionMap	m_connections;
 
-	char		m_name[MAX_PATH];
-	
+	char			m_name[MAX_PATH];
+	DebugInterface*	m_debuger;
+
 private:
 	//// called by connection(in work thread)
 	virtual void on_connection_event(Connection::Event event, Connection* conn);
@@ -68,8 +74,9 @@ private:
 	virtual void on_workthread_start(void);
 	virtual bool on_workthread_message(Packet*);
 
+	void _debug(DebugCmd& cmd);
 public:
-	ServerWorkThread(int32_t index, TcpServer* server, const char* name);
+	ServerWorkThread(int32_t index, TcpServer* server, const char* name, DebugInterface* debuger);
 	~ServerWorkThread();
 
 	//not-copyable

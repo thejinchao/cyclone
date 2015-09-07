@@ -136,6 +136,8 @@ void Looper_select::_insert_to_active_list(channel_s& channel)
 
 	m_active_head = channel.id;
 	channel.active = true;
+
+	m_active_channel_counts++;
 }
 
 //-------------------------------------------------------------------------------------
@@ -156,6 +158,8 @@ void Looper_select::_remove_from_active_list(channel_s& channel)
 		m_active_head = channel.next;
 
 	channel.active = false;
+
+	m_active_channel_counts--;
 }
 
 //-------------------------------------------------------------------------------------

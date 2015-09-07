@@ -51,6 +51,9 @@ public:
 		return m_next_connection_id.get_and_add(1);
 	}
 
+	/// print debug variable to debuger cache system
+	void debug(void);
+
 public:
 	class Listener
 	{
@@ -87,6 +90,8 @@ private:
 
 	char	m_name[MAX_PATH];
 
+	DebugInterface*	m_debuger;
+
 private:
 	/// accept thread function
 	static void _accept_thread_entry(void* param){
@@ -101,7 +106,7 @@ private:
 	bool _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(Listener* listener, const char* name);
+	TcpServer(Listener* listener, const char* name, DebugInterface* debuger);
 	~TcpServer();
 };
 
