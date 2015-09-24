@@ -292,7 +292,7 @@ void TcpServer::shutdown_connection(Connection* conn)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::send_work_message(int32_t work_thread_index, Packet* message)
+void TcpServer::send_work_message(int32_t work_thread_index, const Packet* message)
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
 

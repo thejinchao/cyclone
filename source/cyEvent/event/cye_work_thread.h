@@ -15,7 +15,7 @@ public:
 	class Listener
 	{
 	public:
-		virtual void on_workthread_start(void) = 0;
+		virtual bool on_workthread_start(void) = 0;
 		virtual bool on_workthread_message(Packet*) = 0;
 	};
 

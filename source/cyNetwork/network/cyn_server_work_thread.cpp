@@ -38,7 +38,7 @@ void ServerWorkThread::send_message(uint16_t id, uint16_t size, const char* mess
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_message(Packet* message)
+void ServerWorkThread::send_message(const Packet* message)
 {
 	assert(m_work_thread);
 	m_work_thread->send_message(message);
@@ -61,9 +61,10 @@ Connection* ServerWorkThread::get_connection(int32_t connection_id)
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::on_workthread_start(void)
+bool ServerWorkThread::on_workthread_start(void)
 {
 	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name);
+	return true;
 }
 
 //-------------------------------------------------------------------------------------

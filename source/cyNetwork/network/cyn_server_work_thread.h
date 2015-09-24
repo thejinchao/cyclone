@@ -41,7 +41,7 @@ public:
 public:
 	//// send message to this work thread (thread safe)
 	void send_message(uint16_t id, uint16_t size, const char* message);
-	void send_message(Packet* message);
+	void send_message(const Packet* message);
 	//// get work thread index in work thread pool (thread safe)
 	int32_t get_index(void) const { return m_index; }
 	//// is current thread in work thread (thread safe)
@@ -71,7 +71,7 @@ private:
 	//// called by connection(in work thread)
 	virtual void on_connection_event(Connection::Event event, Connection* conn);
 	//// called by message port (in work thread)
-	virtual void on_workthread_start(void);
+	virtual bool on_workthread_start(void);
 	virtual bool on_workthread_message(Packet*);
 
 	void _debug(DebugCmd& cmd);

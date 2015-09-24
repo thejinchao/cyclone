@@ -69,7 +69,12 @@ void WorkThread::_work_thread(work_thread_param* param)
 	//we start!
 	if (m_listener)
 	{
-		m_listener->on_workthread_start();
+		if (!(m_listener->on_workthread_start())) 
+		{
+			Looper::destroy_looper(m_looper);
+			m_looper = 0;
+			return;
+		}
 	}
 
 	//enter loop ...
