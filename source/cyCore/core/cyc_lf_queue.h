@@ -36,7 +36,7 @@ private:
 	//array to keep the elements
 	ELEM_T m_queue[Q_SIZE];
 	//number of elements in the queue
-	atomic_uint32_t m_count;
+	mutable atomic_uint32_t m_count;
 	//where a new element will be inserted
 	atomic_uint32_t m_write_index;
 	//where the next element where be extracted from
@@ -69,10 +69,13 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::push(const ELEM_T &data)
 		if (_count_to_index(currentWriteIndex + 1) ==
 			_count_to_index(currentReadIndex))
 		{
-			// the queue is full
-			return false;
+			if (m_count.get() > (Q_SIZE >> 1))
+				// the queue is full
+				return false;
+			else
+				//maybe this thread was blocked between m_write_index.get() and m_read_index.get(), cause other threads write and read
+				continue;
 		}
-
 	} while (!m_write_index.cas(currentWriteIndex, (currentWriteIndex + 1)));
 
 	// We know now that this index is reserved for us. Use it to save the data
