@@ -153,29 +153,5 @@ bool Packet::build(size_t head_size, RingBuf& ring_buf)
 	return true;
 }
 
-//-------------------------------------------------------------------------------------
-bool Packet::build(size_t head_size, uint16_t packet_id,
-	uint16_t packet1_size, const char* packet1_content,
-	uint16_t packet2_size, const char* packet2_content)
-{
-	clean();
-
-	uint16_t total_size = (uint16_t)(packet1_size + packet2_size);
-	_resize(head_size, packet1_size + packet2_size);
-
-	*m_packet_size = socket_api::ntoh_16((uint16_t)(packet1_size + packet2_size));
-	*m_packet_id = socket_api::ntoh_16(packet_id);
-
-	if (total_size>0)
-	{
-		if (packet1_size>0)
-			memcpy(m_content, packet1_content, packet1_size);
-
-		if (packet2_size>0)
-			memcpy(m_content + packet1_size, packet2_content, packet2_size);
-	}
-	return true;
-}
-
 }
 
