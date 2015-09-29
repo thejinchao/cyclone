@@ -172,7 +172,9 @@ void Looper_epoll::_update_channel_remove_event(channel_s& channel, event_t even
 
 #else
 //avoid MSVC LNK4221 WARNING
-void nothing(void){}
+namespace {
+	void nothing(void){}
+}
 #endif
 
 }
