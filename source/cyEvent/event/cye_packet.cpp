@@ -8,6 +8,25 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 //-------------------------------------------------------------------------------------
+Packet* Packet::alloc_packet(const Packet* other)
+{
+	Packet* p = new Packet();
+
+	if (other && other->m_memory_size > 0) {
+		p->_resize(other->m_head_size, other->get_packet_size());
+		memcpy(p->m_memory_buf, other->m_memory_buf, other->m_memory_size);
+	}
+
+	return p;
+}
+
+//-------------------------------------------------------------------------------------
+void Packet::free_packet(Packet* p)
+{
+	delete p;
+}
+
+//-------------------------------------------------------------------------------------
 Packet::Packet()
 	: m_head_size(0)
 	, m_memory_buf(0)
@@ -17,21 +36,6 @@ Packet::Packet()
 	, m_content(0)
 {
 
-}
-
-//-------------------------------------------------------------------------------------
-Packet::Packet(const Packet& other)
-	: m_head_size(0)
-	, m_memory_buf(0)
-	, m_memory_size(0)
-	, m_packet_size(0)
-	, m_packet_id(0)
-	, m_content(0)
-{
-	if (other.m_memory_size == 0) return;
-
-	_resize(other.m_head_size, other.get_packet_size());
-	memcpy(m_memory_buf, other.m_memory_buf, other.m_memory_size);
 }
 
 //-------------------------------------------------------------------------------------

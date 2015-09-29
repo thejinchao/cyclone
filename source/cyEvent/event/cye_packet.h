@@ -43,8 +43,13 @@ private:
 
 public:
 	Packet();
-	Packet(const Packet& other);
 	~Packet();
+
+	static Packet* alloc_packet(const Packet* other=0);
+	static void free_packet(Packet*);
+
+private:
+	Packet(const Packet&){}
 };
 
 }

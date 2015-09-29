@@ -99,7 +99,7 @@ bool WorkThread::_on_message(void)
 			return true;
 		}
 
-		delete packet;
+		Packet::free_packet(packet);
 	}
 	return false;
 }
@@ -107,10 +107,10 @@ bool WorkThread::_on_message(void)
 //-------------------------------------------------------------------------------------
 void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 {
-	Packet* message = new Packet();
-	message->build(MESSAGE_HEAD_SIZE, id, size, msg);
+	Packet* packet = Packet::alloc_packet();
+	packet->build(MESSAGE_HEAD_SIZE, id, size, msg);
 
-	m_message_queue.push(message);
+	m_message_queue.push(packet);
 		
 	m_pipe.write((const char*)&size, sizeof(size));
 }
@@ -118,7 +118,7 @@ void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 //-------------------------------------------------------------------------------------
 void WorkThread::send_message(const Packet* message)
 {
-	Packet* packet = new Packet(*message);
+	Packet* packet = Packet::alloc_packet(message);
 	uint16_t size = message->get_packet_size();
 
 	m_message_queue.push(packet);
