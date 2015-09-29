@@ -14,7 +14,6 @@ WorkThread::WorkThread()
 	: m_listener(0)
 	, m_thread(0)
 	, m_looper(0)
-	, m_message_queue_lock(0)
 {
 }
 
@@ -34,8 +33,6 @@ void WorkThread::start(const char* name, Listener* listener)
 
 	work_thread_param param;
 	param._this = this;
-
-	m_message_queue_lock = sys_api::mutex_create();
 
 	//run the work thread
 	strncpy(m_name, (name ? name : "worker"), MAX_PATH);
@@ -95,11 +92,8 @@ bool WorkThread::_on_message(void)
 		if (m_pipe.read((char*)&size, sizeof(size)) <= 0) break;
 
 		Packet* packet = 0;
-		{
-			sys_api::auto_mutex lock(m_message_queue_lock);
-			packet = m_message_queue.front();
-			m_message_queue.pop_front();
-		}
+		if (!m_message_queue.pop(packet)) break;
+
 		//call listener
 		if (m_listener->on_workthread_message(packet)) {
 			return true;
@@ -116,12 +110,9 @@ void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 	Packet* message = new Packet();
 	message->build(MESSAGE_HEAD_SIZE, id, size, msg);
 
-	{
-		sys_api::auto_mutex lock(this->m_message_queue_lock);
-		m_message_queue.push_back(message);
+	m_message_queue.push(message);
 		
-		m_pipe.write((const char*)&size, sizeof(size));
-	}
+	m_pipe.write((const char*)&size, sizeof(size));
 }
 
 //-------------------------------------------------------------------------------------
@@ -130,12 +121,9 @@ void WorkThread::send_message(const Packet* message)
 	Packet* packet = new Packet(*message);
 	uint16_t size = message->get_packet_size();
 
-	{
-		sys_api::auto_mutex lock(this->m_message_queue_lock);
-		m_message_queue.push_back(packet);
+	m_message_queue.push(packet);
 
-		m_pipe.write((const char*)&size, sizeof(size));
-	}
+	m_pipe.write((const char*)&size, sizeof(size));
 }
 
 //-------------------------------------------------------------------------------------
