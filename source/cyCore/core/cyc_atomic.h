@@ -66,8 +66,6 @@ protected:
 
 typedef atomic_t<int32_t> atomic_int32_t;
 typedef atomic_t<int64_t> atomic_int64_t;
-typedef atomic_t<uint32_t> atomic_uint32_t;
-typedef atomic_t<uint64_t> atomic_uint64_t;
 typedef atomic_t<void*> atomic_ptr_t;
 
 #ifdef _MSC_VER

@@ -86,7 +86,7 @@ private:
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
 
-	atomic_uint32_t m_next_connection_id;
+	atomic_int32_t m_next_connection_id;
 
 	char	m_name[MAX_PATH];
 

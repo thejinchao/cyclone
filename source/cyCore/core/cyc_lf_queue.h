@@ -36,13 +36,13 @@ private:
 	//array to keep the elements
 	ELEM_T m_queue[Q_SIZE];
 	//number of elements in the queue
-	mutable atomic_uint32_t m_count;
+	mutable atomic_int32_t m_count;
 	//where a new element will be inserted
-	atomic_uint32_t m_write_index;
+	atomic_int32_t m_write_index;
 	//where the next element where be extracted from
-	atomic_uint32_t m_read_index;
+	atomic_int32_t m_read_index;
 	//maximum read index for multiple producer queues
-	atomic_uint32_t m_maximum_read_index;
+	atomic_int32_t m_maximum_read_index;
 
 private:
 	/// calculate the index in the circular array that corresponds to a particular "count" value

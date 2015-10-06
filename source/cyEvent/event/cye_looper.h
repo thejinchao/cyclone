@@ -109,7 +109,7 @@ protected:
 	sys_api::mutex_t m_lock;
 
 	Pipe* m_inner_pipe;	//pipe to push loop continue
-	atomic_uint32_t m_inner_pipe_touched;
+	atomic_int32_t m_inner_pipe_touched;
 
 	/// Polls the I/O events.
 	virtual void _poll(
