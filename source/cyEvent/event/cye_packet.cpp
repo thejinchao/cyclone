@@ -85,11 +85,12 @@ void Packet::_resize(size_t head_size, size_t packet_size)
 
 	m_head_size = head_size;
 	m_memory_size = head_size + packet_size;
+	size_t need_memory_size = m_memory_size + MEMORY_SAFE_TAIL_SIZE;
 
-	if (m_memory_size <= STATIC_MEMORY_LENGTH)
+	if (need_memory_size <= STATIC_MEMORY_LENGTH)
 		m_memory_buf = m_static_buf;
 	else
-		m_memory_buf = new char[m_memory_size];
+		m_memory_buf = new char[need_memory_size];
 
 	m_packet_size = (uint16_t*)m_memory_buf;
 	m_packet_id = (uint16_t*)(m_memory_buf+sizeof(uint16_t));

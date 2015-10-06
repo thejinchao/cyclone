@@ -5,6 +5,26 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_EVENT_PACKET_H_
 #define _CYCLONE_EVENT_PACKET_H_
 
+/*
+                       Low                        High                          
+                        +-------------+------------+  <---+ get_memory_buf()    
+                     /  |  PacketID   | PacketSize |                            
+             HeadSize   +-------------+------------+                            
+                     \  |    (User Define Head)    |                            
+                        +--------------------------+  <---+ get_packet_content()
+                      / |     (Packet Content)     |                            
+                     /  |                          |                            
+           PacketSize   |                          |                            
+                     \  |                          |                            
+                      \ |                          |                            
+                        +--------------------------+                            
+MEMORY_SAFE_TAIL_SIZE   |         Safe Tail        |                            
+                        +--------------------------+    
+
+*MemorySize = HeadSize+PacketSize
+*PacketID and PacketSize is big endain 16bit ingeter
+
+*/
 namespace cyclone
 {
 
@@ -33,6 +53,8 @@ private:
 	size_t m_head_size;
 
 	enum { STATIC_MEMORY_LENGTH = 1024 };
+	enum { MEMORY_SAFE_TAIL_SIZE = 8 };
+
 	char m_static_buf[STATIC_MEMORY_LENGTH];
 	char*	m_memory_buf;
 	size_t	m_memory_size;
