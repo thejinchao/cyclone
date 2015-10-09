@@ -8,6 +8,7 @@ Copyright(C) thecodeway.com
 #cmakedefine CY_HAVE_INTTYPES_H 1
 #cmakedefine CY_HAVE_SYS_UIO_H 1
 #cmakedefine CY_HAVE_SYS_EVENTFD_H 1
+#cmakedefine CY_HAVE_ATOMIC_H 1
 
 #cmakedefine CY_SYS_LINUX 1
 #cmakedefine CY_SYS_WINDOWS 1
@@ -34,6 +35,12 @@ Copyright(C) thecodeway.com
 
 #ifdef CY_HAVE_SYS_TYPES
 #include <sys/types.h>
+#endif
+
+#ifdef CY_HAVE_ATOMIC_H
+#include <atomic>
+#else
+#include <cstdatomic>
 #endif
 
 #include <vector>

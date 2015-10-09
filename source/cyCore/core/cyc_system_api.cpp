@@ -46,7 +46,7 @@ pid_t thread_get_current_id(void)
 #ifdef CY_SYS_WINDOWS
 	return s_thread_data == 0 ? ::GetCurrentThreadId() : s_thread_data->tid;
 #else
-	return s_thread_data == 0 ? static_cast<pid_t>(::syscall(SYS_gettid)) : s_thread_data->tid.get();
+	return s_thread_data == 0 ? static_cast<pid_t>(::syscall(SYS_gettid)) : s_thread_data->tid.load();
 #endif
 }
 
@@ -78,7 +78,7 @@ static void* __pthread_thread_entry(void* param)
 	thread_data_s* data = (thread_data_s*)param;
 	s_thread_data = data;
 
-	data->tid.set(static_cast<pid_t>(::syscall(SYS_gettid)));
+	data->tid = (static_cast<pid_t>(::syscall(SYS_gettid)));
 
 	if (data->entry_func)
 		data->entry_func(data->param);
@@ -123,7 +123,7 @@ thread_t thread_create(thread_function func, void* param, const char* name)
 		return 0;
 	}
 	data->handle = thread;
-	while(data->tid.get()==0); //make sure we got the pid(BUSY LOOP, BUT IT IS VERY SHORT)
+	while(data->tid == 0); //make sure we got the pid(BUSY LOOP, BUT IT IS VERY SHORT)
 	return data;
 #endif
 }
@@ -258,10 +258,10 @@ void signal_wait(signal_t s)
 #else
 	signal_s* sig = (signal_s*)s;
 	pthread_mutex_lock(&(sig->mutex));
-	while (0==sig->predicate.get()) {
+	while (0==sig->predicate.load()) {
 		pthread_cond_wait(&(sig->cond), &(sig->mutex));
 	}
-	sig->predicate.set(0);
+	sig->predicate = 0;
 	pthread_mutex_unlock(&(sig->mutex));
 #endif
 }
@@ -274,7 +274,7 @@ void signal_notify(signal_t s)
 #else
 	signal_s* sig = (signal_s*)s;
 	pthread_mutex_lock(&(sig->mutex));
-	sig->predicate.set(1);
+	sig->predicate = 1;
 	pthread_cond_signal(&(sig->cond));
 	pthread_mutex_unlock(&(sig->mutex));
 #endif

@@ -34,6 +34,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/../sdk)
 #check include file
 ########
 include(CheckIncludeFile)
+include(CheckIncludeFileCXX)
 check_include_file(unistd.h 		CY_HAVE_UNISTD_H)
 check_include_file(inttypes.h 		CY_HAVE_INTTYPES_H)
 check_include_file(limits.h 		CY_HAVE_LIMITS_H)
@@ -46,6 +47,7 @@ check_include_file(sys/prctl.h		CY_HAVE_SYS_PRCTL_H)
 check_include_file(sys/vfs.h		CY_HAVE_SYS_VFS_H)
 check_include_file(sys/uio.h		CY_HAVE_SYS_UIO_H)
 check_include_file(sys/eventfd.h		CY_HAVE_SYS_EVENTFD_H)
+check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H)
 
 ########
 #check functions
@@ -85,7 +87,7 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MD /W4 /Zi")
 	endif()
 else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -O2 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
+	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -O2 -std=c++0x -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
 endif()
 
 ########
