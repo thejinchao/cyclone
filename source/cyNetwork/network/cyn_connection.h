@@ -92,7 +92,7 @@ private:
 	sys_api::mutex_t m_writeBufLock;	//for multithread lock
 
 	Listener* m_listener;
-	atomic_t<void*> m_proxy;
+	atomic_ptr_t m_proxy;
 
 	char m_name[MAX_PATH];
 

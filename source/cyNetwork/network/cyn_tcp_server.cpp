@@ -27,7 +27,7 @@ TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debug
 	strncpy(m_name, name ? name : "server", MAX_PATH);
 
 	//set connection id from 1
-	m_next_connection_id.set(1);
+	m_next_connection_id = 1;
 }
 
 //-------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ TcpServer::~TcpServer()
 bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 {
 	//is running already?
-	if (m_running.get() > 0) return false;
+	if (m_running > 0) return false;
 
 	//find a empty listen socket slot
 	int index = -1;
@@ -112,7 +112,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//is running already?
-	if (m_running.get_and_set(1) > 0) return false;
+	if (m_running.exchange(1) > 0) return false;
 
 	//start work thread pool
 	m_work_thread_counts = work_thread_counts;
@@ -151,7 +151,7 @@ Address TcpServer::get_bind_address(int index)
 void TcpServer::stop(void)
 {
 	//not running?
-	if (m_running.get() == 0) return;
+	if (m_running == 0) return;
 
 	//this function can't run in work thread
 	for (int32_t i = 0; i < m_work_thread_counts; i++)
@@ -165,7 +165,7 @@ void TcpServer::stop(void)
 	}
 
 	//is shutdown in processing?
-	if (m_shutdown_ing.get_and_set(1) > 0)return;
+	if (m_shutdown_ing.exchange(1) > 0)return;
 
 	//touch the first listen socket, cause the accept thread quit
 	Address address(get_bind_address(0).get_port(), true);
@@ -210,7 +210,7 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	(void)event;
 
 	//is shutdown in processing?		
-	if (m_shutdown_ing.get() > 0) return true;
+	if (m_shutdown_ing > 0) return true;
 
 	//call accept and create peer socket		
 	socket_t connfd = socket_api::accept(fd, 0);
@@ -287,7 +287,7 @@ void TcpServer::shutdown_connection(Connection* conn)
 
 	ServerWorkThread::CloseConnectionCmd closeConnectionCmd;
 	closeConnectionCmd.conn_id = conn->get_id();
-	closeConnectionCmd.shutdown_ing = m_shutdown_ing.get();;
+	closeConnectionCmd.shutdown_ing = m_shutdown_ing;
 	work->send_message(ServerWorkThread::CloseConnectionCmd::ID, sizeof(closeConnectionCmd), (const char*)&closeConnectionCmd);
 }
 

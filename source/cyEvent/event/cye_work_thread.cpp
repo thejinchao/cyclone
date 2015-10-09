@@ -39,7 +39,7 @@ void WorkThread::start(const char* name, Listener* listener)
 	m_thread = sys_api::thread_create(_work_thread_entry, &param, m_name);
 
 	//wait work thread ready signal
-	while (param._ready.get() == 0) sys_api::thread_sleep(1);	//BUSY LOOP!
+	while (param._ready == 0) sys_api::thread_sleep(1);	//BUSY LOOP!
 }
 
 //-------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ void WorkThread::_work_thread(work_thread_param* param)
 		_on_message_entry, 0);
 
 	// set work thread ready signal
-	param->_ready.set(1);
+	param->_ready = 1;
 	param = 0;//we don't use it again!
 
 	//we start!

@@ -291,13 +291,13 @@ void Connection::_on_socket_error(void)
 //-------------------------------------------------------------------------------------
 void Connection::set_proxy(void* proxy)
 {
-	m_proxy.set(proxy);
+	m_proxy = proxy;
 }
 
 //-------------------------------------------------------------------------------------
 void* Connection::get_proxy(void)
 {
-	return m_proxy.get();
+	return m_proxy;
 }
 
 //-------------------------------------------------------------------------------------

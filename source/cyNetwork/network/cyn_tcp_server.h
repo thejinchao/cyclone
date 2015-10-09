@@ -48,7 +48,7 @@ public:
 	int32_t get_work_thread_counts(void) const { return m_work_thread_counts; }
 
 	int32_t get_next_connection_id(void) {
-		return m_next_connection_id.get_and_add(1);
+		return m_next_connection_id++;
 	}
 
 	/// print debug variable to debuger cache system
@@ -78,7 +78,7 @@ private:
 	atomic_int32_t	m_next_work;
 
 	int32_t _get_next_work_thread(void) { 
-		return m_next_work.get_and_add(1) % m_work_thread_counts;
+		return (m_next_work++) % m_work_thread_counts;
 	}
 
 	Listener* m_listener;

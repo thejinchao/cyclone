@@ -24,7 +24,7 @@ public:
 	//returns the current number of items in the queue
 	//It tries to take a snapshot of the size of the queue, but in busy environments
 	//this function might return bogus values. 
-	uint32_t size(void) const { return m_count.get();  }
+	uint32_t size(void) const { return m_count.load();  }
 
 	//push an element at the tail of the queue, returns true if the element was inserted in the queue. False if the queue was full
 	bool push(const ELEM_T& data);
@@ -36,13 +36,13 @@ private:
 	//array to keep the elements
 	ELEM_T m_queue[Q_SIZE];
 	//number of elements in the queue
-	mutable atomic_int32_t m_count;
+	mutable atomic_uint32_t m_count;
 	//where a new element will be inserted
-	atomic_int32_t m_write_index;
+	atomic_uint32_t m_write_index;
 	//where the next element where be extracted from
-	atomic_int32_t m_read_index;
+	atomic_uint32_t m_read_index;
 	//maximum read index for multiple producer queues
-	atomic_int32_t m_maximum_read_index;
+	atomic_uint32_t m_maximum_read_index;
 
 private:
 	/// calculate the index in the circular array that corresponds to a particular "count" value
@@ -64,19 +64,19 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::push(const ELEM_T &data)
 
 	do
 	{
-		currentWriteIndex = m_write_index.get();
-		currentReadIndex = m_read_index.get();
+		currentWriteIndex = m_write_index;
+		currentReadIndex = m_read_index;
 		if (_count_to_index(currentWriteIndex + 1) ==
 			_count_to_index(currentReadIndex))
 		{
-			if (m_count.get() > (Q_SIZE >> 1))
+			if (m_count > (Q_SIZE >> 1))
 				// the queue is full
 				return false;
 			else
 				//maybe this thread was blocked between m_write_index.get() and m_read_index.get(), cause other threads write and read
 				continue;
 		}
-	} while (!m_write_index.cas(currentWriteIndex, (currentWriteIndex + 1)));
+	} while (!atomic_compare_exchange(m_write_index, currentWriteIndex, (currentWriteIndex + 1)));
 
 	// We know now that this index is reserved for us. Use it to save the data
 	m_queue[_count_to_index(currentWriteIndex)] = data;
@@ -84,7 +84,7 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::push(const ELEM_T &data)
 	// update the maximum read index after saving the data. It wouldn't fail if there is only one thread 
 	// inserting in the queue. It might fail if there are more than 1 producer threads because this
 	// operation has to be done in the same order as the previous CAS
-	while (!m_maximum_read_index.cas(currentWriteIndex, (currentWriteIndex + 1)))
+	while (!atomic_compare_exchange(m_maximum_read_index, currentWriteIndex, (currentWriteIndex + 1)))
 	{
 		// this is a good place to yield the thread in case there are more
 		// software threads than hardware processors and you have more
@@ -93,7 +93,7 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::push(const ELEM_T &data)
 	}
 
 	// The value was successfully inserted into the queue
-	m_count.increment();
+	m_count++;
 	return true;
 }
 
@@ -109,8 +109,8 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::pop(ELEM_T &a_data)
 	{
 		// to ensure thread-safety when there is more than 1 producer thread
 		// a second index is defined (m_maximumReadIndex)
-		currentReadIndex = m_read_index.get();
-		currentMaximumReadIndex = m_maximum_read_index.get();
+		currentReadIndex = m_read_index;
+		currentMaximumReadIndex = m_maximum_read_index;
 
 		if (_count_to_index(currentReadIndex) ==
 			_count_to_index(currentMaximumReadIndex))
@@ -127,11 +127,11 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::pop(ELEM_T &a_data)
 		// try to perfrom now the CAS operation on the read index. If we succeed
 		// a_data already contains what m_readIndex pointed to before we 
 		// increased it
-		if (m_read_index.cas(currentReadIndex, (currentReadIndex + 1)))
+		if (atomic_compare_exchange(m_read_index, currentReadIndex, (currentReadIndex + 1)))
 		{
 			// got here. The value was retrieved from the queue. Note that the
 			// data inside the m_queue array is not deleted nor reseted
-			m_count.decrement();
+			m_count--;
 			return true;
 		}
 

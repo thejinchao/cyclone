@@ -22,7 +22,7 @@ namespace sys_api
 //-------------------------------------------------------------------------------------
 struct thread_data_s
 {
-	atomic_t<pid_t> tid;
+	std::atomic<pid_t> tid;
 	thread_function entry_func;
 	void* param;
 	char name[MAX_PATH];
@@ -44,7 +44,7 @@ struct thread_data_s
 pid_t thread_get_current_id(void)
 {
 #ifdef CY_SYS_WINDOWS
-	return s_thread_data == 0 ? ::GetCurrentThreadId() : s_thread_data->tid.get();
+	return s_thread_data == 0 ? ::GetCurrentThreadId() : s_thread_data->tid;
 #else
 	return s_thread_data == 0 ? static_cast<pid_t>(::syscall(SYS_gettid)) : s_thread_data->tid.get();
 #endif
@@ -54,7 +54,7 @@ pid_t thread_get_current_id(void)
 pid_t thread_get_id(thread_t t)
 {
 	thread_data_s* data = (thread_data_s*)t;
-	return data->tid.get();
+	return data->tid;
 }
 
 #ifdef CY_SYS_WINDOWS
@@ -93,7 +93,7 @@ static void* __pthread_thread_entry(void* param)
 thread_t thread_create(thread_function func, void* param, const char* name)
 {
 	thread_data_s* data = (thread_data_s*)malloc(sizeof(*data));
-	data->tid.set(0);
+	data->tid = 0;
 	data->param = param;
 	data->entry_func = func;
 	data->handle = 0;
@@ -113,7 +113,7 @@ thread_t thread_create(thread_function func, void* param, const char* name)
 		return 0;
 	}
 	data->handle = hThread;
-	data->tid.set(thread_id);
+	data->tid = thread_id;
 	::ResumeThread(hThread);
 	return data;
 #else

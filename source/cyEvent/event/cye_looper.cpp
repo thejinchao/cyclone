@@ -385,7 +385,7 @@ void Looper::_touch_inner_pipe(void)
 	if (m_inner_pipe==0) return;
 
 	//just touch once!
-	if (m_inner_pipe_touched.get_and_set(1) != 0) return;
+	if (m_inner_pipe_touched.exchange(1) != 0) return;
 
 	uint64_t touch = 0;
 	m_inner_pipe->write((const char*)&touch, sizeof(touch));
@@ -397,7 +397,7 @@ bool Looper::_on_inner_pipe_touched(event_id_t , socket_t fd, event_t , void* pa
 	uint64_t touch = 0;
 	socket_api::read(fd, &touch, sizeof(touch));
 
-	((Looper*)param)->m_inner_pipe_touched.set(0);
+	((Looper*)param)->m_inner_pipe_touched = 0;
 	return false;
 }
 
