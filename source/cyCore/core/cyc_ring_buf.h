@@ -94,6 +94,9 @@ public:
 	//// or len equ 0 return initial adler value (1)
 	uint32_t checksum(size_t off, size_t count) const;
 
+	//// move all data to a flat memory block and return point
+	const char* normalize(void);
+
 public:
 	RingBuf(size_t capacity = kDefaultCapacity);
 	~RingBuf();

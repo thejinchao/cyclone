@@ -355,4 +355,42 @@ uint32_t RingBuf::checksum(size_t off, size_t count) const
 	return adler;
 }
 
+
+//-------------------------------------------------------------------------------------
+const char* RingBuf::normalize(void)
+{
+	if (empty()) reset();
+	if (m_write >= m_read) return m_buf + m_read;
+
+	//need move memory
+	char default_temp_block[kDefaultCapacity];
+
+	size_t first_block = m_write;
+	size_t second_block = m_end - m_read;
+
+	//alloc a temp block memory
+	size_t temp_block = MIN(first_block, second_block);
+	char* p = (temp_block <= kDefaultCapacity) ? default_temp_block : (char*)malloc(temp_block);
+
+	//which block is the smaller block?
+	if (first_block <= second_block) {
+		memcpy(p, m_buf, first_block);
+		memmove(m_buf, m_buf + m_read, second_block);
+		memcpy(m_buf + second_block, p, first_block);
+	}
+	else {
+		memcpy(p, m_buf + m_read, second_block);
+		memmove(m_buf + second_block, m_buf, first_block);
+		memcpy(m_buf, p, second_block);
+	}
+	m_read = 0;
+	m_write = first_block + second_block;
+
+	if (p != default_temp_block) {
+		free(p);
+	}
+
+	return m_buf;
+}
+
 }
