@@ -56,6 +56,41 @@ include(CheckFunctionExists)
 check_function_exists(epoll_ctl	CY_HAVE_EPOLL)
 
 ########
+#find jemalloc library
+########
+find_path(JEMALLOC_SDK_ROOT
+    NAMES include/jemalloc/jemalloc.h
+    HINTS $ENV{JEMALLOC_SDK_ROOT}
+)
+find_library(JEMALLOC_LIBRARIES
+    NAMES jemalloc_pic
+    HINTS ${JEMALLOC_SDK_ROOT}/lib
+)
+find_path(JEMALLOC_INCLUDE_DIR
+    NAMES jemalloc/jemalloc.h
+    HINTS ${JEMALLOC_SDK_ROOT}/include
+)
+
+if(JEMALLOC_SDK_ROOT AND JEMALLOC_LIBRARIES)
+  set(CY_HAVE_JEMALLOC_LIBRARIES TRUE)
+  message(${JEMALLOC_LIBRARIES})
+else()
+  set(CY_HAVE_JEMALLOC_LIBRARIES FALSE)
+  set(JEMALLOC_LIBRARIES "")
+endif()
+
+mark_as_advanced(
+	JEMALLOC_LIBRARIES
+	JEMALLOC_INCLUDE_DIR
+)
+
+if(CY_HAVE_JEMALLOC_LIBRARIES)
+include_directories(
+	${JEMALLOC_INCLUDE_DIR}
+)
+endif()
+
+########
 #is log enable
 ########
 set(CY_ENABLE_LOG TRUE)

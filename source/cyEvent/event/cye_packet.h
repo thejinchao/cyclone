@@ -67,7 +67,10 @@ public:
 	Packet();
 	~Packet();
 
-	static Packet* alloc_packet(const Packet* other=0);
+	void* operator new(size_t);
+	void operator delete(void*);
+
+	static Packet* alloc_packet(const Packet* other = 0);
 	static void free_packet(Packet*);
 
 private:

@@ -9,6 +9,7 @@ Copyright(C) thecodeway.com
 #cmakedefine CY_HAVE_SYS_UIO_H 1
 #cmakedefine CY_HAVE_SYS_EVENTFD_H 1
 #cmakedefine CY_HAVE_ATOMIC_H 1
+#cmakedefine CY_HAVE_JEMALLOC_LIBRARIES 1
 
 #cmakedefine CY_SYS_LINUX 1
 #cmakedefine CY_SYS_WINDOWS 1
@@ -41,6 +42,15 @@ Copyright(C) thecodeway.com
 #include <atomic>
 #else
 #include <cstdatomic>
+#endif
+
+#ifdef CY_HAVE_JEMALLOC_LIBRARIES
+#include <jemalloc/jemalloc.h>
+#define CY_MALLOC je_malloc
+#define CY_FREE je_free
+#else
+#define CY_MALLOC malloc
+#define CY_FREE free
 #endif
 
 #include <vector>

@@ -23,6 +23,7 @@ target_link_libraries(echo-server
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
+	${JEMALLOC_LIBRARIES}
 )
 
 target_link_libraries(echo-client
@@ -30,17 +31,20 @@ target_link_libraries(echo-client
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
+	${JEMALLOC_LIBRARIES}
 )
 
 else()
 
 target_link_libraries(echo-server
 	cyclone
+	${JEMALLOC_LIBRARIES}
 	pthread
 )
 
 target_link_libraries(echo-client
 	cyclone
+	${JEMALLOC_LIBRARIES}
 	pthread
 )
 endif()

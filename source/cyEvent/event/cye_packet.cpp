@@ -7,6 +7,20 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
+
+//-------------------------------------------------------------------------------------
+void* Packet::operator new(size_t size)
+{
+	void* p = CY_MALLOC(size);
+	return p;
+}
+
+//-------------------------------------------------------------------------------------
+void Packet::operator delete(void* p)
+{
+	CY_FREE(p);
+}
+
 //-------------------------------------------------------------------------------------
 Packet* Packet::alloc_packet(const Packet* other)
 {
@@ -51,7 +65,7 @@ void Packet::clean(void)
 
 	if (m_memory_buf && m_memory_buf != m_static_buf)
 	{
-		delete[] m_memory_buf;
+		CY_FREE(m_memory_buf);
 	}
 	m_memory_buf = 0;
 	m_memory_size = 0;
@@ -90,7 +104,7 @@ void Packet::_resize(size_t head_size, size_t packet_size)
 	if (need_memory_size <= STATIC_MEMORY_LENGTH)
 		m_memory_buf = m_static_buf;
 	else
-		m_memory_buf = new char[need_memory_size];
+		m_memory_buf = (char*)CY_MALLOC(need_memory_size);
 	memset(m_memory_buf, 0xCE, need_memory_size);	//fill memory with 0xCE (CyclonE)
 
 	m_packet_size = (uint16_t*)m_memory_buf;

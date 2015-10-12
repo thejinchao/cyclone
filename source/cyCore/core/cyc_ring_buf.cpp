@@ -20,7 +20,7 @@ namespace cyclone
 RingBuf::RingBuf(size_t _capacity)
 {
 	/* One byte is used for detecting the full condition. */
-	m_buf = (char*)malloc(_capacity + 1);
+	m_buf = (char*)CY_MALLOC(_capacity + 1);
 	m_end = _capacity + 1;
 	reset();
 }
@@ -28,7 +28,7 @@ RingBuf::RingBuf(size_t _capacity)
 //-------------------------------------------------------------------------------------
 RingBuf::~RingBuf()
 {
-	free(this->m_buf);
+	CY_FREE(this->m_buf);
 }
 
 //-------------------------------------------------------------------------------------
@@ -40,11 +40,11 @@ void RingBuf::_auto_resize(size_t need_size)
 
 	//copy old data
 	size_t old_size = size();
-	char* buf = (char*)malloc(new_size);
+	char* buf = (char*)CY_MALLOC(new_size);
 	this->memcpy_out(buf, old_size);
 
 	//free old buf
-	free(m_buf);
+	CY_FREE(m_buf);
 
 	//reset
 	m_buf = buf;
@@ -355,7 +355,6 @@ uint32_t RingBuf::checksum(size_t off, size_t count) const
 	return adler;
 }
 
-
 //-------------------------------------------------------------------------------------
 const char* RingBuf::normalize(void)
 {
@@ -370,7 +369,7 @@ const char* RingBuf::normalize(void)
 
 	//alloc a temp block memory
 	size_t temp_block = MIN(first_block, second_block);
-	char* p = (temp_block <= kDefaultCapacity) ? default_temp_block : (char*)malloc(temp_block);
+	char* p = (temp_block <= kDefaultCapacity) ? default_temp_block : (char*)CY_MALLOC(temp_block);
 
 	//which block is the smaller block?
 	if (first_block <= second_block) {
@@ -387,7 +386,7 @@ const char* RingBuf::normalize(void)
 	m_write = first_block + second_block;
 
 	if (p != default_temp_block) {
-		free(p);
+		CY_FREE(p);
 	}
 
 	return m_buf;
