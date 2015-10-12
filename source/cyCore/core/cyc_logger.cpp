@@ -67,7 +67,9 @@ struct DiskLogFile
 		proc_pidpath(process_id, process_path_name, PROC_PIDPATHINFO_MAXSIZE);
 #else
 		char process_path_name[256] = { 0 };
-		readlink("/proc/self/exe", process_path_name, 256);
+		if(readlink("/proc/self/exe", process_path_name, 256)<0) {
+			strncpy(process_path_name, "unknown", 256);
+		}
 #endif
 		const char* process_name = strrchr(process_path_name, '/');
 		if(process_name!=0) process_name++;

@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 	{
 		char temp[1024] = { 0 };
 		char* str_pos = temp+sizeof(size_t);
-		scanf("%s", str_pos);
+		if (EOF == scanf("%s", str_pos)) break;
 
 		if (str_pos[0] == 0) break;
 
