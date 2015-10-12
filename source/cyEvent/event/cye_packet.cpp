@@ -91,6 +91,7 @@ void Packet::_resize(size_t head_size, size_t packet_size)
 		m_memory_buf = m_static_buf;
 	else
 		m_memory_buf = new char[need_memory_size];
+	memset(m_memory_buf, 0xCE, need_memory_size);	//fill memory with 0xCE (CyclonE)
 
 	m_packet_size = (uint16_t*)m_memory_buf;
 	m_packet_id = (uint16_t*)(m_memory_buf+sizeof(uint16_t));
