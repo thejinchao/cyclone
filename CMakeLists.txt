@@ -73,10 +73,11 @@ find_path(JEMALLOC_INCLUDE_DIR
 
 if(JEMALLOC_SDK_ROOT AND JEMALLOC_LIBRARIES)
   set(CY_HAVE_JEMALLOC_LIBRARIES TRUE)
-  message(${JEMALLOC_LIBRARIES})
+  message("-- jemalloc found, include=${JEMALLOC_INCLUDE_DIR}")
 else()
   set(CY_HAVE_JEMALLOC_LIBRARIES FALSE)
   set(JEMALLOC_LIBRARIES "")
+  message("-- jemalloc NOT found")
 endif()
 
 mark_as_advanced(
