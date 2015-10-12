@@ -40,6 +40,7 @@ public:
 
 	/// send work message to one of work thread(thread safe)
 	void send_work_message(int32_t work_thread_index, const Packet* message);
+	void send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts);
 
 	/// get connection (NOT thread safe, MUST call in the work thread)
 	Connection* get_connection(int32_t work_thread_index, int32_t conn_id);

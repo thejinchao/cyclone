@@ -89,18 +89,24 @@ bool WorkThread::_on_message(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	for (;;)
 	{
-		uint16_t size;
-		if (m_pipe.read((char*)&size, sizeof(size)) <= 0) break;
+		int32_t counts;
+		if (m_pipe.read((char*)&counts, sizeof(counts)) <= 0) break;
+		assert(counts > 0);
 
-		Packet* packet = 0;
-		if (!m_message_queue.pop(packet)) break;
+		for (int32_t i = 0; i < counts; i++) {
+			Packet* packet = 0;
+			if (!m_message_queue.pop(packet)) {
+				assert(false && "WorkThread message queue error");
+				break;
+			}
 
-		//call listener
-		if (m_listener->on_workthread_message(packet)) {
-			return true;
+			//call listener
+			if (m_listener->on_workthread_message(packet)) {
+				return true;
+			}
+
+			Packet::free_packet(packet);
 		}
-
-		Packet::free_packet(packet);
 	}
 	return false;
 }
@@ -113,18 +119,28 @@ void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 
 	m_message_queue.push(packet);
 		
-	m_pipe.write((const char*)&size, sizeof(size));
+	int32_t counts = 1;
+	m_pipe.write((const char*)&counts, sizeof(counts));
 }
 
 //-------------------------------------------------------------------------------------
 void WorkThread::send_message(const Packet* message)
 {
 	Packet* packet = Packet::alloc_packet(message);
-	uint16_t size = message->get_packet_size();
-
 	m_message_queue.push(packet);
+	
+	int32_t counts = 1;
+	m_pipe.write((const char*)&counts, sizeof(counts));
+}
 
-	m_pipe.write((const char*)&size, sizeof(size));
+//-------------------------------------------------------------------------------------
+void WorkThread::send_message(const Packet** message, int32_t counts)
+{
+	for (int32_t i = 0; i < counts; i++){
+		Packet* packet = Packet::alloc_packet(message[i]);
+		m_message_queue.push(packet);
+	}
+	m_pipe.write((const char*)&counts, sizeof(counts));
 }
 
 //-------------------------------------------------------------------------------------

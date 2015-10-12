@@ -306,6 +306,15 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet* messa
 }
 
 //-------------------------------------------------------------------------------------
+void TcpServer::send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts)
+{
+	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts && counts>0);
+
+	ServerWorkThread* work = m_work_thread_pool[work_thread_index];
+	work->send_message(message, counts);
+}
+
+//-------------------------------------------------------------------------------------
 Connection* TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id)
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
