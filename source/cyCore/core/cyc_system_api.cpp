@@ -231,6 +231,7 @@ signal_t signal_create(void)
 	return ::CreateEvent(0, FALSE, FALSE, 0);
 #else
 	signal_s *sig = (signal_s*)malloc(sizeof(*sig));
+	sig->predicate = 0;
 	pthread_mutex_init(&(sig->mutex), 0);
 	pthread_cond_init(&(sig->cond), 0);
 	return (signal_t)sig;
