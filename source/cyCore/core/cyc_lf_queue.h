@@ -102,6 +102,8 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::push(const ELEM_T &data)
 template <typename ELEM_T, uint32_t Q_SIZE>
 bool LockFreeQueue<ELEM_T, Q_SIZE>::pop(ELEM_T &a_data)
 {
+	static const ELEM_T kDefaultElementValue = ELEM_T();
+
 	uint32_t currentMaximumReadIndex;
 	uint32_t currentReadIndex;
 
@@ -129,6 +131,9 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::pop(ELEM_T &a_data)
 		// increased it
 		if (atomic_compare_exchange(m_read_index, currentReadIndex, (currentReadIndex + 1)))
 		{
+			// set with default element value
+			m_queue[_count_to_index(currentReadIndex)] = kDefaultElementValue;
+
 			// got here. The value was retrieved from the queue. Note that the
 			// data inside the m_queue array is not deleted nor reseted
 			m_count--;
