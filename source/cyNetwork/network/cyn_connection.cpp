@@ -19,6 +19,7 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_listener(listener)
+	, m_proxy(0)
 	, m_max_sendbuf_len(0)
 {
 	//set socket to non-block and close-onexec

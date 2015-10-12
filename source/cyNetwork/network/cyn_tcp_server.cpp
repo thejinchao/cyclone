@@ -28,6 +28,11 @@ TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debug
 
 	//set connection id from 1
 	m_next_connection_id = 1;
+
+	m_next_work = 0;
+	m_running = 0;
+	m_shutdown_ing = 0;
+	m_next_connection_id = 0;
 }
 
 //-------------------------------------------------------------------------------------

@@ -33,6 +33,7 @@ void WorkThread::start(const char* name, Listener* listener)
 
 	work_thread_param param;
 	param._this = this;
+	param._ready = 0;
 
 	//run the work thread
 	strncpy(m_name, (name ? name : "worker"), MAX_PATH);

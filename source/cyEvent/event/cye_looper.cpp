@@ -23,6 +23,7 @@ Looper::Looper()
 	, m_active_channel_counts(0)
 	, m_current_thread(sys_api::thread_get_current_id())
 	, m_inner_pipe(0)
+	, m_inner_pipe_touched(0)
 {
 	m_lock = sys_api::mutex_create();
 }
