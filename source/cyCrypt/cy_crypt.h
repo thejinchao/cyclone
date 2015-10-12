@@ -7,7 +7,6 @@ Copyright(C) thecodeway.com
 #include <cyclone_config.h>
 
 #include <crypt/cyr_adler32.h>
-#include <crypt/cyr_aes.h>
 #include <crypt/cyr_dhexchange.h>
 
 #endif
