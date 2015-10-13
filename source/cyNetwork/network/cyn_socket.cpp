@@ -56,7 +56,7 @@ void Socket::set_reuse_addr(bool on)
 //-------------------------------------------------------------------------------------
 void Socket::set_reuse_port(bool on)
 {
-#ifdef CY_SYS_WINDOWS
+#ifndef SO_REUSEPORT
 	(void)on;
 	//NOT SUPPORT 
 #else
