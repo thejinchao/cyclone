@@ -7,7 +7,7 @@ Copyright(C) thecodeway.com
 #include "internal/cye_looper_epoll.h"
 #include "internal/cye_looper_select.h"
 
-#ifndef CY_SYS_WINDOWS
+#ifdef CY_SYS_LINUX
 #include <sys/timerfd.h>
 #endif
 
@@ -92,11 +92,12 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	//create windows timer queue
 	if (!CreateTimerQueueTimer(&(timer->htimer), 0, _on_windows_timer, timer, milliSeconds, milliSeconds, WT_EXECUTEINTIMERTHREAD))
 	{
-		//TODO: error...
+		//error...
 		CY_LOG(L_FATAL, "CreateTimerQueueTimer Failed");
+        delete timer;
 		return 0;
 	}
-#else
+#elif defined(CY_SYS_LINUX)
 	channel.id = id;
 	channel.event = 0;
 	channel.param = timer;
@@ -107,7 +108,10 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	channel.fd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 
 	if (channel.fd < 0) {
-		//TODO: error
+		//error
+        CY_LOG(L_FATAL, "call timerfd_create Failed");
+        delete timer;
+        return 0;
 	}
 
 	struct itimerspec newValue;
@@ -122,7 +126,10 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	newValue.it_value = ts;
 	newValue.it_interval=ts; //set non-zero for repeated timer
 	::timerfd_settime(channel.fd, 0, &newValue, &oldValue);
-
+#else //Mac os
+    //NOT SUPPORT YET!
+    delete timer;
+    return 0;
 #endif
 
 	//add kRead event to poll

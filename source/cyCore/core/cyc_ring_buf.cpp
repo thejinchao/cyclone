@@ -169,7 +169,7 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	const size_t STACK_BUF_SIZE = 0xFFFF;
 	char stack_buf[STACK_BUF_SIZE];
 
-#ifdef CY_SYS_WINDOWS
+#ifndef CY_HAVE_READWRITE_V
 	//TODO: it is not correct to call read() more than once in on event call!
 	size_t count = get_free_size();
 
@@ -254,7 +254,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 {
 	assert(!empty());
 
-#ifdef CY_SYS_WINDOWS
+#ifndef CY_HAVE_READWRITE_V
 	size_t count = size();
 
 	size_t nsended = 0;

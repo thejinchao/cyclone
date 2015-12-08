@@ -47,13 +47,19 @@ check_include_file(sys/prctl.h		CY_HAVE_SYS_PRCTL_H)
 check_include_file(sys/vfs.h		CY_HAVE_SYS_VFS_H)
 check_include_file(sys/uio.h		CY_HAVE_SYS_UIO_H)
 check_include_file(sys/eventfd.h		CY_HAVE_SYS_EVENTFD_H)
+
+if(MSVC)
 check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H)
+else()
+check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H "-std=c++0x")
+endif()
 
 ########
 #check functions
 ########
 include(CheckFunctionExists)
 check_function_exists(epoll_ctl	CY_HAVE_EPOLL)
+check_function_exists(readv CY_HAVE_READWRITE_V)
 
 ########
 #find jemalloc library

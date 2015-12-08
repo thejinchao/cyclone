@@ -198,14 +198,14 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		if (len > 0) {
 			p = new char[len + 1];
 			va_start(ptr, message);
-			vsnprintf(p, len + 1, message, ptr);
+			vsnprintf(p, (size_t)len + 1, message, ptr);
 			p[len] = 0;
 		}
 	}
 	else if (len >= STATIC_BUF_LENGTH) {
 		p = new char[len + 1];
 		va_start(ptr, message);
-		vsnprintf(p, len + 1, message, ptr);
+		vsnprintf(p, (size_t)len + 1, message, ptr);
 		p[len] = 0;
 	}
 	va_end(ptr);
