@@ -4,8 +4,6 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 #define _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 
-#include <hash_map>
-
 namespace cyclone
 {
 
@@ -58,11 +56,7 @@ private:
 	TcpServer*		m_server;
 	WorkThread*		m_work_thread;
 
-#ifdef CY_SYS_WINDOWS
-	typedef std::hash_map< int32_t, Connection* > ConnectionMap;
-#else
-	typedef __gnu_cxx::hash_map< int32_t, Connection*> ConnectionMap;
-#endif	
+	typedef std::unordered_map< int32_t, Connection* > ConnectionMap;
 
 	ConnectionMap	m_connections;
 

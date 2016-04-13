@@ -57,6 +57,7 @@ Copyright(C) thecodeway.com
 #include <vector>
 #include <list>
 #include <set>
+#include <unordered_map>
 
 #ifdef CY_SYS_WINDOWS
 	#define FD_SETSIZE (1024)
