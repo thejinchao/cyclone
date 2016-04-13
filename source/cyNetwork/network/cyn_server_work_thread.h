@@ -73,7 +73,7 @@ private:
 	void _debug(DebugCmd& cmd);
 public:
 	ServerWorkThread(int32_t index, TcpServer* server, const char* name, DebugInterface* debuger);
-	~ServerWorkThread();
+	virtual ~ServerWorkThread();
 
 	//not-copyable
 private:
