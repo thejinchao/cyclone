@@ -8,5 +8,6 @@ Copyright(C) thecodeway.com
 
 #include <crypt/cyr_adler32.h>
 #include <crypt/cyr_dhexchange.h>
+#include <crypt/cyr_xorshift128.h>
 
 #endif
