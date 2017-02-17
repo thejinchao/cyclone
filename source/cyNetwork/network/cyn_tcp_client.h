@@ -16,7 +16,7 @@ class TcpClient : public Connection::Listener
 {
 public:
 	//// connect to remote server(NOT thread safe)
-	bool connect(const Address& addr, int32_t timeOutSeconds);
+	bool connect(const Address& addr, uint32_t timeOutSeconds);
 	//// disconnect(NOT thread safe)
 	void disconnect(void);
 	//// get server address

@@ -62,7 +62,7 @@ TcpClient::~TcpClient()
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpClient::connect(const Address& addr, int32_t timeOutSeconds)
+bool TcpClient::connect(const Address& addr, uint32_t timeOutSeconds)
 {
 	sys_api::auto_mutex lock(m_connection_lock);
 

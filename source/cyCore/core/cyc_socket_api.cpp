@@ -260,7 +260,7 @@ bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t o
 }
 
 //-------------------------------------------------------------------------------------
-int get_socket_error(int sockfd)
+int get_socket_error(socket_t sockfd)
 {
 	int optval;
 	socklen_t optlen = sizeof(optval);

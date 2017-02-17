@@ -57,7 +57,7 @@ bool inet_ntop(const struct in_addr& a, char *dst, socklen_t size);
 bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t optlen);
 
 /// get socket error
-int get_socket_error(int sockfd);
+int get_socket_error(socket_t sockfd);
 
 /// get local name of socket
 bool getsockname(socket_t s, struct sockaddr_in& addr);
