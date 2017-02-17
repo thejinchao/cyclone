@@ -23,7 +23,7 @@ void xorshift128(uint8_t* buf, size_t byte_length, XorShift128& seed)
 	uint64_t last_seed = seed.next();
 
 	for (size_t t = 0; t < tail_bytes; t++) {
-		*(((uint8_t*)input) + t) ^= (last_seed >> (t<<3)) & 0xFF;
+		*(((uint8_t*)input) + t) ^= (uint8_t)((last_seed >> (t<<3)) & 0xFF);
 	}
 }
 
