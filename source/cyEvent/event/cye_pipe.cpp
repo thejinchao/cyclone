@@ -84,7 +84,13 @@ Pipe::Pipe()
 #ifdef CY_SYS_WINDOWS
 	if (!_construct_pipe_windows(m_pipe_fd))
 #else
+#ifdef CY_HAVE_PIPE2
 	if(::pipe2(m_pipe_fd, O_NONBLOCK|O_CLOEXEC)<0)
+#else
+	if(::pipe(m_pipe_fd)<0 || 
+		!socket_api::set_nonblock(m_pipe_fd[0], true) || !socket_api::set_close_onexec(m_pipe_fd[0], true) ||
+		!socket_api::set_nonblock(m_pipe_fd[1], true) || !socket_api::set_close_onexec(m_pipe_fd[1], true))	
+#endif
 #endif
 	{
 		CY_LOG(L_FATAL, "create pipe failed!");
