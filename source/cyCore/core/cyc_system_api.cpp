@@ -80,7 +80,7 @@ static void* __pthread_thread_entry(void* param)
 	thread_data_s* data = (thread_data_s*)param;
 	s_thread_data = data;
 
-#ifdef(CY_SYS_MACOS)
+#ifdef CY_SYS_MACOS
 	data->tid = (static_cast<pid_t>(::syscall(SYS_thread_selfid)));
 #else
 	data->tid = (static_cast<pid_t>(::syscall(SYS_gettid)));
