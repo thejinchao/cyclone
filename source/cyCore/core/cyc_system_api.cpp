@@ -41,15 +41,21 @@ struct thread_data_s
 #endif
 
 //-------------------------------------------------------------------------------------
-pid_t thread_get_current_id(void)
+pid_t FORCEINLINE _nativeThreadID(void)
 {
 #ifdef CY_SYS_WINDOWS
-	return s_thread_data == 0 ? ::GetCurrentThreadId() : s_thread_data->tid;
-#elif defined(CY_SYS_MACOS)
-	return s_thread_data == 0 ? static_cast<pid_t>(::syscall(SYS_thread_selfid)) : s_thread_data->tid.load();
+	return static_cast<pid_t>(::GetCurrentThreadId());
+#elif defined CY_SYS_MACOS
+	return static_cast<pid_t>(::syscall(SYS_thread_selfid))
 #else
-	return s_thread_data == 0 ? static_cast<pid_t>(::syscall(SYS_gettid)) : s_thread_data->tid.load();
+	return static_cast<pid_t>(::syscall(SYS_thread_selfid);
 #endif
+}
+
+//-------------------------------------------------------------------------------------
+pid_t thread_get_current_id(void)
+{
+	return s_thread_data == 0 ? _nativeThreadID() : s_thread_data->tid.load();
 }
 
 //-------------------------------------------------------------------------------------
@@ -80,11 +86,7 @@ static void* __pthread_thread_entry(void* param)
 	thread_data_s* data = (thread_data_s*)param;
 	s_thread_data = data;
 
-#ifdef CY_SYS_MACOS
-	data->tid = (static_cast<pid_t>(::syscall(SYS_thread_selfid)));
-#else
-	data->tid = (static_cast<pid_t>(::syscall(SYS_gettid)));
-#endif
+	data->tid = _nativeThreadID();
 
 	if (data->entry_func)
 		data->entry_func(data->param);
