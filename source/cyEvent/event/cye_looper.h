@@ -125,6 +125,7 @@ protected:
 	{
 		timer_callback on_timer;
 		void* param;
+        uint32_t milli_seconds;
 
 #ifdef CY_SYS_WINDOWS
 		Pipe pipe;

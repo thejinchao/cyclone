@@ -61,6 +61,8 @@ include(CheckFunctionExists)
 check_function_exists(epoll_ctl	CY_HAVE_EPOLL)
 check_function_exists(readv CY_HAVE_READWRITE_V)
 check_function_exists(pipe2 CY_HAVE_PIPE2)
+check_function_exists(kqueue CY_HAVE_KQUEUE)
+
 
 ########
 #find jemalloc library

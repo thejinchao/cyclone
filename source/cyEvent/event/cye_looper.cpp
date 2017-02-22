@@ -58,8 +58,11 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	channel.on_write = _on_write;
 
 	//update to poll
-	if (event != kNone)
-		_update_channel_add_event(channel, event);
+	if ((event & kRead) != 0)
+		_update_channel_add_event(channel, kRead);
+    if ((event & kWrite) != 0)
+        _update_channel_add_event(channel, kWrite);
+    
 	return id;
 }
 
@@ -78,6 +81,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	timer_s* timer = new timer_s();
 	timer->on_timer = _on_timer;
 	timer->param = param;
+    timer->milli_seconds = milliSeconds;
 
 #ifdef CY_SYS_WINDOWS
 	channel.id = id;
@@ -239,7 +243,11 @@ void Looper::disable_all(event_id_t id)
 	assert((size_t)id < m_channelBuffer.size());
 
 	channel_s& channel = m_channelBuffer[id];
-	_update_channel_remove_event(channel, kRead|kWrite);
+    if(channel.event & kRead)
+        _update_channel_remove_event(channel, kRead);
+    
+    if(channel.event & kWrite)
+        _update_channel_remove_event(channel, kWrite);
 }
 
 //-------------------------------------------------------------------------------------
@@ -377,9 +385,10 @@ bool Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event,
 	(void)event;
 
 	timer_s* timer = (timer_s*)param;
-
+#ifndef CY_HAVE_KQUEUE
 	uint64_t touch = 0;
 	socket_api::read(fd, &touch, sizeof(touch));
+#endif
 
 	if (timer->on_timer) {
 		return timer->on_timer(id, timer->param);
