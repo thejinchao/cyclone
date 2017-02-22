@@ -41,14 +41,14 @@ struct thread_data_s
 #endif
 
 //-------------------------------------------------------------------------------------
-pid_t FORCEINLINE _nativeThreadID(void)
+pid_t INLINE _nativeThreadID(void)
 {
 #ifdef CY_SYS_WINDOWS
 	return static_cast<pid_t>(::GetCurrentThreadId());
 #elif defined CY_SYS_MACOS
-	return static_cast<pid_t>(::syscall(SYS_thread_selfid))
+	return static_cast<pid_t>(::syscall(SYS_thread_selfid));
 #else
-	return static_cast<pid_t>(::syscall(SYS_thread_selfid);
+	return static_cast<pid_t>(::syscall(SYS_gettid));
 #endif
 }
 
