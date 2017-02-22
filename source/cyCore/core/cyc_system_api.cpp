@@ -319,6 +319,19 @@ int64_t time_now(void)
 }
 
 //-------------------------------------------------------------------------------------
+void time_now(char* time_dest, size_t max_size, const char* format)
+{
+	time_t local_time = time(0);
+	struct tm tm_now;
+#ifdef CY_SYS_WINDOWS
+	localtime_s(&tm_now, &local_time);
+#else
+	localtime_r(&local_time, &tm_now);
+#endif
+	strftime(time_dest, max_size, format, &tm_now);
+}
+
+//-------------------------------------------------------------------------------------
 uint32_t get_cpu_counts(void)
 {
 	const uint32_t DEFAULT_CPU_COUNTS = 2;

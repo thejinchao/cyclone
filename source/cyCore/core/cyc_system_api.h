@@ -103,6 +103,9 @@ void signal_notify(signal_t s);
 //// get time in microseconds(second*1000*1000) from Epoch
 int64_t time_now(void);
 
+/// get time in format string(strftime)
+void time_now(char* time_dest, size_t max_size, const char* format);
+
 //----------------------
 // utility functions
 //----------------------
