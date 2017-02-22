@@ -14,8 +14,8 @@ include_directories(
 add_executable(echo-server echo_server.cpp)
 add_executable(echo-client echo_client.cpp)
 
-set_property(TARGET echo-server PROPERTY FOLDER "test")
-set_property(TARGET echo-client PROPERTY FOLDER "test")
+set_property(TARGET echo-server PROPERTY FOLDER "samples/simple/echo")
+set_property(TARGET echo-client PROPERTY FOLDER "samples/simple/echo")
 
 if(CY_SYS_WINDOWS)
 target_link_libraries(echo-server
@@ -47,4 +47,5 @@ target_link_libraries(echo-client
 	${JEMALLOC_LIBRARIES}
 	pthread
 )
+
 endif()

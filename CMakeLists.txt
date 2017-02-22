@@ -148,4 +148,4 @@ endif()
 ########
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(source)
-add_subdirectory(test)
+add_subdirectory(samples)
