@@ -82,11 +82,9 @@ find_path(JEMALLOC_INCLUDE_DIR
 
 if(JEMALLOC_SDK_ROOT AND JEMALLOC_LIBRARIES)
   set(CY_HAVE_JEMALLOC_LIBRARIES TRUE)
-  message("-- jemalloc found, include=${JEMALLOC_INCLUDE_DIR}")
 else()
   set(CY_HAVE_JEMALLOC_LIBRARIES FALSE)
   set(JEMALLOC_LIBRARIES "")
-  message("-- jemalloc NOT found")
 endif()
 
 mark_as_advanced(
@@ -99,6 +97,29 @@ include_directories(
 	${JEMALLOC_INCLUDE_DIR}
 )
 endif()
+
+########
+#find gtest and gmock library
+########
+find_path(GTEST_SDK_ROOT
+    NAMES include/gtest/gtest.h
+    HINTS $ENV{GTEST_DIR}
+)
+
+if(GTEST_SDK_ROOT)
+    set(GTEST_INCLUDE_DIR ${GTEST_SDK_ROOT}/include)
+
+    if(MSVC)
+        if(CMAKE_CL_64)
+            set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib/x64)
+        else()
+            set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib/x86)
+        endif()
+    else()
+        set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib)
+    endif()
+endif()
+
 
 ########
 #is log enable
@@ -149,3 +170,6 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(source)
 add_subdirectory(samples)
+if(GTEST_SDK_ROOT)
+    add_subdirectory(test)
+endif()
