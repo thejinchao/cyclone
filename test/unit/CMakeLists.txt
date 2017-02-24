@@ -18,6 +18,7 @@ link_directories(
 
 add_executable(cyt_unit 
     cyt_unit_main.cpp
+    cyt_unit_lfqueue.cpp
 )
     
 set_property(TARGET cyt_unit PROPERTY FOLDER "test/unit")
