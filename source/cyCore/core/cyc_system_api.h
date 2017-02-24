@@ -16,6 +16,15 @@ namespace cyclone
 {
 namespace sys_api
 {
+//----------------------
+// process functions
+//----------------------
+
+//// get current process id
+pid_t process_get_id(void);
+
+//// get current process name
+void process_get_module_name(char* module_name, size_t max_size);
 
 //----------------------
 // thread functions
