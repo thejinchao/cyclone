@@ -7,18 +7,18 @@ using namespace cyclone;
 //-------------------------------------------------------------------------------------
 TEST(Adler32, Basic)
 {
-	EXPECT_EQ(1, adler32(0, 0, 0));
-	EXPECT_EQ(1, adler32(0xFFFFFFFF, 0, 0));
+	EXPECT_EQ(1ul, adler32(0, 0, 0));
+	EXPECT_EQ(1ul, adler32(0xFFFFFFFFul, 0, 0));
 
 	const char* hello = "Hello,World!";
 	uint32_t adler = adler32(0, 0, 0);
 	adler = adler32(adler, hello, strlen(hello));
-	EXPECT_EQ(0x1c9d044a, adler);
+	EXPECT_EQ(0x1c9d044aul, adler);
 
 	const char* force = "May the Force be with you";
 	adler = adler32(0, 0, 0);
 	adler = adler32(adler, force, strlen(force));
-	EXPECT_EQ(0x6fe408d8, adler);
+	EXPECT_EQ(0x6fe408d8ul, adler);
 }
 
 //-------------------------------------------------------------------------------------
