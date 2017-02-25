@@ -68,7 +68,11 @@ uint32_t adler32(uint32_t adler, const char* buf, size_t len)
 	uint32_t sum2;
     unsigned n;
 
-    /* split Adler-32 into component sums */
+	/* initial Adler-32 value */
+	if (buf == 0 || len == 0)
+		return 1L;
+	
+	/* split Adler-32 into component sums */
     sum2 = (adler >> 16) & 0xffff;
     adler &= 0xffff;
 
@@ -82,10 +86,6 @@ uint32_t adler32(uint32_t adler, const char* buf, size_t len)
             sum2 -= BASE;
         return adler | (sum2 << 16);
     }
-
-    /* initial Adler-32 value (deferred check for len == 1 speed) */
-    if (buf == 0)
-        return 1L;
 
     /* in case short lengths are provided, keep it somewhat fast */
     if (len < 16) {
