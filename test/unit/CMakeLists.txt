@@ -7,6 +7,7 @@ cmake_minimum_required (VERSION 2.8)
 include_directories(
 	${CY_AUTO_INCLUDE_PATH}
 	${CY_SOURCE_CORE_PATH}
+	${CY_SOURCE_CRYPT_PATH}
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
 	${GTEST_INCLUDE_DIR}
@@ -19,6 +20,7 @@ link_directories(
 add_executable(cyt_unit 
     cyt_unit_main.cpp
     cyt_unit_lfqueue.cpp
+    cyt_unit_crypt.cpp
 )
     
 set_property(TARGET cyt_unit PROPERTY FOLDER "test/unit")
