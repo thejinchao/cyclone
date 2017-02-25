@@ -11,6 +11,8 @@ struct XorShift128 {
 	uint64_t seed0;
 	uint64_t seed1;
 
+	void make(void);
+
 	uint64_t next(void) {
 		uint64_t x = seed0;
 		uint64_t y = seed1;

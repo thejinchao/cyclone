@@ -8,6 +8,17 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
+void XorShift128::make(void)
+{
+	for (int32_t i = 0; i < 8; i++) {
+		uint64_t mask = ~(((uint64_t)0xFF) << (i * 8));
+
+		seed0 = (seed0 & mask) | ((uint64_t)((rand() & 0xFF)) << (i * 8));
+		seed1 = (seed1 & mask) | ((uint64_t)((rand() & 0xFF)) << (i * 8));
+	}
+}
+
+//-------------------------------------------------------------------------------------
 void xorshift128(uint8_t* buf, size_t byte_length, XorShift128& seed)
 {
 	//xor per 8 bytes
