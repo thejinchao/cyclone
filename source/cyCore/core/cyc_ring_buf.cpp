@@ -20,7 +20,7 @@ namespace cyclone
 RingBuf::RingBuf(size_t _capacity)
 {
 	/* One byte is used for detecting the full condition. */
-	m_buf = (char*)CY_MALLOC(_capacity + 1);
+	m_buf = (uint8_t*)CY_MALLOC(_capacity + 1);
 	m_end = _capacity + 1;
 	reset();
 }
@@ -40,7 +40,7 @@ void RingBuf::_auto_resize(size_t need_size)
 
 	//copy old data
 	size_t old_size = size();
-	char* buf = (char*)CY_MALLOC(new_size);
+	uint8_t* buf = (uint8_t*)CY_MALLOC(new_size);
 	this->memcpy_out(buf, old_size);
 
 	//free old buf
@@ -261,7 +261,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 	while (nsended != count) {
 		size_t n = MIN((size_t)(m_end - m_read), count - nsended);
 
-		ssize_t len = socket_api::write(fd, m_buf + m_read, (ssize_t)n);
+		ssize_t len = socket_api::write(fd, (const char*)m_buf + m_read, (ssize_t)n);
 		if (len == 0) break; //nothing was written
 		if (len < 0) //error
 		{
@@ -356,7 +356,7 @@ uint32_t RingBuf::checksum(size_t off, size_t count) const
 }
 
 //-------------------------------------------------------------------------------------
-const char* RingBuf::normalize(void)
+const uint8_t* RingBuf::normalize(void)
 {
 	if (empty()) reset();
 	if (m_write >= m_read) return m_buf + m_read;

@@ -12,13 +12,59 @@ TEST(Adler32, Basic)
 
 	const char* hello = "Hello,World!";
 	uint32_t adler = adler32(0, 0, 0);
-	adler = adler32(adler, hello, strlen(hello));
+	adler = adler32(adler, (const uint8_t*)hello, strlen(hello));
 	EXPECT_EQ(0x1c9d044aul, adler);
 
 	const char* force = "May the Force be with you";
 	adler = adler32(0, 0, 0);
-	adler = adler32(adler, force, strlen(force));
+	adler = adler32(adler, (const uint8_t*)force, strlen(force));
 	EXPECT_EQ(0x6fe408d8ul, adler);
+	
+	const uint8_t data_buf[] = {
+		0x80,0x8a,0xdc,0x82,0xec,0x0b,0x42,0xd1,0xb8,0xb8,0x4c,0xc8,0xdb,0x7a,0xcb,0x3e,
+		0xe0,0x7d,0xca,0x65,0x3b,0x36,0x7d,0xf4,0xdd,0xa5,0x74,0x85,0x06,0xd7,0x14,0x3b,
+		0x5b,0xb0,0x48,0xa9,0x38,0xe7,0x74,0xef,0x47,0x52,0xab,0x26,0x52,0x64,0x21,0xff,
+		0x55,0xf4,0xe3,0xa6,0xd8,0x3f,0xc5,0xed,0x7b,0x31,0x9c,0xa6,0xd3,0xe0,0xae,0x50
+	};
+	size_t data_length = sizeof(data_buf);
+
+	uint32_t adler1 = adler32(0, 0, 0);
+	adler1 = adler32(adler1, data_buf, data_length);
+	EXPECT_EQ(0x75c12362ul, adler1);
+
+	size_t first = 33;
+	uint32_t adler2 = adler32(0, 0, 0);
+	adler2 = adler32(adler2, data_buf, first);
+	adler2 = adler32(adler2, data_buf+ first, data_length- first);
+	EXPECT_EQ(0x75c12362ul, adler2);
+}
+
+//-------------------------------------------------------------------------------------
+TEST(Adler32, Random)
+{
+	const size_t buf_cap = 257;
+	uint8_t random_buf[buf_cap] = { 0 };
+
+	const size_t test_counts = 100;
+	for (size_t i = 0; i < test_counts; i++) {
+		
+		size_t buf_size = buf_cap - rand() % 32;
+		//fill random data
+		for (size_t j = 0; j < buf_cap; j++) {
+			random_buf[j] = (uint8_t)(rand() & 0xFF);
+		}
+
+		//adler total
+		uint32_t adler1 = adler32(0, 0, 0);
+		adler1 = adler32(adler1, random_buf, buf_size);
+
+		size_t first_part = (size_t)rand()%(buf_size - 1) + 1;
+		uint32_t adler2 = adler32(0, 0, 0);
+		adler2 = adler32(adler2, random_buf, first_part);
+		adler2 = adler32(adler2, random_buf + first_part, buf_size - first_part);
+
+		EXPECT_EQ(adler1, adler2);
+	}
 }
 
 //-------------------------------------------------------------------------------------

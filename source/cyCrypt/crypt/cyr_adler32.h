@@ -26,7 +26,7 @@ namespace cyclone
 * }
 *
 */
-uint32_t adler32(uint32_t adler, const char* buf, size_t len);
+uint32_t adler32(uint32_t adler, const uint8_t* buf, size_t len);
 
 }
 

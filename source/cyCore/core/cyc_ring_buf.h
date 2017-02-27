@@ -95,14 +95,14 @@ public:
 	uint32_t checksum(size_t off, size_t count) const;
 
 	//// move all data to a flat memory block and return point
-	const char* normalize(void);
+	const uint8_t* normalize(void);
 
 public:
 	RingBuf(size_t capacity = kDefaultCapacity);
 	~RingBuf();
 
 private:
-	char* m_buf;
+	uint8_t* m_buf;
 	size_t m_end;
 	size_t m_read;
 	size_t m_write;

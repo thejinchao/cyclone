@@ -63,11 +63,11 @@ namespace cyclone
 #  define MOD28(a) a %= BASE
 #  define MOD63(a) a %= BASE
 #endif
-uint32_t adler32(uint32_t adler, const char* buf, size_t len)
+uint32_t adler32(uint32_t adler, const uint8_t* buf, size_t len)
 {
 	uint32_t sum2;
     unsigned n;
-
+	
 	/* initial Adler-32 value */
 	if (buf == 0 || len == 0)
 		return 1L;
