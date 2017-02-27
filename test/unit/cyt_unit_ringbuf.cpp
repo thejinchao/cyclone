@@ -1,0 +1,438 @@
+#include <cy_core.h>
+#include <cy_crypt.h>
+#include <gtest/gtest.h>
+
+using namespace cyclone;
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4127)
+#endif
+
+//-------------------------------------------------------------------------------------
+void _fillRandom(uint8_t* mem, size_t len)
+{
+	for (size_t i = 0; i < len; i++) {
+		mem[i] = (uint8_t)(rand() & 0xFF);
+	}
+}
+
+//-------------------------------------------------------------------------------------
+#define CHECK_RINGBUF_EMPTY(rb, c) \
+	EXPECT_EQ(0ul, rb.size()); \
+	EXPECT_EQ((size_t)(c), rb.capacity()); \
+	EXPECT_EQ((size_t)(c), rb.get_free_size()); \
+	EXPECT_TRUE(rb.empty()); \
+	EXPECT_FALSE(rb.full());
+
+//-------------------------------------------------------------------------------------
+#define CHECK_RINGBUF_SIZE(rb, s, c) \
+	EXPECT_EQ((size_t)(s), rb.size()); \
+	EXPECT_EQ((size_t)(c), rb.capacity()); \
+	EXPECT_EQ((size_t)((c) - (s)), rb.get_free_size()); \
+	if ((s) == 0) \
+		EXPECT_TRUE(rb.empty()); \
+	else \
+		EXPECT_FALSE(rb.empty()); \
+	if ((size_t)(s) == rb.capacity()) \
+		EXPECT_TRUE(rb.full()); \
+	else \
+		EXPECT_FALSE(rb.full()); 
+
+//-------------------------------------------------------------------------------------
+TEST(RingBuf, Basic)
+{
+	const char* text_pattern = "Hello,World!";
+	const size_t text_length = strlen(text_pattern);
+
+	const size_t buffer_size = RingBuf::kDefaultCapacity * 4;
+	const uint8_t* buffer1;
+	uint8_t* buffer2;
+	{
+		uint8_t* _buffer1 = new uint8_t[RingBuf::kDefaultCapacity * 4];
+		buffer2 = new uint8_t[RingBuf::kDefaultCapacity * 4];
+		_fillRandom(_buffer1, buffer_size);
+		_fillRandom(buffer2, buffer_size);
+		buffer1 = _buffer1;
+	}
+
+	// Initial conditions
+	{
+		RingBuf rb;
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+	}
+
+	// Different sizes 
+	{
+		RingBuf rb(24);
+		CHECK_RINGBUF_EMPTY(rb, 24);
+	}
+
+	// memcpy_into with zero count
+	{
+		RingBuf rb;
+		rb.memcpy_into(text_pattern, 0);
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+	}
+
+	// memcpy_into a few bytes of data AND reset
+	{
+		RingBuf rb;
+		rb.memcpy_into(text_pattern, text_length);
+		CHECK_RINGBUF_SIZE(rb, text_length, RingBuf::kDefaultCapacity);
+
+		rb.reset();
+
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+	}
+
+	// memcpy_into a few bytes twice
+	{
+		RingBuf rb;
+		rb.memcpy_into(text_pattern, text_length);
+		rb.memcpy_into(text_pattern, text_length);
+
+		CHECK_RINGBUF_SIZE(rb, text_length * 2, RingBuf::kDefaultCapacity);
+	}
+
+	//memcpy_into full capacity AND reset
+	{
+		RingBuf rb;
+		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity);
+
+		CHECK_RINGBUF_SIZE(rb, RingBuf::kDefaultCapacity, RingBuf::kDefaultCapacity);
+
+		rb.reset();
+
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+	}
+
+	//memcpy_into twice to full capacity
+	{
+		RingBuf rb;
+		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity-2);
+		rb.memcpy_into(buffer1 +(RingBuf::kDefaultCapacity - 2), 2);
+
+		CHECK_RINGBUF_SIZE(rb, RingBuf::kDefaultCapacity, RingBuf::kDefaultCapacity);
+	}
+
+	//memcpy_into, overflow by 1 byte
+	{
+		RingBuf rb;
+		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity + 1);
+
+		CHECK_RINGBUF_SIZE(rb, RingBuf::kDefaultCapacity + 1, (RingBuf::kDefaultCapacity + 1) * 2 - 1);
+	}
+
+	//memcpy_into twice, overflow by 1 byte on second copy
+	{
+		RingBuf rb;
+		rb.memcpy_into(buffer1, 1);
+		rb.memcpy_into(buffer1+1, RingBuf::kDefaultCapacity);
+
+		CHECK_RINGBUF_SIZE(rb, RingBuf::kDefaultCapacity+1, (RingBuf::kDefaultCapacity + 1) * 2 - 1);
+	}
+
+	//memcpy_out with zero count
+	{
+		RingBuf rb;
+		rb.memcpy_into(text_pattern, text_length);
+		EXPECT_EQ(0ul, rb.memcpy_out(0, 0));
+
+		CHECK_RINGBUF_SIZE(rb, text_length, RingBuf::kDefaultCapacity);
+	}
+
+	//memcpy_out a few bytes of data
+	{
+		RingBuf rb;
+		rb.memcpy_into(text_pattern, text_length);
+
+		const size_t READ_SIZE = 8;
+
+		EXPECT_EQ(READ_SIZE, rb.memcpy_out(buffer2, READ_SIZE));
+
+		CHECK_RINGBUF_SIZE(rb, text_length - READ_SIZE, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(0, memcmp(buffer2, text_pattern, READ_SIZE));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//memcpy_out all data
+	{
+		RingBuf rb;
+		rb.memcpy_into(text_pattern, text_length);
+
+		const size_t READ_SIZE = text_length;
+
+		EXPECT_EQ(READ_SIZE, rb.memcpy_out(buffer2, READ_SIZE));
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(0, memcmp(buffer2, text_pattern, text_length));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//make wrap condition and memcpy_out
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE*3 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb;
+		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity- TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity- TEST_WRAP_SIZE, TEST_WRAP_SIZE*2);
+
+		EXPECT_EQ(0, memcmp(buffer2, buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+
+		CHECK_RINGBUF_SIZE(rb, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(TEST_WRAP_SIZE * 3, rb.memcpy_out(buffer2, TEST_WRAP_SIZE * 3));
+		EXPECT_EQ(0, memcmp(buffer2, buffer1+ RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 3));
+
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//make wrap condition and reset
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 3 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb;
+		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 2);
+
+		rb.reset();
+		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//make wrap condition and overflow
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE*3 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb;
+		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 2);
+
+		//overflow
+		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, RingBuf::kDefaultCapacity);
+
+		CHECK_RINGBUF_SIZE(rb, RingBuf::kDefaultCapacity + TEST_WRAP_SIZE * 3, (RingBuf::kDefaultCapacity + 1) * 2 - 1);
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(RingBuf::kDefaultCapacity + TEST_WRAP_SIZE * 3, rb.memcpy_out(buffer2, rb.size()));
+		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.size()));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//copyto
+	{
+		const size_t COPY_SIZE = 8;
+
+		RingBuf rb1, rb2;
+		rb1.memcpy_into(text_pattern, text_length);
+		EXPECT_EQ(COPY_SIZE, rb1.copyto(&rb2, COPY_SIZE));
+
+		CHECK_RINGBUF_SIZE(rb1, text_length- COPY_SIZE, RingBuf::kDefaultCapacity);
+		CHECK_RINGBUF_SIZE(rb2, COPY_SIZE, RingBuf::kDefaultCapacity);
+
+		_fillRandom(buffer2, buffer_size);
+
+		EXPECT_EQ(COPY_SIZE, rb2.memcpy_out(buffer2, COPY_SIZE));
+		EXPECT_EQ(0, memcmp(buffer2, text_pattern, COPY_SIZE));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//make wrap condition and copyto
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
+		const size_t COPY_SIZE = TEST_WRAP_SIZE*3;
+
+		RingBuf rb1, rb2;
+		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
+
+		EXPECT_EQ(COPY_SIZE, rb1.copyto(&rb2, COPY_SIZE));
+
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE, RingBuf::kDefaultCapacity);
+		CHECK_RINGBUF_SIZE(rb2, COPY_SIZE, RingBuf::kDefaultCapacity);
+
+		_fillRandom(buffer2, buffer_size);
+
+		EXPECT_EQ(COPY_SIZE, rb2.memcpy_out(buffer2, COPY_SIZE));
+		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb2.size()));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//peek
+	{
+		const size_t PEEK_SIZE = 8;
+
+		RingBuf rb1;
+		rb1.memcpy_into(text_pattern, text_length);
+
+		EXPECT_EQ(PEEK_SIZE, rb1.peek(0, buffer2, PEEK_SIZE));
+		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(0, memcmp(buffer2, text_pattern, PEEK_SIZE));
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(PEEK_SIZE, rb1.peek(1, buffer2, PEEK_SIZE));
+
+		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(0, memcmp(buffer2, text_pattern+1, PEEK_SIZE));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//make wrap condition and peek
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb1;
+		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(TEST_WRAP_SIZE, rb1.peek(0, buffer2, TEST_WRAP_SIZE));
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(0, memcmp(buffer2, buffer1+ RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE));
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(TEST_WRAP_SIZE * 2, rb1.peek(TEST_WRAP_SIZE, buffer2, TEST_WRAP_SIZE*2));
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE*2));
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(TEST_WRAP_SIZE, rb1.peek(TEST_WRAP_SIZE*3, buffer2, TEST_WRAP_SIZE));
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, TEST_WRAP_SIZE));
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//discard
+	{
+		const size_t DISCARD_SIZE = 8;
+
+		RingBuf rb1;
+		rb1.memcpy_into(text_pattern, text_length);
+
+		EXPECT_EQ(DISCARD_SIZE, rb1.discard(DISCARD_SIZE));
+		CHECK_RINGBUF_SIZE(rb1, text_length-DISCARD_SIZE, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(text_length - DISCARD_SIZE, rb1.memcpy_out(buffer2, text_length));
+		EXPECT_EQ(0, memcmp(buffer2, text_pattern+ DISCARD_SIZE, text_length - DISCARD_SIZE));
+
+		CHECK_RINGBUF_EMPTY(rb1, RingBuf::kDefaultCapacity);
+		rb1.memcpy_into(text_pattern, text_length);
+		EXPECT_EQ(text_length, rb1.discard(RingBuf::kDefaultCapacity));
+		CHECK_RINGBUF_EMPTY(rb1, RingBuf::kDefaultCapacity);
+	}
+
+	_fillRandom(buffer2, buffer_size);
+
+	//make wrap condition and discard
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb1;
+		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
+
+		EXPECT_EQ(TEST_WRAP_SIZE * 3, rb1.discard(TEST_WRAP_SIZE * 3));
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE, RingBuf::kDefaultCapacity);
+
+		_fillRandom(buffer2, buffer_size);
+		EXPECT_EQ(TEST_WRAP_SIZE, rb1.memcpy_out(buffer2, TEST_WRAP_SIZE));
+		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, TEST_WRAP_SIZE));
+	}
+
+	//checksum
+	{
+		RingBuf rb1;
+		rb1.memcpy_into(text_pattern, text_length);
+
+		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(text_length, 0));
+		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(text_length, 1));
+		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(0, text_length+1));
+		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(0,0));
+
+		EXPECT_EQ(0x1c9d044aul, rb1.checksum(0, text_length));
+		EXPECT_EQ(0x0d0c02e7ul, rb1.checksum(0, 8));
+		EXPECT_EQ(0x0ddc0311ul, rb1.checksum(1, 8));
+
+		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
+	}
+
+	//make wrap condition and checksum
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb1;
+		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
+
+		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE), rb1.checksum(0, TEST_WRAP_SIZE));
+		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE*3), rb1.checksum(0, TEST_WRAP_SIZE*3));
+		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity, TEST_WRAP_SIZE), rb1.checksum(TEST_WRAP_SIZE*2, TEST_WRAP_SIZE));
+		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity+ TEST_WRAP_SIZE, TEST_WRAP_SIZE), rb1.checksum(TEST_WRAP_SIZE * 3, TEST_WRAP_SIZE));
+	}
+
+	//normalize
+	{
+		RingBuf rb1;
+		rb1.memcpy_into(text_pattern, text_length);
+
+		EXPECT_EQ(0, memcmp(text_pattern, rb1.normalize(), text_length));
+		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
+
+		rb1.discard(1);
+		EXPECT_EQ(0, memcmp(text_pattern+1, rb1.normalize(), text_length-1));
+		CHECK_RINGBUF_SIZE(rb1, text_length-1, RingBuf::kDefaultCapacity);
+	}
+
+	//make wrap condition and normalize
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb1;
+		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 2);
+		EXPECT_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE*2, rb1.normalize(), TEST_WRAP_SIZE*3));
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
+
+		rb1.reset();
+		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE));
+		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity, TEST_WRAP_SIZE * 2);
+		EXPECT_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.normalize(), TEST_WRAP_SIZE * 3));
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
+	}
+
+}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+

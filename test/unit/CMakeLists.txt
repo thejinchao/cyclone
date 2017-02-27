@@ -21,6 +21,7 @@ add_executable(cyt_unit
     cyt_unit_main.cpp
     cyt_unit_lfqueue.cpp
     cyt_unit_crypt.cpp
+    cyt_unit_ringbuf.cpp
 )
     
 set_property(TARGET cyt_unit PROPERTY FOLDER "test/unit")
