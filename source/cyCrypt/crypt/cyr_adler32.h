@@ -9,6 +9,9 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
+//initial adler32 value
+#define INITIAL_ADLER	(1L)
+
 /*
 * Update a running Adler-32 checksum with the bytes buf[0..len-1] and
 * return the updated checksum.  If buf is NULL, this function returns the
@@ -19,7 +22,7 @@ namespace cyclone
 * 
 * Usage example:
 * 
-* uint32_t adler = cyclone::adler32(0, 0, 0);
+* uint32_t adler = cyclone::INITIAL_ADLER;
 * 
 * while (read_buffer(buffer, length) != EOF) {
 *   adler = cyclone::adler32(adler, buffer, length);

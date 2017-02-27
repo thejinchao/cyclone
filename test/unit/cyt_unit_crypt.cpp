@@ -7,17 +7,15 @@ using namespace cyclone;
 //-------------------------------------------------------------------------------------
 TEST(Adler32, Basic)
 {
-	EXPECT_EQ(1ul, adler32(0, 0, 0));
-	EXPECT_EQ(1ul, adler32(0xFFFFFFFFul, 0, 0));
+	EXPECT_EQ(INITIAL_ADLER, adler32(0, 0, 0));
+	EXPECT_EQ(INITIAL_ADLER, adler32(0xFFFFFFFFul, 0, 0));
 
 	const char* hello = "Hello,World!";
-	uint32_t adler = adler32(0, 0, 0);
-	adler = adler32(adler, (const uint8_t*)hello, strlen(hello));
+	uint32_t adler = adler32(INITIAL_ADLER, (const uint8_t*)hello, strlen(hello));
 	EXPECT_EQ(0x1c9d044aul, adler);
 
 	const char* force = "May the Force be with you";
-	adler = adler32(0, 0, 0);
-	adler = adler32(adler, (const uint8_t*)force, strlen(force));
+	adler = adler32(INITIAL_ADLER, (const uint8_t*)force, strlen(force));
 	EXPECT_EQ(0x6fe408d8ul, adler);
 	
 	const uint8_t data_buf[] = {
@@ -28,13 +26,11 @@ TEST(Adler32, Basic)
 	};
 	size_t data_length = sizeof(data_buf);
 
-	uint32_t adler1 = adler32(0, 0, 0);
-	adler1 = adler32(adler1, data_buf, data_length);
+	uint32_t adler1 = adler32(INITIAL_ADLER, data_buf, data_length);
 	EXPECT_EQ(0x75c12362ul, adler1);
 
 	size_t first = 33;
-	uint32_t adler2 = adler32(0, 0, 0);
-	adler2 = adler32(adler2, data_buf, first);
+	uint32_t adler2 = adler32(INITIAL_ADLER, data_buf, first);
 	adler2 = adler32(adler2, data_buf+ first, data_length- first);
 	EXPECT_EQ(0x75c12362ul, adler2);
 }
@@ -55,12 +51,10 @@ TEST(Adler32, Random)
 		}
 
 		//adler total
-		uint32_t adler1 = adler32(0, 0, 0);
-		adler1 = adler32(adler1, random_buf, buf_size);
+		uint32_t adler1 = adler32(INITIAL_ADLER, random_buf, buf_size);
 
 		size_t first_part = (size_t)rand()%(buf_size - 1) + 1;
-		uint32_t adler2 = adler32(0, 0, 0);
-		adler2 = adler32(adler2, random_buf, first_part);
+		uint32_t adler2 = adler32(INITIAL_ADLER, random_buf, first_part);
 		adler2 = adler32(adler2, random_buf + first_part, buf_size - first_part);
 
 		EXPECT_EQ(adler1, adler2);

@@ -332,7 +332,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 //-------------------------------------------------------------------------------------
 uint32_t RingBuf::checksum(size_t off, size_t count) const
 {
-	uint32_t adler = adler32(0, 0, 0);
+	uint32_t adler = INITIAL_ADLER;
 
 	size_t bytes_used = size();
 	if (off > bytes_used) return adler;
