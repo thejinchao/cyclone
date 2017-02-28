@@ -56,6 +56,18 @@ bool inet_ntop(const struct in_addr& a, char *dst, socklen_t size);
 /// socket operation
 bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t optlen);
 
+/// Enable/disable SO_REUSEADDR
+bool set_reuse_addr(socket_t s, bool on);
+
+/// Enable/disable SO_REUSEPORT
+bool set_reuse_port(socket_t s, bool on);
+
+/// Enable/disable SO_KEEPALIVE
+bool set_keep_alive(socket_t s, bool on);
+
+/// Set socket SO_LINGER
+bool set_linger(socket_t s, bool on, uint16_t linger_time);
+
 /// get socket error
 int get_socket_error(socket_t sockfd);
 

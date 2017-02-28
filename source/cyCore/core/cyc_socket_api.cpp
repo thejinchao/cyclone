@@ -234,10 +234,50 @@ bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t o
 {
 	if (SOCKET_ERROR == ::setsockopt(s, level, optname, (const char*)optval, (socklen_t)optlen))
 	{
-		CY_LOG(L_FATAL, "socket_api::setsockopt, err=%d", get_lasterror());
+		CY_LOG(L_ERROR, "socket_api::setsockopt, level=%d, optname=%d, err=%d", get_lasterror());
 		return false;
 	}
 	return true;
+}
+
+//-------------------------------------------------------------------------------------
+bool set_reuse_addr(socket_t s, bool on)
+{
+	int optval = on ? 1 : 0;
+	return setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof optval));
+}
+
+//-------------------------------------------------------------------------------------
+bool set_reuse_port(socket_t s, bool on)
+{
+#ifndef SO_REUSEPORT
+	(void)s;
+	(void)on;
+	//NOT SUPPORT 
+	CY_LOG(L_WARN, "socket_api::set_reuse_port, System do NOT support REUSEPORT issue!");
+	return false;
+#else
+	int optval = on ? 1 : 0;
+	return setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &optval, static_cast<socklen_t>(sizeof optval));
+#endif
+}
+
+//-------------------------------------------------------------------------------------
+bool set_keep_alive(socket_t s, bool on)
+{
+	int optval = on ? 1 : 0;
+	return setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof optval));
+}
+
+//-------------------------------------------------------------------------------------
+bool set_linger(socket_t s, bool on, uint16_t linger_time)
+{
+	struct linger linger_;
+
+	linger_.l_onoff = on; // && (linger_time > 0)) ? 1 : 0;
+	linger_.l_linger = on ? linger_time : 0;
+
+	return setsockopt(s, SOL_SOCKET, SO_LINGER, &linger_, sizeof(linger_));
 }
 
 //-------------------------------------------------------------------------------------

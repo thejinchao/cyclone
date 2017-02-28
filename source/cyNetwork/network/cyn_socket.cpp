@@ -39,69 +39,27 @@ bool Socket::connect(const Address& addr)
 }
 
 //-------------------------------------------------------------------------------------
-void Socket::set_reuse_addr(bool on)
+bool Socket::set_reuse_addr(bool on)
 {
-	int optval = on ? 1 : 0;
-	bool success = socket_api::setsockopt(m_sockfd, SOL_SOCKET, 
-		SO_REUSEADDR,
-		&optval, static_cast<socklen_t>(sizeof optval));
-
-	if (!success && on)
-	{
-		//log error set SO_REUSEPORT failed
-		CY_LOG(L_FATAL, "set SO_REUSEPORT failed[%s]", on ? "ON" : "OFF");
-	}
+	return socket_api::set_reuse_addr(m_sockfd, on);
 }
 
 //-------------------------------------------------------------------------------------
-void Socket::set_reuse_port(bool on)
+bool Socket::set_reuse_port(bool on)
 {
-#ifndef SO_REUSEPORT
-	(void)on;
-	//NOT SUPPORT 
-#else
-	int optval = on ? 1 : 0;
-	bool success = socket_api::setsockopt(m_sockfd, SOL_SOCKET, 
-		SO_REUSEPORT,
-		&optval, static_cast<socklen_t>(sizeof optval));
-
-	if (!success && on)
-	{
-		//log error set SO_REUSEPORT failed; 
-		//this option avaliable in linux 3.9
-		CY_LOG(L_FATAL, "set SO_REUSEPORT failed[%s]", on ? "ON" : "OFF");
-	}
-#endif
+	return socket_api::set_reuse_port(m_sockfd, on);
 }
 
 //-------------------------------------------------------------------------------------
-void Socket::set_keep_alive(bool on)
+bool Socket::set_keep_alive(bool on)
 {
-	int optval = on ? 1 : 0;
-	bool success = socket_api::setsockopt(m_sockfd, 
-		SOL_SOCKET, 
-		SO_KEEPALIVE,
-		&optval, static_cast<socklen_t>(sizeof optval));
-
-	if (!success && on)
-	{
-		//log error set SO_KEEPALIVE failed.;
-		CY_LOG(L_FATAL, "set SO_KEEPALIVE failed[%s]", on ? "ON" : "OFF");
-	}
+	return socket_api::set_keep_alive(m_sockfd, on);
 }
 
 //-------------------------------------------------------------------------------------
-void Socket::set_linger(bool on, uint16_t linger_time)
+bool Socket::set_linger(bool on, uint16_t linger_time)
 {
-	struct linger linger_;
-
-	linger_.l_onoff = on; // && (linger_time > 0)) ? 1 : 0;
-	linger_.l_linger = on ? linger_time : 0;
-
-	if (!socket_api::setsockopt(m_sockfd, SOL_SOCKET, SO_LINGER, &linger_, sizeof(linger_)))
-	{
-		CY_LOG(L_ERROR, "set SO_LINGER failed[%s]", on ? "ON" : "OFF");
-	}
+	return socket_api::set_linger(m_sockfd, on, linger_time);
 }
 
 }
