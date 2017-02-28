@@ -90,6 +90,9 @@ Copyright(C) thecodeway.com
 	#ifndef INVALID_SOCKET
 		#define INVALID_SOCKET	(-1)
 	#endif
+	#ifndef SOCKET_ERROR
+		#define SOCKET_ERROR	(-1)
+	#endif	
 #endif
 
 #ifndef MAX_PATH
