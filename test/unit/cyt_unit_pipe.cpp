@@ -71,7 +71,7 @@ TEST(Pipe, Overflow)
 			EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
 			break;
 		}
-		total_rcv_size += read_size;
+		total_rcv_size += (size_t)read_size;
 		EXPECT_EQ(read_data, rndPop.next());
 	}
 
