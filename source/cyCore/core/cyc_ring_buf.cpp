@@ -164,7 +164,7 @@ size_t RingBuf::discard(size_t count)
 }
 
 //-------------------------------------------------------------------------------------
-ssize_t RingBuf::read_socket(socket_t fd)
+ssize_t RingBuf::read_socket(socket_t fd, bool extra_buf)
 {
 	const size_t STACK_BUF_SIZE = 0xFFFF;
 	char stack_buf[STACK_BUF_SIZE];
@@ -192,11 +192,14 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	}
 
 	//need read more data
-	ssize_t len = socket_api::read(fd, stack_buf, STACK_BUF_SIZE);
-	if (len == 0) return len; //EOF
-	if (len < 0) return socket_api::is_lasterror_WOULDBLOCK() ? nwritten : len;
-	memcpy_into(stack_buf, len);
-	return nwritten + len;
+	if (extra_buf) {
+		ssize_t len = socket_api::read(fd, stack_buf, STACK_BUF_SIZE);
+		if (len == 0) return nwritten; //EOF
+		if (len < 0) return socket_api::is_lasterror_WOULDBLOCK() ? nwritten : len;
+		memcpy_into(stack_buf, len);
+		return nwritten + len;
+	}
+	return nwritten;
 #else
 	//use vector read functon
 	struct iovec vec[3];
@@ -219,9 +222,11 @@ ssize_t RingBuf::read_socket(socket_t fd)
 	}
 
 	//add extra buff
-	vec[vec_counts].iov_base = stack_buf;
-	vec[vec_counts].iov_len = STACK_BUF_SIZE;
-	vec_counts++;
+	if (extra_buf) {
+		vec[vec_counts].iov_base = stack_buf;
+		vec[vec_counts].iov_len = STACK_BUF_SIZE;
+		vec_counts++;
+	}
 
 	//call sys function
 	ssize_t read_counts = ::readv(fd, vec, vec_counts);
@@ -242,6 +247,7 @@ ssize_t RingBuf::read_socket(socket_t fd)
 
 	//append extra data
 	if (nwritten < (size_t)read_counts) {
+		assert(extra_buf);
 		memcpy_into(stack_buf, (size_t)read_counts - nwritten);
 	}
 

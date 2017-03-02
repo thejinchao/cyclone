@@ -82,7 +82,8 @@ public:
 
 	//// call read on the socket descriptor(fd), using the ring buffer rb as the 
 	//// destination buffer for the read, and read as more data as impossible data.
-	ssize_t read_socket(socket_t fd);
+	//// set extra_read to false if you don't want expand this ringbuf
+	ssize_t read_socket(socket_t fd, bool extra_read=true);
 
 	//// call write on the socket descriptor(fd), using the ring buffer rb as the 
 	//// source buffer for writing, In Linux platform, it will only call writev
