@@ -196,14 +196,14 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		va_start(ptr, message);
 		len = vsnprintf(0, 0, message, ptr);
 		if (len > 0) {
-			p = new char[len + 1];
+			p = (char*)CY_MALLOC(len + 1);
 			va_start(ptr, message);
 			vsnprintf(p, (size_t)len + 1, message, ptr);
 			p[len] = 0;
 		}
 	}
 	else if (len >= STATIC_BUF_LENGTH) {
-		p = new char[len + 1];
+		p = (char*)CY_MALLOC(len + 1);
 		va_start(ptr, message);
 		vsnprintf(p, (size_t)len + 1, message, ptr);
 		p[len] = 0;
@@ -225,7 +225,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		p);
 
 	if (p != szTemp) {
-		delete[] p;
+		CY_FREE(p);
 	}
 }
 

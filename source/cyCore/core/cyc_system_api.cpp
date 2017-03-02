@@ -123,7 +123,7 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 	s_thread_data = 0;
 	if (data->detached) {
 		::CloseHandle(data->handle);
-		free(data);
+		CY_FREE(data);
 	}
 	_endthreadex(0);
 	return 0;
@@ -142,7 +142,7 @@ static void* __pthread_thread_entry(void* param)
 
 	s_thread_data = 0;
 	if (data->detached) {
-		free(data);
+		CY_FREE(data);
 	}
 	pthread_exit(0);
 	return 0;
@@ -152,7 +152,7 @@ static void* __pthread_thread_entry(void* param)
 //-------------------------------------------------------------------------------------
 thread_t _thread_create(thread_function func, void* param, const char* name, bool detached)
 {
-	thread_data_s* data = (thread_data_s*)malloc(sizeof(*data));
+	thread_data_s* data = (thread_data_s*)CY_MALLOC(sizeof(*data));
 	data->tid = 0;
 	data->param = param;
 	data->entry_func = func;
@@ -170,7 +170,7 @@ thread_t _thread_create(thread_function func, void* param, const char* name, boo
 		THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME, &thread_id);
 	
 	if (hThread < 0) {
-		free(data);
+		CY_FREE(data);
 		return 0;
 	}
 	data->handle = hThread;
@@ -188,7 +188,7 @@ thread_t _thread_create(thread_function func, void* param, const char* name, boo
 	pthread_attr_destroy(&attr);
 
 	if(ret){
-		free(data);
+		CY_FREE(data);
 		return 0;
 	}
 	data->handle = thread;
@@ -233,7 +233,7 @@ void thread_join(thread_t thread)
 	pthread_join(data->handle, 0);
 #endif
 	if (!(data->detached)) {
-		free(data);
+		CY_FREE(data);
 	}
 }
 
@@ -257,11 +257,11 @@ void thread_yield(void)
 mutex_t mutex_create(void)
 {
 #ifdef CY_SYS_WINDOWS
-	LPCRITICAL_SECTION cs = (LPCRITICAL_SECTION)malloc(sizeof(CRITICAL_SECTION));
+	LPCRITICAL_SECTION cs = (LPCRITICAL_SECTION)CY_MALLOC(sizeof(CRITICAL_SECTION));
 	::InitializeCriticalSection(cs);
 	return cs;
 #else
-	pthread_mutex_t* pm = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_t* pm = (pthread_mutex_t*)CY_MALLOC(sizeof(pthread_mutex_t));
 	::pthread_mutex_init(pm, 0);
 	return pm;
 #endif
@@ -272,10 +272,10 @@ void mutex_destroy(mutex_t m)
 {
 #ifdef CY_SYS_WINDOWS
 	::DeleteCriticalSection(m);
-	free(m);
+	CY_FREE(m);
 #else
 	::pthread_mutex_destroy(m);
-	free(m);
+	CY_FREE(m);
 #endif
 }
 
@@ -315,7 +315,7 @@ signal_t signal_create(void)
 #ifdef CY_SYS_WINDOWS
 	return ::CreateEvent(0, FALSE, FALSE, 0);
 #else
-	signal_s *sig = (signal_s*)malloc(sizeof(*sig));
+	signal_s *sig = (signal_s*)CY_MALLOC(sizeof(*sig));
 	sig->predicate = 0;
 	pthread_mutex_init(&(sig->mutex), 0);
 	pthread_cond_init(&(sig->cond), 0);
@@ -332,7 +332,7 @@ void signal_destroy(signal_t s)
 	signal_s* sig = (signal_s*)s;
 	pthread_cond_destroy(&(sig->cond));
 	pthread_mutex_destroy(&(sig->mutex));
-	free(sig);
+	CY_FREE(sig);
 #endif
 }
 
@@ -422,12 +422,12 @@ uint32_t get_cpu_counts(void)
 	{
 		if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
 		{
-			if (buffer) free(buffer);
-			buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc(returnLength);
+			if (buffer) CY_FREE(buffer);
+			buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)CY_MALLOC(returnLength);
 		}
 		else
 		{
-			if (buffer) free(buffer);
+			if (buffer) CY_FREE(buffer);
 			return DEFAULT_CPU_COUNTS;
 		}
 	}
@@ -444,7 +444,7 @@ uint32_t get_cpu_counts(void)
 		byteOffset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
 		p++;
 	}
-	free(buffer);
+	CY_FREE(buffer);
 	return cpu_counts;
 #else
 	long int cpu_counts = 0;
