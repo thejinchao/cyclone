@@ -77,3 +77,82 @@ TEST(Pipe, Overflow)
 
 	EXPECT_EQ(total_snd_size, total_rcv_size);
 }
+
+//-------------------------------------------------------------------------------------
+struct ThreadData
+{
+	Pipe pipe;
+	XorShift128 rnd;
+	size_t total_size;
+};
+
+//-------------------------------------------------------------------------------------
+void _push_function(void* param)
+{
+	ThreadData* data = (ThreadData*)param;
+	XorShift128 rnd = data->rnd;
+	RingBuf sndBuf;
+
+	size_t total_snd_size = 0;
+
+	for (;;) {
+		while (sndBuf.get_free_size() >= sizeof(uint64_t) && total_snd_size<(data->total_size)) {
+			uint64_t next_snd = rnd.next();
+			sndBuf.memcpy_into(&next_snd, sizeof(next_snd));
+			total_snd_size += sizeof(next_snd);
+		}
+
+		if (sndBuf.empty()) break;
+
+		ssize_t write_size = sndBuf.write_socket(data->pipe.get_write_port());
+		if (write_size <= 0) {
+			sys_api::thread_yield();
+			continue;
+		}
+	}
+	EXPECT_EQ(total_snd_size, data->total_size);
+}
+
+//-------------------------------------------------------------------------------------
+void _pop_function(void* param)
+{
+	ThreadData* data = (ThreadData*)param;
+	XorShift128 rnd = data->rnd;
+	RingBuf rcvBuf;
+
+	size_t total_rcv_size = 0;
+	uint64_t read_data;
+
+	while (total_rcv_size<(data->total_size)) {
+		ssize_t read_size = rcvBuf.read_socket(data->pipe.get_read_port(), false);
+		while (rcvBuf.size() >= sizeof(uint64_t)) {
+			EXPECT_EQ(sizeof(uint64_t), rcvBuf.memcpy_out(&read_data, sizeof(uint64_t)));
+			EXPECT_EQ(rnd.next(), read_data);
+			total_rcv_size += sizeof(uint64_t);
+		}
+
+		if (read_size <= 0) {
+			sys_api::thread_yield();
+		}
+	}
+	EXPECT_TRUE(rcvBuf.empty());
+	EXPECT_EQ(total_rcv_size, data->total_size);
+	EXPECT_EQ(SOCKET_ERROR, (data->pipe).read((char*)&read_data, sizeof(read_data)));
+	EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+	EXPECT_EQ(RingBuf::kDefaultCapacity, rcvBuf.capacity());
+}
+
+//-------------------------------------------------------------------------------------
+TEST(Pipe, MultiThread)
+{
+	ThreadData data;
+	data.rnd.make();
+	data.total_size = 1024 * 1024*10; //1MB
+
+	thread_t pop_thread = sys_api::thread_create(_pop_function, &data, "pop");
+	thread_t push_thread = sys_api::thread_create(_push_function, &data, "push");
+
+	//join
+	sys_api::thread_join(pop_thread);
+	sys_api::thread_join(push_thread);
+}
