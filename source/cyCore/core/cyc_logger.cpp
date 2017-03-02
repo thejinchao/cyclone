@@ -36,61 +36,24 @@ struct DiskLogFile
 	DiskLogFile() 
 	{
 #ifdef CY_SYS_WINDOWS
+		socket_api::global_init();
+#endif
 		//get process name
-		char process_path_name[256] = { 0 };
-		::GetModuleFileName(::GetModuleHandle(0), process_path_name, 256);
-		const char* process_name = ::PathFindFileNameA(process_path_name);
-
-		//current time
-		SYSTEMTIME time;
-		::GetLocalTime(&time);
+		char process_name[256] = { 0 };
+		sys_api::process_get_module_name(process_name, 256);
 		
 		//get host name
 		char host_name[256];
-		socket_api::global_init();
 		::gethostname(host_name, 256);
 
 		//get process id
-		DWORD process_id = ::GetCurrentProcessId();
+		pid_t process_id = sys_api::process_get_id();
 
-		snprintf(file_name, _MAX_PATH, LOG_PATH"%s.%04d%02d%02d-%02d%02d%02d.%s.%d.log",
-			process_name, 
-			time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond,
-			host_name, process_id);
-#else
-		//get process id
-		pid_t process_id = ::getpid();
+		//log filename patten
+		char name_patten[256] = { 0 };
+		snprintf(name_patten, 256, LOG_PATH"%s.%%Y%%m%%d-%%H%%M%%S.%s.%d.log", process_name, host_name, process_id);
+		sys_api::time_now(file_name, 256, name_patten);
 
-		//get process name
-#ifdef CY_SYS_MACOS
-		char process_path_name[PROC_PIDPATHINFO_MAXSIZE]={0};
-		proc_pidpath(process_id, process_path_name, PROC_PIDPATHINFO_MAXSIZE);
-#else
-		char process_path_name[256] = { 0 };
-		if(readlink("/proc/self/exe", process_path_name, 256)<0) {
-			strncpy(process_path_name, "unknown", 256);
-		}
-#endif
-		const char* process_name = strrchr(process_path_name, '/');
-		if(process_name!=0) process_name++;
-		else process_name="unknown";
-
-		//current time
-		time_t t = time(0);
-		struct tm tm_now;
-		localtime_r(&t, &tm_now); 
-
-		char timebuf[32];
-		strftime(timebuf, sizeof(timebuf), "%Y%m%d-%H%M%S", &tm_now);
-
-		//host name
-		char host_name[256] = { 0 };
-		::gethostname(host_name, sizeof(host_name));
-
-		snprintf(file_name, _MAX_PATH, LOG_PATH"%s.%s.%s.%d.log",
-			process_name, timebuf, host_name, process_id);
-
-#endif
 		//create lock
 		lock = sys_api::mutex_create();
 
@@ -171,20 +134,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	if (fp == 0) return;
 
 	char timebuf[32] = { 0 };
-#ifdef CY_SYS_WINDOWS
-	//current time
-	SYSTEMTIME time;
-	::GetLocalTime(&time);
-
-	snprintf(timebuf, sizeof(timebuf), "%04d_%02d_%02d-%02d:%02d:%02d",
-		time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
-#else
-	time_t t = time(0);
-	struct tm tm_now;
-	localtime_r(&t, &tm_now);
-
-	strftime(timebuf, sizeof(timebuf), "%Y_%m_%d-%H:%M:%S", &tm_now);
-#endif
+	sys_api::time_now(timebuf, 32, "%Y_%m_%d-%H:%M:%S");
 
 	static const int32_t STATIC_BUF_LENGTH = 2048;
 
@@ -196,14 +146,14 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		va_start(ptr, message);
 		len = vsnprintf(0, 0, message, ptr);
 		if (len > 0) {
-			p = (char*)CY_MALLOC(len + 1);
+			p = (char*)CY_MALLOC((size_t)(len + 1));
 			va_start(ptr, message);
 			vsnprintf(p, (size_t)len + 1, message, ptr);
 			p[len] = 0;
 		}
 	}
 	else if (len >= STATIC_BUF_LENGTH) {
-		p = (char*)CY_MALLOC(len + 1);
+		p = (char*)CY_MALLOC((size_t)(len + 1));
 		va_start(ptr, message);
 		vsnprintf(p, (size_t)len + 1, message, ptr);
 		p[len] = 0;
