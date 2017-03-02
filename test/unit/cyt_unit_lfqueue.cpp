@@ -87,20 +87,20 @@ public:
 
 		if (m_pushFirst) {
 			for (int32_t i = 0; i < m_pushThreads; i++) {
-				sys_api::thread_create(MultiThreadPushPop::pushFunction, pushThreadData[i], pushThreadData[i]->name);
+				sys_api::thread_create_detached(MultiThreadPushPop::pushFunction, pushThreadData[i], pushThreadData[i]->name);
 			}
 
 			for (int32_t i = 0; i < m_popThreads; i++) {
-				sys_api::thread_create(MultiThreadPushPop::popFunction, popThreadData[i], popThreadData[i]->name);
+				sys_api::thread_create_detached(MultiThreadPushPop::popFunction, popThreadData[i], popThreadData[i]->name);
 			}
 		}
 		else {
 			for (int32_t i = 0; i < m_popThreads; i++) {
-				sys_api::thread_create(MultiThreadPushPop::popFunction, popThreadData[i], popThreadData[i]->name);
+				sys_api::thread_create_detached(MultiThreadPushPop::popFunction, popThreadData[i], popThreadData[i]->name);
 			}
 
 			for (int32_t i = 0; i < m_pushThreads; i++) {
-				sys_api::thread_create(MultiThreadPushPop::pushFunction, pushThreadData[i], pushThreadData[i]->name);
+				sys_api::thread_create_detached(MultiThreadPushPop::pushFunction, pushThreadData[i], pushThreadData[i]->name);
 			}
 		}
 

@@ -39,8 +39,11 @@ pid_t thread_get_current_id(void);
 //// get the system id of thread
 pid_t thread_get_id(thread_t t);
 
-//// create a new thread
+//// create a new thread(use thread_join to release resources)
 thread_t thread_create(thread_function func, void* param, const char* name);
+
+//// create a new thread(all thread resources will be released automatic)
+void thread_create_detached(thread_function func, void* param, const char* name);
 
 //// sleep in current thread
 void thread_sleep(int32_t msec);

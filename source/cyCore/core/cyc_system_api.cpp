@@ -70,6 +70,7 @@ struct thread_data_s
 	thread_function entry_func;
 	void* param;
 	char name[MAX_PATH];
+	bool detached;
 #ifdef CY_SYS_WINDOWS
 	HANDLE handle;
 #else
@@ -120,7 +121,11 @@ static unsigned int __stdcall __win32_thread_entry(void* param)
 		data->entry_func(data->param);
 
 	s_thread_data = 0;
-	free(data);
+	if (data->detached) {
+		::CloseHandle(data->handle);
+		free(data);
+	}
+	_endthreadex(0);
 	return 0;
 }
 #else
@@ -136,19 +141,23 @@ static void* __pthread_thread_entry(void* param)
 		data->entry_func(data->param);
 
 	s_thread_data = 0;
-	free(data);
+	if (data->detached) {
+		free(data);
+	}
+	pthread_exit(0);
 	return 0;
 }
 #endif
 
 //-------------------------------------------------------------------------------------
-thread_t thread_create(thread_function func, void* param, const char* name)
+thread_t _thread_create(thread_function func, void* param, const char* name, bool detached)
 {
 	thread_data_s* data = (thread_data_s*)malloc(sizeof(*data));
 	data->tid = 0;
 	data->param = param;
 	data->entry_func = func;
 	data->handle = 0;
+	data->detached = detached;
 	if (name != 0)
 		strncpy(data->name, name, MAX_PATH);
 	else
@@ -169,8 +178,16 @@ thread_t thread_create(thread_function func, void* param, const char* name)
 	::ResumeThread(hThread);
 	return data;
 #else
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	if(detached)
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
 	pthread_t thread;
-	if(pthread_create(&thread, 0, __pthread_thread_entry, data)!=0) {
+	int ret = pthread_create(&thread, &attr, __pthread_thread_entry, data);
+	pthread_attr_destroy(&attr);
+
+	if(ret){
 		free(data);
 		return 0;
 	}
@@ -178,6 +195,18 @@ thread_t thread_create(thread_function func, void* param, const char* name)
 	while(data->tid == 0); //make sure we got the pid(BUSY LOOP, BUT IT IS VERY SHORT)
 	return data;
 #endif
+}
+
+//-------------------------------------------------------------------------------------
+thread_t thread_create(thread_function func, void* param, const char* name)
+{
+	return _thread_create(func, param, name, false);
+}
+
+//-------------------------------------------------------------------------------------
+void thread_create_detached(thread_function func, void* param, const char* name)
+{
+	_thread_create(func, param, name, true);
 }
 
 //-------------------------------------------------------------------------------------
@@ -199,9 +228,13 @@ void thread_join(thread_t thread)
 	thread_data_s* data = (thread_data_s*)thread;
 #ifdef CY_SYS_WINDOWS
 	::WaitForSingleObject(data->handle, INFINITE);
+	::CloseHandle(data->handle);
 #else
 	pthread_join(data->handle, 0);
 #endif
+	if (!(data->detached)) {
+		free(data);
+	}
 }
 
 //-------------------------------------------------------------------------------------
