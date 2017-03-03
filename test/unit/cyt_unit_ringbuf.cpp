@@ -1,5 +1,6 @@
 #include <cy_core.h>
 #include <cy_crypt.h>
+#include <cy_event.h>
 #include <gtest/gtest.h>
 
 using namespace cyclone;
@@ -429,8 +430,128 @@ TEST(RingBuf, Basic)
 		EXPECT_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.normalize(), TEST_WRAP_SIZE * 3));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
 	}
-
 }
+
+
+//-------------------------------------------------------------------------------------
+TEST(RingBuf, Socket)
+{
+	const char* text_pattern = "Hello,World!";
+	const size_t text_length = strlen(text_pattern);
+
+	const size_t buffer_size = RingBuf::kDefaultCapacity * 4;
+	const uint8_t* buffer1;
+	uint8_t* buffer2;
+	{
+		uint8_t* _buffer1 = new uint8_t[RingBuf::kDefaultCapacity * 4];
+		buffer2 = new uint8_t[RingBuf::kDefaultCapacity * 4];
+		_fillRandom(_buffer1, buffer_size);
+		_fillRandom(buffer2, buffer_size);
+		buffer1 = _buffer1;
+	}
+
+	//write_socket/read_socket
+	{
+		RingBuf rb_snd;
+		Pipe pipe;
+
+		//send few bytes
+		rb_snd.memcpy_into(text_pattern, text_length);
+		EXPECT_EQ(text_length, (size_t)rb_snd.write_socket(pipe.get_write_port()));
+		CHECK_RINGBUF_EMPTY(rb_snd, RingBuf::kDefaultCapacity);
+
+		RingBuf rb_rcv;
+		EXPECT_EQ(text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
+		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		rb_rcv.discard(text_length);
+		CHECK_RINGBUF_EMPTY(rb_rcv, RingBuf::kDefaultCapacity);
+
+		uint32_t read_buf;
+		EXPECT_EQ(SOCKET_ERROR, pipe.read((char*)&read_buf, sizeof(read_buf)));
+		EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+
+		//send and receive again
+		rb_snd.memcpy_into(text_pattern, text_length);
+		rb_snd.memcpy_into(text_pattern, text_length);
+		rb_snd.discard(text_length);
+		CHECK_RINGBUF_SIZE(rb_snd, text_length, RingBuf::kDefaultCapacity);
+
+		rb_rcv.memcpy_into(text_pattern, text_length);
+		rb_rcv.memcpy_into(text_pattern, text_length);
+		rb_rcv.discard(text_length);
+		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(text_length, (size_t)rb_snd.write_socket(pipe.get_write_port()));
+		EXPECT_EQ(text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
+		CHECK_RINGBUF_EMPTY(rb_snd, RingBuf::kDefaultCapacity);
+		CHECK_RINGBUF_SIZE(rb_rcv, text_length*2, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize()+text_length, text_pattern, text_length));
+	}
+
+	//read_socket to full
+	{
+		Pipe pipe;
+
+		RingBuf rb_rcv;
+		rb_rcv.memcpy_into(text_pattern, text_length);
+		rb_rcv.memcpy_into(text_pattern, text_length);
+		rb_rcv.discard(text_length);
+		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(RingBuf::kDefaultCapacity, pipe.write((const char*)buffer1, RingBuf::kDefaultCapacity));
+
+		EXPECT_EQ(RingBuf::kDefaultCapacity-text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port(), false));
+		CHECK_RINGBUF_SIZE(rb_rcv, RingBuf::kDefaultCapacity, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize() + text_length, buffer1, RingBuf::kDefaultCapacity-text_length));
+	}
+
+	//read_socket and expand
+	{
+		Pipe pipe;
+
+		RingBuf rb_rcv;
+		rb_rcv.memcpy_into(text_pattern, text_length);
+		rb_rcv.memcpy_into(text_pattern, text_length);
+		rb_rcv.discard(text_length);
+		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(RingBuf::kDefaultCapacity, pipe.write((const char*)buffer1, RingBuf::kDefaultCapacity));
+
+		EXPECT_EQ(RingBuf::kDefaultCapacity, rb_rcv.read_socket(pipe.get_read_port()));
+		CHECK_RINGBUF_SIZE(rb_rcv, text_length + RingBuf::kDefaultCapacity, (RingBuf::kDefaultCapacity + 1) * 2 - 1);
+
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize() + text_length, buffer1, RingBuf::kDefaultCapacity));
+	}
+
+	//make wrap condition and write_socket
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 3 < RingBuf::kDefaultCapacity);
+
+		RingBuf rb_snd;
+		rb_snd.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		rb_snd.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2);
+		rb_snd.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
+		CHECK_RINGBUF_SIZE(rb_snd, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
+
+		Pipe pipe;
+		EXPECT_EQ(TEST_WRAP_SIZE * 4, (size_t)rb_snd.write_socket(pipe.get_write_port()));
+		CHECK_RINGBUF_EMPTY(rb_snd, RingBuf::kDefaultCapacity);
+
+		RingBuf rb_rcv;
+		EXPECT_EQ(TEST_WRAP_SIZE * 4, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
+		CHECK_RINGBUF_SIZE(rb_rcv, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
+
+		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 4));
+	}
+}
+
 
 #ifdef _MSC_VER
 #pragma warning(pop)
