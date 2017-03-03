@@ -126,11 +126,6 @@ endif()
 ########
 set(CY_ENABLE_LOG TRUE)
 
-########
-#build info
-########
-string(TIMESTAMP CY_BUILD_TIME "%Y-%m-%d %H:%M:%S")
-
 #make configure files
 set(CY_AUTO_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/source)
 set(CY_AUTO_CONFIG_FILE ${CY_AUTO_INCLUDE_PATH}/cyclone_config.h)
