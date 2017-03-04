@@ -83,9 +83,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	timer->param = param;
     timer->milli_seconds = milliSeconds;
 
-#ifdef CY_SYS_WINDOWS
 	channel.id = id;
-	channel.fd = timer->pipe.get_read_port();
 	channel.event = 0;
 	channel.param = timer;
 	channel.active = false;
@@ -93,22 +91,17 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	channel.on_read = _on_timer_event_callback;
 	channel.on_write = 0;
 
+#ifdef CY_SYS_WINDOWS
+	channel.fd = timer->pipe.get_read_port();
+
 	//create windows timer queue
-	if (!CreateTimerQueueTimer(&(timer->htimer), 0, _on_windows_timer, timer, milliSeconds, milliSeconds, WT_EXECUTEINTIMERTHREAD))
-	{
+	if (!CreateTimerQueueTimer(&(timer->htimer), 0, _on_windows_timer, timer, milliSeconds, milliSeconds, WT_EXECUTEINTIMERTHREAD)) {
 		//error...
 		CY_LOG(L_FATAL, "CreateTimerQueueTimer Failed");
         delete timer;
 		return 0;
 	}
 #elif defined(CY_SYS_LINUX)
-	channel.id = id;
-	channel.event = 0;
-	channel.param = timer;
-	channel.active = false;
-	channel.timer = true;
-	channel.on_read = _on_timer_event_callback;
-	channel.on_write = 0;
 	channel.fd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 
 	if (channel.fd < 0) {
@@ -130,10 +123,8 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	newValue.it_value = ts;
 	newValue.it_interval=ts; //set non-zero for repeated timer
 	::timerfd_settime(channel.fd, 0, &newValue, &oldValue);
-#else //Mac os
-    //NOT SUPPORT YET!
-    delete timer;
-    return 0;
+#else	//macOS, use kqueue
+	channel.fd = 0;
 #endif
 
 	//add kRead event to poll
