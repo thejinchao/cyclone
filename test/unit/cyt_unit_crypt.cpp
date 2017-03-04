@@ -4,6 +4,7 @@
 
 using namespace cyclone;
 
+namespace {
 //-------------------------------------------------------------------------------------
 TEST(Adler32, Basic)
 {
@@ -147,5 +148,7 @@ TEST(XorShift128, Basic)
 		xorshift128((uint8_t*)buf, text_len, seed_decrypt);
 		ASSERT_STREQ(plain_text, buf);
 	}
+
+}
 
 }

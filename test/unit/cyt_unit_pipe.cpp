@@ -5,6 +5,7 @@
 
 using namespace cyclone;
 
+namespace {
 //-------------------------------------------------------------------------------------
 TEST(Pipe, Basic)
 {
@@ -155,4 +156,6 @@ TEST(Pipe, MultiThread)
 	//join
 	sys_api::thread_join(pop_thread);
 	sys_api::thread_join(push_thread);
+}
+
 }

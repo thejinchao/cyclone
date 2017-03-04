@@ -10,6 +10,7 @@ using namespace cyclone;
 #pragma warning(disable:4127)
 #endif
 
+namespace {
 //-------------------------------------------------------------------------------------
 void _fillRandom(uint8_t* mem, size_t len)
 {
@@ -552,6 +553,7 @@ TEST(RingBuf, Socket)
 	}
 }
 
+}
 
 #ifdef _MSC_VER
 #pragma warning(pop)

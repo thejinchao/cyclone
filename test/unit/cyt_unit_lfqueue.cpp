@@ -3,6 +3,7 @@
 
 using namespace cyclone;
 
+namespace {
 //-------------------------------------------------------------------------------------
 TEST(LockFreeQueue, Basic)
 {
@@ -268,4 +269,6 @@ TEST(LockFreeQueue, MultiThread)
 
 	MultiThreadPushPop test6(100000u, 5, 2, false);
 	test6.pushAndPop();
+}
+
 }
