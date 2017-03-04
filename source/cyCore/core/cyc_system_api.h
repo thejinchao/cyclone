@@ -105,6 +105,9 @@ void signal_destroy(signal_t s);
 //// wait a signal inifinite
 void signal_wait(signal_t s);
 
+//// wait a signal in [t] millisecond(second*1000), return true immediately if the signal is lighted, if false if timeout or other error
+bool signal_timewait(signal_t s, uint32_t ms);
+
 //// light the signal
 void signal_notify(signal_t s);
 

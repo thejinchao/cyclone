@@ -353,6 +353,61 @@ void signal_wait(signal_t s)
 }
 
 //-------------------------------------------------------------------------------------
+#ifndef CY_SYS_WINDOWS
+bool _signal_unlock_wait(signal_s* sig, uint32_t ms)
+{
+	const uint64_t kNanoSecondsPerSecond = 1000ll * 1000ll * 1000ll;
+
+	if (sig->predicate.load() == 1) { //It's light!
+		sig->predicate = 0;
+		return true;
+	}
+
+	//need wait...
+	if (ms == 0) return  false;	//zero-timeout event state check optimization
+
+	timeval tv;
+	gettimeofday(&tv, 0);
+	uint64_t nanoseconds = ((uint64_t)tv.tv_sec) * kNanoSecondsPerSecond + ms * 1000 * 1000 + ((uint64_t)tv.tv_usec) * 1000;
+
+	timespec ts;
+	ts.tv_sec = nanoseconds / kNanoSecondsPerSecond;
+	ts.tv_nsec = (long int)(nanoseconds - ((uint64_t)ts.tv_sec) * kNanoSecondsPerSecond);
+	
+	//wait...
+	while(0 == sig->predicate.load()) {
+		if (pthread_cond_timedwait(&(sig->cond), &(sig->mutex), &ts) != 0)
+			return false; //time out
+	}
+
+	sig->predicate = 0;
+	return true;
+}
+#endif
+
+//-------------------------------------------------------------------------------------
+bool signal_timewait(signal_t s, uint32_t ms)
+{
+#ifdef CY_SYS_WINDOWS
+	return (WAIT_OBJECT_0 == ::WaitForSingleObject(s, ms));
+#else
+	signal_s* sig = (signal_s*)s;
+	if (ms == 0) {
+		if (EBUSY == pthread_mutex_trylock(&(sig->mutex)))
+			return false;
+	}
+	else {
+		pthread_mutex_lock(&(sig->mutex));
+	}
+
+	bool ret = _signal_unlock_wait(sig, ms);
+
+	pthread_mutex_unlock(&(sig->mutex));
+	return ret;
+#endif
+}
+
+//-------------------------------------------------------------------------------------
 void signal_notify(signal_t s)
 {
 #ifdef CY_SYS_WINDOWS
