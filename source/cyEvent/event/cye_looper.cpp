@@ -248,7 +248,8 @@ void Looper::loop(void)
 	assert(sys_api::thread_get_current_id() == m_current_thread);
 
 	//register inner pipe first
-	m_inner_pipe = new Pipe();
+	Pipe inner_pipe;
+	m_inner_pipe = &inner_pipe;
 	Looper::event_id_t inner_event_id = register_event(m_inner_pipe->get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
 
 	channel_list readList;
@@ -295,7 +296,7 @@ void Looper::loop(void)
 	//it's the time to shutdown everything...
 	disable_all(inner_event_id);
 	delete_event(inner_event_id);
-	delete m_inner_pipe; m_inner_pipe = 0;
+	m_inner_pipe = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
