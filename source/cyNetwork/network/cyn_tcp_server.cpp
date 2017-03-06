@@ -209,13 +209,17 @@ void TcpServer::stop(void)
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
+void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
 	(void)id;
 	(void)event;
 
 	//is shutdown in processing?		
-	if (m_shutdown_ing > 0) return true;
+	if (m_shutdown_ing > 0) {
+		//push loop request command
+		m_accept_looper->push_stop_request();
+		return;
+	}
 
 	//call accept and create peer socket		
 	socket_t connfd = socket_api::accept(fd, 0);
@@ -223,7 +227,7 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	{
 		//log error		
 		CY_LOG(L_ERROR, "accept socket error");
-		return false;
+		return;
 	}
 
 	//send it to one of work thread		
@@ -236,14 +240,13 @@ bool TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	work->send_message(ServerWorkThread::NewConnectionCmd::ID, sizeof(newConnectionCmd), (const char*)&newConnectionCmd);
 
 	CY_LOG(L_TRACE, "accept a socket, send to work thread %d ", index);
-	return false;
 }
 
 //-------------------------------------------------------------------------------------
 void TcpServer::_accept_thread(void)
 {
 	//create a event looper		
-	Looper* looper = Looper::create_looper();
+	m_accept_looper = Looper::create_looper();
 
 	//registe listen event	
 	int32_t counts = 0;
@@ -253,7 +256,7 @@ void TcpServer::_accept_thread(void)
 
 		socket_t sfd = m_acceptor_socket[i]->get_fd();
 
-		looper->register_event(sfd,
+		m_accept_looper->register_event(sfd,
 			Looper::kRead,
 			this,
 			_on_accept_function_entry,
@@ -265,11 +268,11 @@ void TcpServer::_accept_thread(void)
 	}
 
 	CY_LOG(L_TRACE, "accept thread run, listen %d port(s)", counts);
-	looper->loop();
+	m_accept_looper->loop();
 
 	//it's time to disppear...
-	Looper::destroy_looper(looper);
-	return;
+	Looper::destroy_looper(m_accept_looper);
+	m_accept_looper = nullptr;
 }
 
 //-------------------------------------------------------------------------------------

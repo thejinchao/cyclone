@@ -25,8 +25,8 @@ public:
 		kWrite	= 1<<1,
 	};
 
-	typedef bool(*event_callback)(event_id_t id, socket_t fd, event_t event, void* param);
-	typedef bool(*timer_callback)(event_id_t id, void* param);
+	typedef void(*event_callback)(event_id_t id, socket_t fd, event_t event, void* param);
+	typedef void(*timer_callback)(event_id_t id, void* param);
 
 public:
 	//----------------------
@@ -52,6 +52,10 @@ public:
 	void loop(void);
 	//// reactor step
 	void step(void);
+	//// push stop request
+	void push_stop_request(void);
+	//// is quit cmd active
+	bool is_quit_pending(void) const { return m_quit_cmd.load() != 0; }
 
 	//// update event
 	void disable_read(event_id_t id);
@@ -64,6 +68,9 @@ public:
 
 	void disable_all(event_id_t id);
 
+	//----------------------
+	// utility functions(NOT thread safe)
+	//----------------------
 	pid_t get_thread_id(void) const { return m_current_thread; }
 
 	void debug(DebugInterface* debuger, const char* name);
@@ -110,6 +117,7 @@ protected:
 
 	Pipe* m_inner_pipe;	//pipe to push loop continue
 	atomic_int32_t m_inner_pipe_touched;
+	atomic_int32_t m_quit_cmd;
 
 	/// Polls the I/O events.
 	virtual void _poll(
@@ -134,7 +142,7 @@ protected:
 #endif
 	};
 	
-	static bool _on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param);
+	static void _on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param);
 
 #ifdef CY_SYS_WINDOWS
 	static void __stdcall _on_windows_timer(PVOID param, BOOLEAN timer_or_wait_fired);
@@ -142,7 +150,7 @@ protected:
 
 	//inner pipe functions
 	void _touch_inner_pipe(void);
-	static bool _on_inner_pipe_touched(event_id_t id, socket_t fd, event_t event, void* param);
+	static void _on_inner_pipe_touched(event_id_t id, socket_t fd, event_t event, void* param);
 
 private:
 	event_id_t _get_free_slot(void);

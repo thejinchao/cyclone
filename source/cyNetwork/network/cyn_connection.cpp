@@ -199,7 +199,7 @@ void Connection::shutdown(void)
 }
 
 //-------------------------------------------------------------------------------------
-bool Connection::_on_socket_read(void)
+void Connection::_on_socket_read(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
@@ -222,11 +222,10 @@ bool Connection::_on_socket_read(void)
 		//error!
 		_on_socket_error();
 	}
-	return false;
 }
 
 //-------------------------------------------------------------------------------------
-bool Connection::_on_socket_write(void)
+void Connection::_on_socket_write(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
@@ -262,8 +261,6 @@ bool Connection::_on_socket_write(void)
 			CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
 		}
 	}
-
-	return false;
 }
 
 //-------------------------------------------------------------------------------------

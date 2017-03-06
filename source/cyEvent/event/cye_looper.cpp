@@ -24,6 +24,7 @@ Looper::Looper()
 	, m_current_thread(sys_api::thread_get_current_id())
 	, m_inner_pipe(0)
 	, m_inner_pipe_touched(0)
+	, m_quit_cmd(0)
 {
 	m_lock = sys_api::mutex_create();
 }
@@ -253,6 +254,8 @@ void Looper::loop(void)
 	channel_list readList;
 	channel_list writeList;
 
+	m_quit_cmd = 0;
+
 	for (;;)
 	{
 		readList.clear();
@@ -261,7 +264,7 @@ void Looper::loop(void)
 		//wait in kernel...
 		_poll(readList, writeList, true);
 		
-		bool quit_cmd = false;
+		if (is_quit_pending()) break;
 
 		//reactor
 		for (size_t i = 0; i < readList.size(); i++)
@@ -269,25 +272,27 @@ void Looper::loop(void)
 			channel_s* c = &(m_channelBuffer[readList[i]]);
 			if (c->on_read == 0 || (c->event & kRead) == 0) continue;
 
-			if (c->on_read(c->id, c->fd, kRead, c->param)) {
-				quit_cmd = true;
-			}
+			c->on_read(c->id, c->fd, kRead, c->param);
+
+			if (is_quit_pending()) break;
 		}
+
+		if (is_quit_pending()) break;
 
 		for (size_t i = 0; i < writeList.size(); i++)
 		{
 			channel_s* c = &(m_channelBuffer[writeList[i]]);
 			if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
 
-			if (c->on_write(c->id, c->fd, kWrite, c->param)){
-				quit_cmd = true;
-			}
+			c->on_write(c->id, c->fd, kWrite, c->param);
+
+			if (is_quit_pending()) break;
 		}
 
-		//it's the time to shutdown everything...
-		if (quit_cmd) break;
+		if (is_quit_pending()) break;
 	}
 
+	//it's the time to shutdown everything...
 	disable_all(inner_event_id);
 	delete_event(inner_event_id);
 	delete m_inner_pipe; m_inner_pipe = 0;
@@ -298,12 +303,14 @@ void Looper::step(void)
 {
 	assert(sys_api::thread_get_current_id() == m_current_thread);
 	assert(m_inner_pipe==0);
+	if (is_quit_pending()) return;
 
 	channel_list readList;
 	channel_list writeList;
 
 	//wait in kernel...
 	_poll(readList, writeList, false);
+	if (is_quit_pending()) return;
 
 	//reactor
 	for (size_t i = 0; i < readList.size(); i++)
@@ -312,6 +319,8 @@ void Looper::step(void)
 		if (c->on_read == 0 || (c->event & kRead) == 0) continue;
 
 		c->on_read(c->id, c->fd, kRead, c->param);
+
+		if (is_quit_pending()) return;
 	}
 
 	for (size_t i = 0; i < writeList.size(); i++)
@@ -320,8 +329,16 @@ void Looper::step(void)
 		if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
 
 		c->on_write(c->id, c->fd, kWrite, c->param);
-	}
 
+		if (is_quit_pending()) return;
+	}
+}
+
+//-------------------------------------------------------------------------------------
+void Looper::push_stop_request(void)
+{
+	m_quit_cmd = 1;
+	_touch_inner_pipe();
 }
 
 //-------------------------------------------------------------------------------------
@@ -371,7 +388,7 @@ void Looper::_on_windows_timer(PVOID param, BOOLEAN timer_or_wait_fired)
 #endif
 
 //-------------------------------------------------------------------------------------
-bool Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param)
+void Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event, void* param)
 {
 	(void)event;
 
@@ -382,9 +399,8 @@ bool Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event,
 #endif
 
 	if (timer->on_timer) {
-		return timer->on_timer(id, timer->param);
+		timer->on_timer(id, timer->param);
 	}
-	return false;
 }
 
 //-------------------------------------------------------------------------------------
@@ -400,13 +416,12 @@ void Looper::_touch_inner_pipe(void)
 }
 
 //-------------------------------------------------------------------------------------
-bool Looper::_on_inner_pipe_touched(event_id_t , socket_t fd, event_t , void* param)
+void Looper::_on_inner_pipe_touched(event_id_t , socket_t fd, event_t , void* param)
 {
 	uint64_t touch = 0;
 	socket_api::read(fd, &touch, sizeof(touch));
 
 	((Looper*)param)->m_inner_pipe_touched = 0;
-	return false;
 }
 
 //-------------------------------------------------------------------------------------

@@ -71,7 +71,7 @@ private:
 	enum { MAX_BIND_PORT_COUNTS = 128, MAX_WORK_THREAD_COUNTS = 32 };
 
 	Socket*			m_acceptor_socket[MAX_BIND_PORT_COUNTS];
-
+	Looper*			m_accept_looper;
 	thread_t		m_acceptor_thread;
 
 	ServerWorkThread*	m_work_thread_pool[MAX_WORK_THREAD_COUNTS];
@@ -101,10 +101,10 @@ private:
 	void _accept_thread(void);
 
 	/// on acception callback function
-	static bool _on_accept_function_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		return ((TcpServer*)param)->_on_accept_function(id, fd, event);
+	static void _on_accept_function_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+		((TcpServer*)param)->_on_accept_function(id, fd, event);
 	}
-	bool _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
+	void _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
 	TcpServer(Listener* listener, const char* name, DebugInterface* debuger);

@@ -63,23 +63,23 @@ public:
 
 private:
 	/// on read/write callback function
-	static bool _on_socket_read_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		return ((TcpClient*)param)->_on_socket_read_write(id, fd, event);
+	static void _on_socket_read_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
+		((TcpClient*)param)->_on_socket_read_write(id, fd, event);
 	}
-	bool _on_socket_read_write(Looper::event_id_t id, socket_t fd, Looper::event_t event);
+	void _on_socket_read_write(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 #ifdef CY_SYS_WINDOWS
-	static bool _on_connection_timer_entry(Looper::event_id_t id, void* param){
-		return ((TcpClient*)param)->_on_connection_timer(id);
+	static void _on_connection_timer_entry(Looper::event_id_t id, void* param){
+		((TcpClient*)param)->_on_connection_timer(id);
 	}
-	bool _on_connection_timer(Looper::event_id_t id);
+	void _on_connection_timer(Looper::event_id_t id);
 	Looper::event_id_t m_connection_timer_id;
 #endif
 
-	static bool _on_retry_connect_timer_entry(Looper::event_id_t id, void* param){
-		return ((TcpClient*)param)->_on_retry_connect_timer(id);
+	static void _on_retry_connect_timer_entry(Looper::event_id_t id, void* param){
+		((TcpClient*)param)->_on_retry_connect_timer(id);
 	}
-	bool _on_retry_connect_timer(Looper::event_id_t id);
+	void _on_retry_connect_timer(Looper::event_id_t id);
 
 private:
 	void _check_connect_status(bool abort);

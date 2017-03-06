@@ -96,7 +96,7 @@ bool TcpClient::connect(const Address& addr, uint32_t timeOutSeconds)
 
 #ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
-bool TcpClient::_on_connection_timer(Looper::event_id_t id)
+void TcpClient::_on_connection_timer(Looper::event_id_t id)
 {
 	if (get_connection_state() == Connection::kConnecting){
 		//is still waiting connect? abort!
@@ -107,7 +107,6 @@ bool TcpClient::_on_connection_timer(Looper::event_id_t id)
 	m_looper->disable_all(id);
 	m_looper->delete_event(id);
 	m_connection_timer_id = Looper::INVALID_EVENT_ID;
-	return false;
 }
 #endif
 
@@ -195,7 +194,7 @@ void TcpClient::on_connection_event(Connection::Event event, Connection* conn)
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
+void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 {
 	//remove the timer
 	m_looper->disable_all(id);
@@ -215,18 +214,15 @@ bool TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 			}
 		}
 	}
-
-	return false;
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpClient::_on_socket_read_write(Looper::event_id_t /*id*/, socket_t /*fd*/, Looper::event_t /*event*/)
+void TcpClient::_on_socket_read_write(Looper::event_id_t /*id*/, socket_t /*fd*/, Looper::event_t /*event*/)
 {
 	if (get_connection_state() == Connection::kConnecting)
 	{
 		_check_connect_status(false);
 	}
-	return false;
 }
 
 //-------------------------------------------------------------------------------------

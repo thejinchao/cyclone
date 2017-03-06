@@ -100,16 +100,16 @@ private:
 
 private:
 	//// on socket read event
-	static bool _on_socket_read_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		return ((Connection*)param)->_on_socket_read();
+	static void _on_socket_read_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
+		((Connection*)param)->_on_socket_read();
 	}
-	bool _on_socket_read(void);
+	void _on_socket_read(void);
 
 	//// on socket read event
-	static bool _on_socket_write_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		return ((Connection*)param)->_on_socket_write();
+	static void _on_socket_write_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
+		((Connection*)param)->_on_socket_write();
 	}
-	bool _on_socket_write(void);
+	void _on_socket_write(void);
 
 private:
 	//// on socket close

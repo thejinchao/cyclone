@@ -75,7 +75,7 @@ bool ServerWorkThread::on_workthread_start(void)
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerWorkThread::on_workthread_message(Packet* message)
+void ServerWorkThread::on_workthread_message(Packet* message)
 {
 	assert(is_in_workthread());
 	assert(message);
@@ -101,7 +101,7 @@ bool ServerWorkThread::on_workthread_message(Packet* message)
 		memcpy(&closeConnectionCmd, message->get_packet_content(), sizeof(CloseConnectionCmd));
 
 		ConnectionMap::iterator it = m_connections.find(closeConnectionCmd.conn_id);
-		if (it == m_connections.end()) return false;
+		if (it == m_connections.end()) return;
 
 		Connection* conn = it->second;
 		Connection::State curr_state = conn->get_state();
@@ -130,12 +130,20 @@ bool ServerWorkThread::on_workthread_message(Packet* message)
 		}
 
 		//if all connection is shutdown, and server is in shutdown process, quit the loop
-		if (m_connections.empty() && closeConnectionCmd.shutdown_ing>0) return true;
+		if (m_connections.empty() && closeConnectionCmd.shutdown_ing > 0) {
+			//push loop quit command
+			m_work_thread->get_looper()->push_stop_request();
+			return;
+		}
 	}
 	else if (msg_id == ShutdownCmd::ID)
 	{
 		//all connection is disconnect, just quit the loop
-		if (m_connections.empty()) return true;
+		if (m_connections.empty()) {
+			//push loop request command
+			m_work_thread->get_looper()->push_stop_request();
+			return;
+		}
 
 		//send shutdown command to all connection
 		ConnectionMap::iterator it, end = m_connections.end();
@@ -165,7 +173,6 @@ bool ServerWorkThread::on_workthread_message(Packet* message)
 			server_listener->on_extra_workthread_msg(m_server, get_index(), message);
 		}
 	}
-	return false;
 }
 
 //-------------------------------------------------------------------------------------

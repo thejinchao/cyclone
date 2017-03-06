@@ -18,7 +18,7 @@ public:
 	{
 	public:
 		virtual bool on_workthread_start(void) = 0;
-		virtual bool on_workthread_message(Packet*) = 0;
+		virtual void on_workthread_message(Packet*) = 0;
 	};
 
 public:
@@ -63,10 +63,10 @@ private:
 	void _work_thread(work_thread_param* param);
 
 	//// on work thread receive message
-	static bool _on_message_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		return ((WorkThread*)param)->_on_message();
+	static void _on_message_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
+		((WorkThread*)param)->_on_message();
 	}
-	bool _on_message(void);
+	void _on_message(void);
 
 public:
 	WorkThread();

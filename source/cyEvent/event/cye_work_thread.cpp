@@ -84,7 +84,7 @@ void WorkThread::_work_thread(work_thread_param* param)
 }
 
 //-------------------------------------------------------------------------------------
-bool WorkThread::_on_message(void)
+void WorkThread::_on_message(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	for (;;)
@@ -101,14 +101,11 @@ bool WorkThread::_on_message(void)
 			}
 
 			//call listener
-			if (m_listener->on_workthread_message(packet)) {
-				return true;
-			}
+			m_listener->on_workthread_message(packet);
 
 			Packet::free_packet(packet);
 		}
 	}
-	return false;
 }
 
 //-------------------------------------------------------------------------------------

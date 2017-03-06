@@ -68,7 +68,7 @@ private:
 	virtual void on_connection_event(Connection::Event event, Connection* conn);
 	//// called by message port (in work thread)
 	virtual bool on_workthread_start(void);
-	virtual bool on_workthread_message(Packet*);
+	virtual void on_workthread_message(Packet*);
 
 	void _debug(DebugCmd& cmd);
 public:
