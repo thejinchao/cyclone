@@ -150,7 +150,7 @@ void Looper::delete_event(event_id_t id)
 		timer_s* timer = (timer_s*)channel.param;
 #ifdef CY_SYS_WINDOWS
 		::DeleteTimerQueueTimer(0, timer->htimer, INVALID_HANDLE_VALUE);
-#else
+#elif defined(CY_SYS_LINUX)
 		socket_api::close_socket(channel.fd);
 #endif
 		delete timer;
