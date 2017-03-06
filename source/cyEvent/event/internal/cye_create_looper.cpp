@@ -14,9 +14,9 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 Looper* Looper::create_looper(void)
 {
-#ifdef CY_HAVE_EPOLL
+#if (CY_POLL_TECH==CY_POLL_EPOLL)
 	return new Looper_epoll();
-#elif defined CY_HAVE_KQUEUE
+#elif (CY_POLL_TECH == CY_POLL_KQUEUE)
 	return new Looper_kqueue();
 #else
 	return new Looper_select();

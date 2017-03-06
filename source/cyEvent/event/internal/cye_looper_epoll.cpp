@@ -8,8 +8,6 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-#ifdef CY_HAVE_EPOLL
-
 //-------------------------------------------------------------------------------------
 Looper_epoll::Looper_epoll()
 	: Looper()
@@ -169,16 +167,5 @@ void Looper_epoll::_update_channel_remove_event(channel_s& channel, event_t even
 		}
 	}
 }
-
-#else
-
-#ifdef _MSC_VER
-//avoid MSVC LNK4221 WARNING
-namespace {
-	void nothing(void){}
-}
-#endif
-
-#endif
 
 }

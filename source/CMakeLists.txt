@@ -49,15 +49,26 @@ set(CY_EVENT_SOURCE_FILES
 )
 source_group("cyEvent" FILES ${CY_EVENT_SOURCE_FILES})
 
+
+if(CY_HAVE_EPOLL)
 set(CY_EVENT_INTERNAL_FILES
-	cyEvent/event/internal/cye_looper_select.h
 	cyEvent/event/internal/cye_looper_epoll.h
-	cyEvent/event/internal/cye_looper_kqueue.h
-	cyEvent/event/internal/cye_looper_select.cpp
 	cyEvent/event/internal/cye_looper_epoll.cpp
+	cyEvent/event/internal/cye_create_looper.cpp
+)
+elseif(CY_HAVE_KQUEUE)
+set(CY_EVENT_INTERNAL_FILES
+	cyEvent/event/internal/cye_looper_kqueue.h
 	cyEvent/event/internal/cye_looper_kqueue.cpp
 	cyEvent/event/internal/cye_create_looper.cpp
 )
+else()
+set(CY_EVENT_INTERNAL_FILES
+	cyEvent/event/internal/cye_looper_select.h
+	cyEvent/event/internal/cye_looper_select.cpp
+	cyEvent/event/internal/cye_create_looper.cpp
+)
+endif()
 source_group("cyEvent\\internal" FILES ${CY_EVENT_INTERNAL_FILES})
 
 ########

@@ -16,12 +16,23 @@ Copyright(C) thecodeway.com
 #cmakedefine CY_SYS_MACOS 1
 
 #cmakedefine CY_HAVE_EPOLL 1
-#cmakedefine CY_HAVE_SELECT 1
+#cmakedefine CY_HAVE_KQUEUE 1
 #cmakedefine CY_HAVE_READWRITE_V 1
 #cmakedefine CY_HAVE_PIPE2 1
-#cmakedefine CY_HAVE_KQUEUE 1
 
 #cmakedefine CY_ENABLE_LOG 1
+
+#define CY_POLL_EPOLL   1
+#define CY_POLL_KQUEUE  2
+#define CY_POLL_SELECT  3
+
+#ifdef CY_HAVE_EPOLL
+#define CY_POLL_TECH CY_POLL_EPOLL
+#elif defined CY_HAVE_KQUEUE
+#define CY_POLL_TECH CY_POLL_KQUEUE
+#else
+#define CY_POLL_TECH CY_POLL_SELECT
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
