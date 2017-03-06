@@ -72,6 +72,7 @@ public:
 	// utility functions(NOT thread safe)
 	//----------------------
 	pid_t get_thread_id(void) const { return m_current_thread; }
+	uint64_t get_loop_counts(void) const { return m_loop_counts; }
 
 	void debug(DebugInterface* debuger, const char* name);
 
@@ -110,6 +111,7 @@ protected:
 	channel_buffer m_channelBuffer;	//all event buf
 	event_id_t m_free_head;			//free list head in event buf
 	int32_t m_active_channel_counts;
+	uint64_t m_loop_counts;
 
 	pid_t m_current_thread;
 

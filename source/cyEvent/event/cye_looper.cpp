@@ -256,6 +256,7 @@ void Looper::loop(void)
 	channel_list writeList;
 
 	m_quit_cmd = 0;
+	m_loop_counts = 0;
 
 	for (;;)
 	{
@@ -264,7 +265,8 @@ void Looper::loop(void)
 
 		//wait in kernel...
 		_poll(readList, writeList, true);
-		
+		m_loop_counts++;
+
 		if (is_quit_pending()) break;
 
 		//reactor
@@ -311,6 +313,8 @@ void Looper::step(void)
 
 	//wait in kernel...
 	_poll(readList, writeList, false);
+	m_loop_counts++;
+
 	if (is_quit_pending()) return;
 
 	//reactor
