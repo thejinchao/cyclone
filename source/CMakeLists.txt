@@ -25,7 +25,6 @@ set(CY_CORE_SOURCE_FILES
 	cyCore/core/cyc_socket_api.cpp
 	cyCore/core/cyc_system_api.cpp
 	cyCore/core/cyc_ring_buf.cpp
-	cyCore/core/cyc_lf_queue.cpp
 )
 source_group("cyCore" FILES ${CY_CORE_SOURCE_FILES})
 
