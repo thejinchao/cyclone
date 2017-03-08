@@ -20,6 +20,9 @@ public:
 	ssize_t write(const char* buf, size_t len);
 	ssize_t read(char* buf, size_t len);
 
+	static bool construct_socket_pipe(pipe_port_t handles[2]);
+	static void destroy_socket_pipe(pipe_port_t handles[2]);
+
 private:
 	pipe_port_t m_pipe_fd[2];
 

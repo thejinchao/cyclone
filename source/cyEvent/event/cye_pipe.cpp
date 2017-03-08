@@ -10,9 +10,8 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-#ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
-static bool _construct_pipe_windows(pipe_port_t handles[2])
+bool Pipe::construct_socket_pipe(pipe_port_t handles[2])
 {	
 	//
 	//https://trac.transmissionbt.com/browser/trunk/libtransmission/trevent.c
@@ -68,21 +67,24 @@ static bool _construct_pipe_windows(pipe_port_t handles[2])
 }
 
 //-------------------------------------------------------------------------------------
-static void _destroy_pipe_windows(pipe_port_t handles[2])
+void Pipe::destroy_socket_pipe(pipe_port_t handles[2])
 {
-	socket_api::close_socket(handles[0]);
-	handles[0] = INVALID_SOCKET;
+	if (handles[0] != INVALID_SOCKET) {
+		socket_api::close_socket(handles[0]);
+		handles[0] = INVALID_SOCKET;
+	}
 
-	socket_api::close_socket(handles[1]);
-	handles[1] = INVALID_SOCKET;
+	if (handles[1] != INVALID_SOCKET) {
+		socket_api::close_socket(handles[1]);
+		handles[1] = INVALID_SOCKET;
+	}
 }
-#endif
 
 //-------------------------------------------------------------------------------------
 Pipe::Pipe()
 {
 #ifdef CY_SYS_WINDOWS
-	if (!_construct_pipe_windows(m_pipe_fd))
+	if (!construct_socket_pipe(m_pipe_fd))
 #else
 #ifdef CY_HAVE_PIPE2
 	if(::pipe2(m_pipe_fd, O_NONBLOCK|O_CLOEXEC)<0)
@@ -101,7 +103,7 @@ Pipe::Pipe()
 Pipe::~Pipe()
 {
 #ifdef CY_SYS_WINDOWS
-	_destroy_pipe_windows(m_pipe_fd);
+	destroy_socket_pipe(m_pipe_fd);
 #else
 	::close(m_pipe_fd[0]);
 	::close(m_pipe_fd[1]);
