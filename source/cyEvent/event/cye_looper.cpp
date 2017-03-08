@@ -126,7 +126,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	newValue.it_interval=ts; //set non-zero for repeated timer
 	::timerfd_settime(channel.fd, 0, &newValue, &oldValue);
 #else	//macOS, use kqueue
-	channel.fd = 0;
+	channel.fd = (socket_t)id;
 #endif
 
 	//add kRead event to poll
