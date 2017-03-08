@@ -248,6 +248,9 @@ void Looper::loop(void)
 {
 	assert(sys_api::thread_get_current_id() == m_current_thread);
 
+	//is quit request pushed before loop begin
+	if (is_quit_pending()) return;
+
 	//register inner pipe first
 	Pipe inner_pipe;
 	m_inner_pipe = &inner_pipe;
@@ -255,8 +258,6 @@ void Looper::loop(void)
 
 	channel_list readList;
 	channel_list writeList;
-
-	m_quit_cmd = 0;
 
 	for (;;)
 	{
