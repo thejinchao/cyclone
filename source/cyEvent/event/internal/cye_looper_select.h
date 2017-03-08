@@ -34,7 +34,7 @@ private:
 #ifndef CY_SYS_WINDOWS	//disable max_fd at windows platform
 	socket_t m_max_fd;  
 #endif
-
+protected:
 	event_id_t m_active_head;	//active list in fd_set;
 
 private:
