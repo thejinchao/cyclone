@@ -21,6 +21,7 @@ const Looper::event_id_t Looper::INVALID_EVENT_ID = (Looper::event_id_t)(~0);
 Looper::Looper()
 	: m_free_head(INVALID_EVENT_ID)
 	, m_active_channel_counts(0)
+	, m_loop_counts(0)
 	, m_current_thread(sys_api::thread_get_current_id())
 	, m_inner_pipe(0)
 	, m_inner_pipe_touched(0)
@@ -256,7 +257,6 @@ void Looper::loop(void)
 	channel_list writeList;
 
 	m_quit_cmd = 0;
-	m_loop_counts = 0;
 
 	for (;;)
 	{
