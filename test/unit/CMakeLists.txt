@@ -24,6 +24,10 @@ add_executable(cyt_unit
     cyt_unit_ringbuf.cpp
     cyt_unit_pipe.cpp
     cyt_unit_signal.cpp
+	cyt_event_fortest.h
+	cyt_unit_event_basic.cpp
+	cyt_unit_event_timer.cpp
+	cyt_unit_event_socket.cpp
 )
     
 set_property(TARGET cyt_unit PROPERTY FOLDER "test/unit")
