@@ -63,9 +63,9 @@ public:
 
 	void pushAndPop(void) {
 		m_queue = new UIntQueue();
-		m_result = new atomic_uint32_t[m_topValue + 1];
+		m_result = new std::atomic_flag[m_topValue + 1];
 		for (uint32_t i = 0; i <= m_topValue; i++) {
-			m_result[i] = 0;
+			m_result[i].clear();
 		}
 
 		ThreadData** pushThreadData = new ThreadData*[m_pushThreads];
@@ -145,7 +145,7 @@ public:
 #endif
 		//check result
 		for (uint32_t i = 1; i <= m_topValue; i++) {
-			EXPECT_EQ(1u, m_result[i]);
+			EXPECT_TRUE(m_result[i].test_and_set());
 		}
 
 		//free memory
@@ -201,9 +201,7 @@ private:
 			if (pop_result) {
 				EXPECT_GE(pop_value, 1u);
 				EXPECT_LE(pop_value, m_topValue);
-				uint32_t exp_value = 0;
-				bool sotre_result = m_result[pop_value].compare_exchange_weak(exp_value, 1u);
-				EXPECT_TRUE(sotre_result);
+				EXPECT_FALSE(m_result[pop_value].test_and_set());
 				threadData->workCounts++;
 			}
 			else {
@@ -219,7 +217,7 @@ private:
 
 private:
 	UIntQueue*	m_queue;
-	atomic_uint32_t* m_result;
+	std::atomic_flag* m_result;
 
 	const uint32_t m_topValue;
 	atomic_uint32_t m_currentValue;
@@ -257,7 +255,7 @@ TEST(LockFreeQueue, MultiThread)
 	
 	MultiThreadPushPop test2(100, 1, 1, false);
 	test2.pushAndPop();
-
+	
 	MultiThreadPushPop test3(100000u, 3, 5, true);
 	test3.pushAndPop();
 
