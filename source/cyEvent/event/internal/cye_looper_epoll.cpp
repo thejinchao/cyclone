@@ -51,7 +51,7 @@ void Looper_epoll::_poll(
 	//fill active channels
 	for (int i = 0; i < num_events; i++)
 	{
-		const epoll_event& event = m_events[i];
+		const epoll_event& event = m_events[(size_t)i];
 		uint32_t revents = event.events;
 		channel_s* channel = &(m_channelBuffer[event.data.u32]);
 

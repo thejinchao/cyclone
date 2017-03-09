@@ -371,7 +371,7 @@ bool _signal_unlock_wait(signal_s* sig, uint32_t ms)
 	uint64_t nanoseconds = ((uint64_t)tv.tv_sec) * kNanoSecondsPerSecond + ms * 1000 * 1000 + ((uint64_t)tv.tv_usec) * 1000;
 
 	timespec ts;
-	ts.tv_sec = nanoseconds / kNanoSecondsPerSecond;
+	ts.tv_sec = (time_t)(nanoseconds / kNanoSecondsPerSecond);
 	ts.tv_nsec = (long int)(nanoseconds - ((uint64_t)ts.tv_sec) * kNanoSecondsPerSecond);
 	
 	//wait...
