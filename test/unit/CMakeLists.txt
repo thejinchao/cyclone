@@ -28,8 +28,9 @@ add_executable(cyt_unit
 	cyt_unit_event_basic.cpp
 	cyt_unit_event_timer.cpp
 	cyt_unit_event_socket.cpp
+	cyt_uint_system.cpp
 )
-    
+
 set_property(TARGET cyt_unit PROPERTY FOLDER "test/unit")
 
 if(CY_SYS_WINDOWS)
