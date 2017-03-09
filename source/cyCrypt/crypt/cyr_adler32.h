@@ -10,7 +10,7 @@ namespace cyclone
 {
 
 //initial adler32 value
-#define INITIAL_ADLER	(1L)
+#define INITIAL_ADLER	(1u)
 
 /*
 * Update a running Adler-32 checksum with the bytes buf[0..len-1] and
