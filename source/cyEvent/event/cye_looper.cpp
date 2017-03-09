@@ -101,7 +101,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 		//error...
 		CY_LOG(L_FATAL, "CreateTimerQueueTimer Failed");
         delete timer;
-		return 0;
+		return INVALID_EVENT_ID;
 	}
 #elif defined(CY_SYS_LINUX)
 	channel.fd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -110,7 +110,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 		//error
         CY_LOG(L_FATAL, "call timerfd_create Failed");
         delete timer;
-        return 0;
+        return INVALID_EVENT_ID;
 	}
 
 	struct itimerspec newValue;
