@@ -139,7 +139,7 @@ TEST(EventLooper, Timer)
 		int64_t end_time = sys_api::time_now();
 
 		EXPECT_EQ(1, data.counts.load());
-		EXPECT_GE(end_time - begin_time, data.freq * 1000ll);
+		EXPECT_GE(end_time - begin_time, (data.freq - MAX_TIMER_ERROR) * 1000ll);
 		EXPECT_LE(end_time - begin_time, (data.freq + MAX_TIMER_ERROR) * 1000ll);
 		sys_api::thread_join(thread);
 	}
