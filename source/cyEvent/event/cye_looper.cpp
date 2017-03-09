@@ -7,7 +7,7 @@ Copyright(C) thecodeway.com
 #include "internal/cye_looper_epoll.h"
 #include "internal/cye_looper_select.h"
 
-#ifdef CY_SYS_LINUX
+#ifdef CY_HAVE_TIMERFD
 #include <sys/timerfd.h>
 #endif
 
@@ -103,7 +103,7 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
         delete timer;
 		return INVALID_EVENT_ID;
 	}
-#elif defined(CY_SYS_LINUX)
+#elif defined(CY_HAVE_TIMERFD)
 	channel.fd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 
 	if (channel.fd < 0) {
@@ -151,7 +151,7 @@ void Looper::delete_event(event_id_t id)
 		timer_s* timer = (timer_s*)channel.param;
 #ifdef CY_SYS_WINDOWS
 		::DeleteTimerQueueTimer(0, timer->htimer, INVALID_HANDLE_VALUE);
-#elif defined(CY_SYS_LINUX)
+#elif defined(CY_HAVE_TIMERFD)
 		socket_api::close_socket(channel.fd);
 #endif
 		delete timer;

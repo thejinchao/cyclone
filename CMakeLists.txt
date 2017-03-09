@@ -62,6 +62,7 @@ check_function_exists(epoll_ctl	CY_HAVE_EPOLL)
 check_function_exists(readv CY_HAVE_READWRITE_V)
 check_function_exists(pipe2 CY_HAVE_PIPE2)
 check_function_exists(kqueue CY_HAVE_KQUEUE)
+check_function_exists(timerfd_create CY_HAVE_TIMERFD)
 
 
 ########
@@ -116,8 +117,8 @@ if(GTEST_SDK_ROOT)
             set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib/x86)
         endif()
     else()
-        set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib)
-    endif()
+            set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib)
+        endif()
 endif()
 
 
