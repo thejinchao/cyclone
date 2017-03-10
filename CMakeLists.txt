@@ -64,6 +64,21 @@ check_function_exists(pipe2 CY_HAVE_PIPE2)
 check_function_exists(kqueue CY_HAVE_KQUEUE)
 check_function_exists(timerfd_create CY_HAVE_TIMERFD)
 
+########
+#compiler flag
+########
+if(MSVC)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+	if(CY_MSVC_MT)
+		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MTd /W4 /ZI")
+		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MT /W4 /Zi")
+	else()
+		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MDd /W4 /ZI")
+		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MD /W4 /Zi")
+	endif()
+else()
+	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -O2 -std=c++0x -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
+endif()
 
 ########
 #find jemalloc library
@@ -102,6 +117,9 @@ endif()
 ########
 #find gtest and gmock library
 ########
+if(MSVC AND CY_MSVC_MT)
+    set(GTEST_MSVC_SEARCH MT)
+endif()
 find_package(GTest)
 
 ########
@@ -113,26 +131,6 @@ set(CY_ENABLE_LOG TRUE)
 set(CY_AUTO_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/source)
 set(CY_AUTO_CONFIG_FILE ${CY_AUTO_INCLUDE_PATH}/cyclone_config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/cyclone_config.h.in ${CY_AUTO_CONFIG_FILE})
-
-########
-#compiler flag
-########
-if(MSVC)
-	option(CY_USE_MULTITHREAD "Use Multi-thread /MT" OFF)
-endif()
-
-if(MSVC)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	if(CY_USE_MULTITHREAD)
-		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MTd /W4 /ZI")
-		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MT /W4 /Zi")
-	else()
-		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MDd /W4 /ZI")
-		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MD /W4 /Zi")
-	endif()
-else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -O2 -std=c++0x -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
-endif()
 
 ########
 #sub dictionary
