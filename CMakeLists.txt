@@ -46,7 +46,7 @@ check_include_file(crypt.h			CY_HAVE_CRYPT_H)
 check_include_file(sys/prctl.h		CY_HAVE_SYS_PRCTL_H)
 check_include_file(sys/vfs.h		CY_HAVE_SYS_VFS_H)
 check_include_file(sys/uio.h		CY_HAVE_SYS_UIO_H)
-check_include_file(sys/eventfd.h		CY_HAVE_SYS_EVENTFD_H)
+check_include_file(sys/eventfd.h	CY_HAVE_SYS_EVENTFD_H)
 
 if(MSVC)
 check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H)
@@ -102,25 +102,7 @@ endif()
 ########
 #find gtest and gmock library
 ########
-find_path(GTEST_SDK_ROOT
-    NAMES include/gtest/gtest.h
-    HINTS $ENV{GTEST_DIR}
-)
-
-if(GTEST_SDK_ROOT)
-    set(GTEST_INCLUDE_DIR ${GTEST_SDK_ROOT}/include)
-
-    if(MSVC)
-        if(CMAKE_CL_64)
-            set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib/x64)
-        else()
-            set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib/x86)
-        endif()
-    else()
-            set(GTEST_LIBRARIES_PATH ${GTEST_SDK_ROOT}/lib)
-        endif()
-endif()
-
+find_package(GTest)
 
 ########
 #is log enable
@@ -166,6 +148,11 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(source)
 add_subdirectory(samples)
-if(GTEST_SDK_ROOT)
+
+########
+#test dictionary
+########
+if(GTEST_FOUND)
+    enable_testing()
     add_subdirectory(test)
 endif()
