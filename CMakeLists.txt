@@ -51,7 +51,7 @@ check_include_file(sys/eventfd.h	CY_HAVE_SYS_EVENTFD_H)
 if(MSVC)
 check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H)
 else()
-check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H "-std=c++0x")
+check_include_file_cxx(atomic		CY_HAVE_ATOMIC_H "-std=c++11")
 endif()
 
 ########
@@ -77,7 +77,7 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MD /W4 /Zi")
 	endif()
 else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -O2 -std=c++0x -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
+	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -O2 -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
 endif()
 
 ########
