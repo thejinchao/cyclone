@@ -51,7 +51,7 @@ else()
 target_link_libraries(cyt_unit
 	cyclone
 	${JEMALLOC_LIBRARIES}
-	pthread
+	${PTHREAD_LIBRARIES}
 	${GTEST_BOTH_LIBRARIES}
 )
 

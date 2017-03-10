@@ -11,14 +11,14 @@ project(cyclone)
 ########
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(CY_SYS_LINUX TRUE)
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set(CY_SYS_WINDOWS TRUE)
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set(CY_SYS_MACOS TRUE)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
+	set(CY_SYS_ANDROID TRUE)
+else()
+    message(FATAL_ERROR "Unknown target system \"${CMAKE_SYSTEM_NAME}\".")
 endif()
 
 ########
@@ -81,6 +81,18 @@ else()
 endif()
 
 ########
+#find third library
+########
+
+#defined in $ANDROID_SDK_ROOT/build/cmake/android.toolchain.cmake
+if(CY_SYS_ANDROID)
+unset(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM)
+unset(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY)
+unset(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE)
+unset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
+endif()
+
+########
 #find jemalloc library
 ########
 find_path(JEMALLOC_SDK_ROOT
@@ -123,11 +135,22 @@ endif()
 find_package(GTest)
 
 ########
+#pthread library
+########
+if(CY_SYS_ANDROID)
+    set(PTHREAD_LIBRARIES "")
+else()
+    set(PTHREAD_LIBRARIES "pthread")
+endif()
+
+########
 #is log enable
 ########
 set(CY_ENABLE_LOG TRUE)
 
+########
 #make configure files
+########
 set(CY_AUTO_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/source)
 set(CY_AUTO_CONFIG_FILE ${CY_AUTO_INCLUDE_PATH}/cyclone_config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/cyclone_config.h.in ${CY_AUTO_CONFIG_FILE})

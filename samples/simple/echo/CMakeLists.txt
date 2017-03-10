@@ -39,13 +39,13 @@ else()
 target_link_libraries(echo-server
 	cyclone
 	${JEMALLOC_LIBRARIES}
-	pthread
+	${PTHREAD_LIBRARIES}
 )
 
 target_link_libraries(echo-client
 	cyclone
 	${JEMALLOC_LIBRARIES}
-	pthread
+	${PTHREAD_LIBRARIES}
 )
 
 endif()
