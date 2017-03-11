@@ -29,6 +29,7 @@ set(cyt_unit_sources
     cyt_unit_event_timer.cpp
     cyt_unit_event_socket.cpp
     cyt_uint_system.cpp
+    cyt_unit_packet.cpp
 )
 
 add_executable(cyt_unit 
