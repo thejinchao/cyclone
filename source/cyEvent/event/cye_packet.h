@@ -33,7 +33,7 @@ class Packet
 public:
 	void clean(void);
 
-	bool build(size_t head_size, uint16_t packet_id, uint16_t packet_size, const char* packet_content);
+	void build(size_t head_size, uint16_t packet_id, uint16_t packet_size, const char* packet_content);
 	bool build(size_t head_size, Pipe& pipe);
 	bool build(size_t head_size, RingBuf& ring_buf);
 

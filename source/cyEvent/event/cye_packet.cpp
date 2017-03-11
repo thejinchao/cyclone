@@ -43,11 +43,11 @@ void Packet::free_packet(Packet* p)
 //-------------------------------------------------------------------------------------
 Packet::Packet()
 	: m_head_size(0)
-	, m_memory_buf(0)
+	, m_memory_buf(nullptr)
 	, m_memory_size(0)
 	, m_packet_size(0)
 	, m_packet_id(0)
-	, m_content(0)
+	, m_content(nullptr)
 {
 
 }
@@ -67,11 +67,11 @@ void Packet::clean(void)
 	{
 		CY_FREE(m_memory_buf);
 	}
-	m_memory_buf = 0;
+	m_memory_buf = nullptr;
 	m_memory_size = 0;
 	m_packet_size = 0;
 	m_packet_id = 0;
-	m_content = 0;
+	m_content = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -109,11 +109,11 @@ void Packet::_resize(size_t head_size, size_t packet_size)
 
 	m_packet_size = (uint16_t*)m_memory_buf;
 	m_packet_id = (uint16_t*)(m_memory_buf+sizeof(uint16_t));
-	m_content = packet_size>0 ? (char*)(m_memory_buf + head_size) : 0;
+	m_content = packet_size>0 ? (char*)(m_memory_buf + head_size) : nullptr;
 }
 
 //-------------------------------------------------------------------------------------
-bool Packet::build(size_t head_size, uint16_t packet_id, uint16_t packet_size, const char* packet_content)
+void Packet::build(size_t head_size, uint16_t packet_id, uint16_t packet_size, const char* packet_content)
 {
 	clean();
 
@@ -123,9 +123,8 @@ bool Packet::build(size_t head_size, uint16_t packet_id, uint16_t packet_size, c
 	*m_packet_size = socket_api::ntoh_16(packet_size);
 	*m_packet_id = socket_api::ntoh_16(packet_id);
 
-	if (packet_content)
+	if (m_content && packet_content)
 		memcpy(m_content, packet_content, packet_size);
-	return true;
 }
 
 //-------------------------------------------------------------------------------------
@@ -168,9 +167,7 @@ bool Packet::build(size_t head_size, RingBuf& ring_buf)
 
 	_resize(head_size, packet_size);
 
-	ring_buf.memcpy_out(m_memory_buf, m_memory_size);
-
-	return true;
+	return (m_memory_size==ring_buf.memcpy_out(m_memory_buf, m_memory_size));
 }
 
 }
