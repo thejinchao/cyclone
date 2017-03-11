@@ -71,7 +71,7 @@ public:
 	//----------------------
 	// utility functions(NOT thread safe)
 	//----------------------
-	pid_t get_thread_id(void) const { return m_current_thread; }
+	thread_id_t get_thread_id(void) const { return m_current_thread; }
 	uint64_t get_loop_counts(void) const { return m_loop_counts; }
 
 	void debug(DebugInterface* debuger, const char* name);
@@ -113,7 +113,7 @@ protected:
 	int32_t m_active_channel_counts;
 	uint64_t m_loop_counts;
 
-	pid_t m_current_thread;
+	thread_id_t m_current_thread;
 
 	sys_api::mutex_t m_lock;
 

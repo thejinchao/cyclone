@@ -69,10 +69,13 @@ Copyright(C) thecodeway.com
 #define CY_FREE free
 #endif
 
+#include <string>
 #include <vector>
 #include <list>
 #include <set>
 #include <unordered_map>
+#include <functional>
+#include <thread>
 
 #ifdef CY_SYS_WINDOWS
 	#define FD_SETSIZE (1024)

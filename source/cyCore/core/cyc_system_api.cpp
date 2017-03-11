@@ -19,6 +19,7 @@ Copyright(C) thecodeway.com
 #endif
 
 #include <time.h>
+#include <chrono>
 
 namespace cyclone
 {
@@ -66,135 +67,66 @@ void process_get_module_name(char* module_name, size_t max_size)
 //-------------------------------------------------------------------------------------
 struct thread_data_s
 {
-	std::atomic<pid_t> tid;
+	thread_id_t tid;
+	std::thread thandle;
 	thread_function entry_func;
 	void* param;
-	char name[MAX_PATH];
+	std::string name;
 	bool detached;
-#ifdef CY_SYS_WINDOWS
-	HANDLE handle;
-#else
-	pthread_t handle;
-#endif
+	signal_t resume_signal;
 };
 
 //-------------------------------------------------------------------------------------
-#ifdef CY_SYS_WINDOWS
-	static __declspec(thread) thread_data_s* s_thread_data = 0;
-#else
-	static __thread thread_data_s* s_thread_data = 0;
-#endif
+static thread_local thread_data_s* s_thread_data = nullptr;
 
 //-------------------------------------------------------------------------------------
-pid_t INLINE _nativeThreadID(void)
+thread_id_t thread_get_current_id(void)
 {
-#ifdef CY_SYS_WINDOWS
-	return static_cast<pid_t>(::GetCurrentThreadId());
-#elif defined CY_SYS_MACOS
-	return static_cast<pid_t>(::syscall(SYS_thread_selfid));
-#else
-	return static_cast<pid_t>(::syscall(SYS_gettid));
-#endif
+	return s_thread_data == 0 ? std::this_thread::get_id() : s_thread_data->tid;
 }
 
 //-------------------------------------------------------------------------------------
-pid_t thread_get_current_id(void)
-{
-	return s_thread_data == 0 ? _nativeThreadID() : s_thread_data->tid.load();
-}
-
-//-------------------------------------------------------------------------------------
-pid_t thread_get_id(thread_t t)
+thread_id_t thread_get_id(thread_t t)
 {
 	thread_data_s* data = (thread_data_s*)t;
 	return data->tid;
 }
 
-#ifdef CY_SYS_WINDOWS
 //-------------------------------------------------------------------------------------
-static unsigned int __stdcall __win32_thread_entry(void* param)
+void _thread_entry(thread_data_s* data)
 {
-	thread_data_s* data = (thread_data_s*)param;
 	s_thread_data = data;
+	signal_wait(data->resume_signal);
+	signal_destroy(data->resume_signal);
+	data->resume_signal = 0;
 
 	if (data->entry_func)
 		data->entry_func(data->param);
 
-	s_thread_data = 0;
+	s_thread_data = nullptr;
 	if (data->detached) {
-		::CloseHandle(data->handle);
-		CY_FREE(data);
+		delete data;
 	}
-	_endthreadex(0);
-	return 0;
 }
-#else
-//-------------------------------------------------------------------------------------
-static void* __pthread_thread_entry(void* param)
-{
-	thread_data_s* data = (thread_data_s*)param;
-	s_thread_data = data;
-
-	data->tid = _nativeThreadID();
-
-	if (data->entry_func)
-		data->entry_func(data->param);
-
-	s_thread_data = 0;
-	if (data->detached) {
-		CY_FREE(data);
-	}
-	pthread_exit(0);
-	return 0;
-}
-#endif
 
 //-------------------------------------------------------------------------------------
 thread_t _thread_create(thread_function func, void* param, const char* name, bool detached)
 {
-	thread_data_s* data = (thread_data_s*)CY_MALLOC(sizeof(*data));
-	data->tid = 0;
+	thread_data_s* data = new thread_data_s;
 	data->param = param;
 	data->entry_func = func;
-	data->handle = 0;
 	data->detached = detached;
-	if (name != 0)
-		strncpy(data->name, name, MAX_PATH);
-	else
-		data->name[0] = 0;
+	data->name = name;
+	data->resume_signal = signal_create();
+	data->thandle = std::thread(_thread_entry, data);
+	data->tid = data->thandle.get_id();
 
-#ifdef CY_SYS_WINDOWS
-	unsigned int thread_id;
-	HANDLE hThread = (HANDLE)::_beginthreadex(0, 0,
-		__win32_thread_entry, (void*)(data),
-		THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME, &thread_id);
+	//detached thread
+	if (data->detached) data->thandle.detach();
 	
-	if (hThread < 0) {
-		CY_FREE(data);
-		return 0;
-	}
-	data->handle = hThread;
-	data->tid = thread_id;
-	::ResumeThread(hThread);
+	//resume thread
+	signal_notify(data->resume_signal);
 	return data;
-#else
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	if(detached)
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-	pthread_t thread;
-	int ret = pthread_create(&thread, &attr, __pthread_thread_entry, data);
-	pthread_attr_destroy(&attr);
-
-	if(ret){
-		CY_FREE(data);
-		return 0;
-	}
-	data->handle = thread;
-	while(data->tid == 0); //make sure we got the pid(BUSY LOOP, BUT IT IS VERY SHORT)
-	return data;
-#endif
 }
 
 //-------------------------------------------------------------------------------------
@@ -212,45 +144,30 @@ void thread_create_detached(thread_function func, void* param, const char* name)
 //-------------------------------------------------------------------------------------
 void thread_sleep(int32_t msec)
 {
-#ifdef CY_SYS_WINDOWS
-	::Sleep(msec);
-#else
-	struct timespec ts = { 0, 0 };
-	ts.tv_sec = static_cast<time_t>(msec / 1000);
-	ts.tv_nsec = static_cast<long>((msec % 1000) * 1000*1000);
-	::nanosleep(&ts, NULL);
-#endif
+	std::this_thread::sleep_for(std::chrono::milliseconds(msec));
 }
 
 //-------------------------------------------------------------------------------------
 void thread_join(thread_t thread)
 {
 	thread_data_s* data = (thread_data_s*)thread;
-#ifdef CY_SYS_WINDOWS
-	::WaitForSingleObject(data->handle, INFINITE);
-	::CloseHandle(data->handle);
-#else
-	pthread_join(data->handle, 0);
-#endif
+	data->thandle.join();
+
 	if (!(data->detached)) {
-		CY_FREE(data);
+		delete data;
 	}
 }
 
 //-------------------------------------------------------------------------------------
 const char* thread_get_current_name(void)
 {
-	return s_thread_data == 0 ? "<UNNAME>" : s_thread_data->name;
+	return (s_thread_data == nullptr) ? "<UNNAME>" : s_thread_data->name.c_str();
 }
 
 //-------------------------------------------------------------------------------------
 void thread_yield(void)
 {
-#ifdef CY_SYS_WINDOWS
-	Sleep(0);
-#else
-	sched_yield();
-#endif
+	std::this_thread::yield();
 }
 
 //-------------------------------------------------------------------------------------
