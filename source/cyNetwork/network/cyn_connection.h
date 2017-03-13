@@ -100,18 +100,11 @@ private:
 
 private:
 	//// on socket read event
-	static void _on_socket_read_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		((Connection*)param)->_on_socket_read();
-	}
 	void _on_socket_read(void);
 
 	//// on socket read event
-	static void _on_socket_write_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		((Connection*)param)->_on_socket_write();
-	}
 	void _on_socket_write(void);
 
-private:
 	//// on socket close
 	void _on_socket_close(void);
 

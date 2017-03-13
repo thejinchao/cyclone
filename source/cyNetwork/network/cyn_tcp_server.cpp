@@ -128,7 +128,8 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//start listen thread
-	m_acceptor_thread = sys_api::thread_create(_accept_thread_entry, this, "accept");
+	m_acceptor_thread = sys_api::thread_create(
+		std::bind(&TcpServer::_accept_thread, this), this, "accept");
 
 	//write debug variable
 	if (m_debuger && m_debuger->is_enable()) {
@@ -259,7 +260,7 @@ void TcpServer::_accept_thread(void)
 		m_accept_looper->register_event(sfd,
 			Looper::kRead,
 			this,
-			_on_accept_function_entry,
+			std::bind(&TcpServer::_on_accept_function, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 			0);
 
 		//begin listen

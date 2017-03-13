@@ -63,22 +63,12 @@ public:
 
 private:
 	/// on read/write callback function
-	static void _on_socket_read_write_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		((TcpClient*)param)->_on_socket_read_write(id, fd, event);
-	}
 	void _on_socket_read_write(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 #ifdef CY_SYS_WINDOWS
-	static void _on_connection_timer_entry(Looper::event_id_t id, void* param){
-		((TcpClient*)param)->_on_connection_timer(id);
-	}
 	void _on_connection_timer(Looper::event_id_t id);
 	Looper::event_id_t m_connection_timer_id;
 #endif
-
-	static void _on_retry_connect_timer_entry(Looper::event_id_t id, void* param){
-		((TcpClient*)param)->_on_retry_connect_timer(id);
-	}
 	void _on_retry_connect_timer(Looper::event_id_t id);
 
 private:

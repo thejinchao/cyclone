@@ -59,13 +59,9 @@ private:
 		atomic_int32_t	_ready;
 	};
 	/// work thread function
-	static void _work_thread_entry(void* param);
-	void _work_thread(work_thread_param* param);
+	void _work_thread(void* param);
 
 	//// on work thread receive message
-	static void _on_message_entry(Looper::event_id_t, socket_t, Looper::event_t, void* param){
-		((WorkThread*)param)->_on_message();
-	}
 	void _on_message(void);
 
 public:

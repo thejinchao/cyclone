@@ -95,15 +95,9 @@ private:
 
 private:
 	/// accept thread function
-	static void _accept_thread_entry(void* param){
-		((TcpServer*)param)->_accept_thread();
-	}
 	void _accept_thread(void);
 
 	/// on acception callback function
-	static void _on_accept_function_entry(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param){
-		((TcpServer*)param)->_on_accept_function(id, fd, event);
-	}
 	void _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:

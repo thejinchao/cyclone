@@ -37,32 +37,28 @@ void WorkThread::start(const char* name, Listener* listener)
 
 	//run the work thread
 	strncpy(m_name, (name ? name : "worker"), MAX_PATH);
-	m_thread = sys_api::thread_create(_work_thread_entry, &param, m_name);
+	m_thread = sys_api::thread_create(
+		std::bind(&WorkThread::_work_thread, this, std::placeholders::_1), &param, m_name);
 
 	//wait work thread ready signal
-	while (param._ready == 0) sys_api::thread_sleep(1);	//BUSY LOOP!
+	while (param._ready == 0) sys_api::thread_yield();	//BUSY LOOP!
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::_work_thread_entry(void* param)
+void WorkThread::_work_thread(void* param)
 {
 	work_thread_param* thread_param = (work_thread_param*)param;
-	thread_param->_this->_work_thread(thread_param);
-}
 
-//-------------------------------------------------------------------------------------
-void WorkThread::_work_thread(work_thread_param* param)
-{
 	//create work event looper
 	m_looper = Looper::create_looper();
 
 	//register pipe read event
 	m_looper->register_event(m_pipe.get_read_port(), Looper::kRead, this,
-		_on_message_entry, 0);
+		std::bind(&WorkThread::_on_message, this), 0);
 
 	// set work thread ready signal
-	param->_ready = 1;
-	param = 0;//we don't use it again!
+	thread_param->_ready = 1;
+	thread_param = nullptr;//we don't use it again!
 
 	//we start!
 	if (m_listener)

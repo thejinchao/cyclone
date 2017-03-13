@@ -77,7 +77,9 @@ bool TcpClient::connect(const Address& addr, uint32_t timeOutSeconds)
 
 	//set event callback
 	m_socket_event_id = m_looper->register_event(m_socket, Looper::kRead | Looper::kWrite, this,
-		_on_socket_read_write_entry, _on_socket_read_write_entry);
+		std::bind(&TcpClient::_on_socket_read_write, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&TcpClient::_on_socket_read_write, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		);
 
 	//start connect to server
 	if (!socket_api::connect(m_socket, addr.get_sockaddr_in()))
@@ -89,7 +91,8 @@ bool TcpClient::connect(const Address& addr, uint32_t timeOutSeconds)
 #ifdef CY_SYS_WINDOWS
 	//for select mode in windows, the non-block fd of connect socket wouldn't be readable or writeable if connection failed
 	//but... it's ugly...
-	m_connection_timer_id = m_looper->register_timer_event(timeOutSeconds, this, _on_connection_timer_entry);
+	m_connection_timer_id = m_looper->register_timer_event(timeOutSeconds, this, 
+		std::bind(&TcpClient::_on_connection_timer, this, std::placeholders::_1));
 #endif
 	return true;
 }
@@ -135,7 +138,8 @@ void TcpClient::_check_connect_status(bool abort)
 			//retry connection?
 			if (retry_sleep_ms>0) {
 				//remove the timer
-				m_retry_timer_id = m_looper->register_timer_event(retry_sleep_ms, this, _on_retry_connect_timer_entry);
+				m_retry_timer_id = m_looper->register_timer_event(retry_sleep_ms, this, 
+					std::bind(&TcpClient::_on_retry_connect_timer, this, std::placeholders::_1));
 			}
 		}
 
@@ -210,7 +214,9 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 
 			//retry connection?
 			if (retry_sleep_ms>0) {
-				m_retry_timer_id = m_looper->register_timer_event(retry_sleep_ms, this, _on_retry_connect_timer_entry);
+				m_retry_timer_id = m_looper->register_timer_event(retry_sleep_ms, this,
+					std::bind(&TcpClient::_on_retry_connect_timer, this, std::placeholders::_1));
+
 			}
 		}
 	}

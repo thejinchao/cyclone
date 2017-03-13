@@ -25,8 +25,8 @@ public:
 		kWrite	= 1<<1,
 	};
 
-	typedef void(*event_callback)(event_id_t id, socket_t fd, event_t event, void* param);
-	typedef void(*timer_callback)(event_id_t id, void* param);
+	typedef std::function<void(event_id_t id, socket_t fd, event_t event, void* param)> event_callback;
+	typedef std::function<void(event_id_t id, void* param)> timer_callback;
 
 public:
 	//----------------------

@@ -63,8 +63,9 @@ void Connection::established(void)
 	m_event_id = m_looper->register_event(m_socket.get_fd(),
 		Looper::kRead,			//care read event only
 		this,
-		_on_socket_read_entry,
-		_on_socket_write_entry);
+		std::bind(&Connection::_on_socket_read, this),
+		std::bind(&Connection::_on_socket_write,this)
+	);
 
 	//logic callback
 	if (m_listener) {
