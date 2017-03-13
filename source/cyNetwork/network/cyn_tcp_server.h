@@ -70,12 +70,13 @@ public:
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	typedef std::vector< socket_t > SocketVector;
+	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
 
 	SocketVector	m_acceptor_sockets;
 	Looper*			m_accept_looper;
 	thread_t		m_acceptor_thread;
 
-	ServerWorkThread*	m_work_thread_pool[MAX_WORK_THREAD_COUNTS];
+	ServerWorkThreadArray	m_work_thread_pool;
 	int32_t			m_work_thread_counts;
 	atomic_int32_t	m_next_work;
 
@@ -90,7 +91,7 @@ private:
 
 	atomic_int32_t m_next_connection_id;
 
-	char	m_name[MAX_PATH];
+	std::string	m_name;
 
 	DebugInterface*	m_debuger;
 

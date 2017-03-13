@@ -12,24 +12,18 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debuger)
-	: m_acceptor_thread(0)
+	: m_accept_looper(0)
+	, m_acceptor_thread(0)
 	, m_work_thread_counts(0)
+	, m_next_work(0)
 	, m_listener(listener)
+	, m_running(0)
+	, m_shutdown_ing(0)
+	, m_next_connection_id(0)
+	, m_name(name ? name : "server")
 	, m_debuger(debuger)
 {
-	//zero work thread pool
-	memset(m_work_thread_pool, 0, sizeof(m_work_thread_pool[0])*MAX_WORK_THREAD_COUNTS);
 
-	//set server name
-	strncpy(m_name, name ? name : "server", MAX_PATH);
-
-	//set connection id from 1
-	m_next_connection_id = 1;
-
-	m_next_work = 0;
-	m_running = 0;
-	m_shutdown_ing = 0;
-	m_next_connection_id = 0;
 }
 
 //-------------------------------------------------------------------------------------
@@ -103,10 +97,9 @@ bool TcpServer::start(int32_t work_thread_counts)
 
 	//start work thread pool
 	m_work_thread_counts = work_thread_counts;
-	for (int32_t i = 0; i < m_work_thread_counts; i++)
-	{
+	for (int32_t i = 0; i < m_work_thread_counts; i++) {
 		//run the thread
-		m_work_thread_pool[i] = new ServerWorkThread(i, this, m_name, m_debuger);
+		m_work_thread_pool.push_back(new ServerWorkThread(i, this, m_name.c_str(), m_debuger));
 	}
 
 	//start listen thread
@@ -116,7 +109,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	//write debug variable
 	if (m_debuger && m_debuger->is_enable()) {
 		char key_value[256] = { 0 };
-		snprintf(key_value, 256, "TcpServer:%s:thread_counts", m_name);
+		snprintf(key_value, 256, "TcpServer:%s:thread_counts", m_name.c_str());
 		m_debuger->set_debug_value(key_value, m_work_thread_counts);
 	}
 	return true;
@@ -141,11 +134,8 @@ void TcpServer::stop(void)
 	if (m_running == 0) return;
 
 	//this function can't run in work thread
-	for (int32_t i = 0; i < m_work_thread_counts; i++)
-	{
-		ServerWorkThread* work = m_work_thread_pool[i];
-		if (work->is_in_workthread())
-		{
+	for (auto work : m_work_thread_pool){
+		if (work->is_in_workthread()){
 			CY_LOG(L_ERROR, "you can't stop server in work thread.");
 			return;
 		}
@@ -161,25 +151,22 @@ void TcpServer::stop(void)
 	socket_api::close_socket(s);
 
 	//first shutdown all connection
-	for (int32_t i = 0; i < m_work_thread_counts; i++){
-		ServerWorkThread* work = m_work_thread_pool[i];
-
+	for (auto work : m_work_thread_pool){
 		work->send_message(ServerWorkThread::ShutdownCmd::ID, 0, 0);
 	}
 
 	//wait all thread quit
-	for (int32_t i = 0; i < m_work_thread_counts; i++){
-		ServerWorkThread* work = m_work_thread_pool[i];
+	for (auto work : m_work_thread_pool){
 		work->join();
 		delete work;
 	}
+	m_work_thread_pool.clear();
 
 	//wait accept thread quit
 	sys_api::thread_join(m_acceptor_thread);
 
 	//close the listen socket
-	for (auto sfd : m_acceptor_sockets)
-	{
+	for (auto sfd : m_acceptor_sockets){
 		socket_api::close_socket(sfd);
 	}
 	m_acceptor_sockets.clear();
@@ -212,7 +199,7 @@ void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 
 	//send it to one of work thread		
 	int32_t index = _get_next_work_thread();
-	ServerWorkThread* work = m_work_thread_pool[index];
+	ServerWorkThread* work = m_work_thread_pool[(size_t)index];
 	
 	//write new connection command(cmd, socket_t)		
 	ServerWorkThread::NewConnectionCmd newConnectionCmd;
@@ -278,7 +265,7 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet* messa
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
 
-	ServerWorkThread* work = m_work_thread_pool[work_thread_index];
+	ServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
 	work->send_message(message);
 }
 
@@ -287,7 +274,7 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts && counts>0);
 
-	ServerWorkThread* work = m_work_thread_pool[work_thread_index];
+	ServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
 	work->send_message(message, counts);
 }
 
@@ -295,7 +282,7 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 Connection* TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id)
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
-	ServerWorkThread* work = m_work_thread_pool[work_thread_index];
+	ServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
 	assert(work->is_in_workthread());
 
 	return work->get_connection(conn_id);
@@ -306,9 +293,7 @@ void TcpServer::debug(void)
 {
 	ServerWorkThread::DebugCmd cmd;
 
-	for (int32_t i = 0; i < m_work_thread_counts; i++)
-	{
-		ServerWorkThread* work = m_work_thread_pool[i];
+	for (auto work : m_work_thread_pool) {
 		work->send_message(ServerWorkThread::DebugCmd::ID, sizeof(cmd), (const char*)&cmd);
 	}
 }
