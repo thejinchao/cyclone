@@ -36,7 +36,7 @@ public:
 	void shutdown_connection(Connection* conn); 
 
 	/// get bind address, if index is invalid return default Address value
-	Address get_bind_address(int index);
+	Address get_bind_address(size_t index);
 
 	/// send work message to one of work thread(thread safe)
 	void send_work_message(int32_t work_thread_index, const Packet* message);
@@ -68,9 +68,10 @@ public:
 	Listener* get_listener(void) { 	return m_listener; }
 
 private:
-	enum { MAX_BIND_PORT_COUNTS = 128, MAX_WORK_THREAD_COUNTS = 32 };
+	enum { MAX_WORK_THREAD_COUNTS = 32 };
+	typedef std::vector< socket_t > SocketVector;
 
-	Socket*			m_acceptor_socket[MAX_BIND_PORT_COUNTS];
+	SocketVector	m_acceptor_sockets;
 	Looper*			m_accept_looper;
 	thread_t		m_acceptor_thread;
 
