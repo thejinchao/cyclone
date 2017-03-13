@@ -6,7 +6,6 @@ Copyright(C) thecodeway.com
 
 #include <cyclone_config.h>
 
-#include <network/cyn_socket.h>
 #include <network/cyn_address.h>
 #include <network/cyn_tcp_server.h>
 #include <network/cyn_connection.h>

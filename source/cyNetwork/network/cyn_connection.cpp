@@ -26,8 +26,8 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	socket_api::set_nonblock(sfd, true);
 	socket_api::set_close_onexec(sfd, true);
 	//set other socket option
-	m_socket.set_keep_alive(true);
-	m_socket.set_linger(false, 0);
+	socket_api::set_keep_alive(sfd, true);
+	socket_api::set_linger(sfd, false, 0);
 
 	//init write buf lock
 	m_writeBufLock = sys_api::mutex_create();
@@ -56,11 +56,11 @@ void Connection::established(void)
 
 	m_state = kConnected;
 
-	m_local_addr = Address(false, m_socket.get_fd()); //create local address
-	m_peer_addr = Address(true, m_socket.get_fd()); //create peer address
+	m_local_addr = Address(false, m_socket); //create local address
+	m_peer_addr = Address(true, m_socket); //create peer address
 
 	//register socket event
-	m_event_id = m_looper->register_event(m_socket.get_fd(),
+	m_event_id = m_looper->register_event(m_socket,
 		Looper::kRead,			//care read event only
 		this,
 		std::bind(&Connection::_on_socket_read, this),
@@ -127,7 +127,7 @@ void Connection::_send(const char* buf, size_t len)
 	//nothing in write buf, send it diretly
 	if (!(m_looper->is_write(m_event_id)) && _is_writeBuf_empty())
 	{
-		nwrote = socket_api::write(m_socket.get_fd(), buf, len);
+		nwrote = socket_api::write(m_socket, buf, len);
 		if (nwrote >= 0)
 		{
 			remaining = len - (size_t)nwrote;
@@ -195,7 +195,7 @@ void Connection::shutdown(void)
 	if (m_looper->is_write(m_event_id) && !_is_writeBuf_empty()) return;
 	
 	//ok, we can close the socket now
-	socket_api::shutdown(m_socket.get_fd());
+	socket_api::shutdown(m_socket);
 	_on_socket_close();
 }
 
@@ -204,7 +204,7 @@ void Connection::_on_socket_read(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	ssize_t len = m_readBuf.read_socket(m_socket.get_fd());
+	ssize_t len = m_readBuf.read_socket(m_socket);
 
 	if (len > 0)
 	{
@@ -240,7 +240,7 @@ void Connection::_on_socket_write(void)
 			m_max_sendbuf_len = m_writeBuf.size();
 		}
 
-		ssize_t len = m_writeBuf.write_socket(m_socket.get_fd());
+		ssize_t len = m_writeBuf.write_socket(m_socket);
 		if (len > 0) {
 			if (m_writeBuf.empty()) {
 				m_looper->disable_write(m_event_id);

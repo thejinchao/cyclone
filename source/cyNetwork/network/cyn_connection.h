@@ -77,7 +77,7 @@ public:
 
 private:
 	int32_t m_id;
-	Socket m_socket;
+	socket_t m_socket;
 	State m_state;
 	Address m_local_addr;
 	Address m_peer_addr;

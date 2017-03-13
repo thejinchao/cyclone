@@ -77,7 +77,6 @@ source_group("cyEvent\\internal" FILES ${CY_EVENT_INTERNAL_FILES})
 
 set(CY_NETWORK_INCLUDE_FILES
 	cyNetwork/cy_network.h
-	cyNetwork/network/cyn_socket.h
 	cyNetwork/network/cyn_address.h
 	cyNetwork/network/cyn_tcp_server.h
 	cyNetwork/network/cyn_connection.h
@@ -87,7 +86,6 @@ set(CY_NETWORK_INCLUDE_FILES
 source_group("cyNetwork" FILES ${CY_NETWORK_INCLUDE_FILES})
 
 set(CY_NETWORK_SOURCE_FILES
-	cyNetwork/network/cyn_socket.cpp
 	cyNetwork/network/cyn_address.cpp
 	cyNetwork/network/cyn_tcp_server.cpp
 	cyNetwork/network/cyn_connection.cpp
