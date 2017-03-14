@@ -76,6 +76,8 @@ void Connection::established(void)
 //-------------------------------------------------------------------------------------
 void Connection::send(const char* buf, size_t len)
 {
+	if (buf == nullptr || len == 0) return;
+
 	if (sys_api::thread_get_current_id() == m_looper->get_thread_id())
 	{
 		_send(buf, len);
