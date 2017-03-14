@@ -125,7 +125,7 @@ void time_now(char* time_dest, size_t max_size, const char* format);
 //----------------------
 // utility functions
 //----------------------
-uint32_t get_cpu_counts(void);
+int32_t get_cpu_counts(void);
 
 }
 }

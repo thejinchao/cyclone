@@ -381,9 +381,9 @@ void time_now(char* time_dest, size_t max_size, const char* format)
 }
 
 //-------------------------------------------------------------------------------------
-uint32_t get_cpu_counts(void)
+int32_t get_cpu_counts(void)
 {
-	const uint32_t DEFAULT_CPU_COUNTS = 2;
+	const int32_t DEFAULT_CPU_COUNTS = 2;
 
 #ifdef CY_SYS_WINDOWS
 	//use GetLogicalProcessorInformation
@@ -404,7 +404,7 @@ uint32_t get_cpu_counts(void)
 		}
 	}
 
-	uint32_t cpu_counts = 0;
+	int32_t cpu_counts = 0;
 
 	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION p = buffer;
 	DWORD byteOffset = 0;
@@ -421,10 +421,10 @@ uint32_t get_cpu_counts(void)
 #else
 	long int cpu_counts = 0;
 	if ((cpu_counts = sysconf(_SC_NPROCESSORS_ONLN)) == -1){
-		CY_LOG(L_ERROR, "get cpu counts \"sysconf(_SC_NPROCESSORS_ONLN)\" error, use default(2)");
+		CY_LOG(L_ERROR, "get cpu counts \"sysconf(_SC_NPROCESSORS_ONLN)\" error, use default(%d)", DEFAULT_CPU_COUNTS);
 		return DEFAULT_CPU_COUNTS;
 	}
-	return (uint32_t)cpu_counts;
+	return (int32_t)cpu_counts;
 #endif
 }
 
