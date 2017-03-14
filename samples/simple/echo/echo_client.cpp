@@ -2,17 +2,13 @@
 #include <cy_event.h>
 #include <cy_network.h>
 
+#include <iostream>
+
 using namespace cyclone;
 
+#define MAX_ECHO_LENGTH (255)
+
 //-------------------------------------------------------------------------------------
-struct client_s {
-	const char* server_ip;
-	uint16_t port;
-	TcpClient* client;
-};
-
-#define MAX_MESSAGE_LEN (256)
-
 class ClientListener : public TcpClient::Listener
 {
 public:
@@ -24,27 +20,30 @@ public:
 			client->get_server_address().get_port(),
 			success ? "OK" : "FAILED");
 
-		if (success)
-		{
+		if (success) {
+			m_client = client;
+			sys_api::signal_notify(m_connected_signal);
 			return 0;
 		}
 		else
 		{
 			uint32_t retry_time = 1000 * 5;
-			printf("connect failed!, retry after %d milli seconds...\n", retry_time);
+			CY_LOG(L_INFO, "connect failed!, retry after %d milliseconds...\n", retry_time);
 			return 1000 * 5;
 		}
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message_callback(TcpClient* /*client*/, Connection* conn)
+	virtual void on_message_callback(TcpClient* client, Connection* conn)
 	{
+		(void)client;
+
 		RingBuf& buf = conn->get_input_buf();
 
-		char temp[1024] = { 0 };
-		buf.memcpy_out(temp, 1024);
+		char temp[MAX_ECHO_LENGTH +1] = { 0 };
+		buf.memcpy_out(temp, MAX_ECHO_LENGTH);
 
-		CY_LOG(L_INFO, "receive:%s", temp);
+		CY_LOG(L_INFO, "%s", temp);
 	}
 
 	//-------------------------------------------------------------------------------------
@@ -55,23 +54,27 @@ public:
 		CY_LOG(L_INFO, "socket close");
 		exit(0);
 	}
+
+public:
+	void wait_connected(void) { sys_api::signal_wait(m_connected_signal); }
+	TcpClient* get_client(void) { return m_client; }
+
+private:
+	TcpClient* m_client;
+	sys_api::signal_t m_connected_signal;
+
+public:
+	ClientListener()
+		: m_client(nullptr)
+		, m_connected_signal(sys_api::signal_create())
+	{
+	}
+
+	~ClientListener()
+	{
+		sys_api::signal_destroy(m_connected_signal);
+	}
 };
-
-//-------------------------------------------------------------------------------------
-void _client_thread(void* param)
-{
-	client_s* data = (client_s*)param;
-	ClientListener listener;
-	Looper* looper = Looper::create_looper();
-	TcpClient client(looper, &listener, data);
-	Address address(data->server_ip, data->port);
-
-	data->client = &client;
-
-	client.connect(address, 1000 * 10);
-
-	looper->loop();
-}
 
 //-------------------------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -84,26 +87,33 @@ int main(int argc, char* argv[])
 	if (argc > 2)
 		server_port = (uint16_t)atoi(argv[2]);
 
-	client_s client;
-	client.server_ip = server_ip;
-	client.port = server_port;
+	ClientListener client_listener;
 
-	cyclone::sys_api::thread_create_detached(_client_thread, &client, "client");
+	//client thread
+	sys_api::thread_create_detached([&](void*) {
+		Looper* looper = Looper::create_looper();
 
-	for (;;)
+		TcpClient client(looper, &client_listener, 0);
+		client.connect(Address(server_ip, server_port), 1000 * 10);
+
+		looper->loop();
+
+		Looper::destroy_looper(looper);
+	}, 0, "client");
+
+	CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip, server_port);
+
+	//wait connect completed
+	client_listener.wait_connected();
+
+	//input
+	char line[MAX_ECHO_LENGTH + 1] = { 0 };
+	while (std::cin.getline(line, MAX_ECHO_LENGTH + 1))
 	{
-		char temp[1024] = { 0 };
-		char* str_pos = temp+sizeof(size_t);
-		if (EOF == scanf("%s", str_pos)) break;
-
-		if (str_pos[0] == 0) break;
-
-		size_t len = strlen(str_pos) + 1;
-		if (len >= MAX_MESSAGE_LEN) continue;
-
-		client.client->send(str_pos, len);
+		if (line[0] == 0) continue;
+		client_listener.get_client()->send(line, strlen(line));
 	}
-	
+
 	return 0;
 }
 

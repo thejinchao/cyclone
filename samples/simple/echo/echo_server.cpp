@@ -6,6 +6,8 @@
 
 using namespace cyclone;
 
+#define MAX_ECHO_LENGTH (255)
+
 class ServerListener : public TcpServer::Listener
 {
 	//-------------------------------------------------------------------------------------
@@ -26,8 +28,8 @@ class ServerListener : public TcpServer::Listener
 	{
 		RingBuf& buf = conn->get_input_buf();
 
-		char temp[1024] = { 0 };
-		buf.memcpy_out(temp, 1024);
+		char temp[MAX_ECHO_LENGTH+1] = { 0 };
+		buf.memcpy_out(temp, MAX_ECHO_LENGTH);
 
 		CY_LOG(L_INFO, "[T=%d]receive:%s", thread_index, temp);
 
@@ -39,7 +41,6 @@ class ServerListener : public TcpServer::Listener
 
 		size_t len = strlen(temp);
 		for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
-		strcat(temp, "\n");
 
 		conn->send(temp, strlen(temp));
 	}
@@ -67,15 +68,19 @@ class ServerListener : public TcpServer::Listener
 //-------------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-	(void)argc; 
-	(void)argv;
+	uint16_t server_port = 1978;
+
+	if (argc > 1)
+		server_port = (uint16_t)atoi(argv[1]);
+
+	CY_LOG(L_DEBUG, "listen port %d", server_port);
 
 	ServerListener listener;
 
 	TcpServer server(&listener, "echo", 0);
-	server.bind(Address(1978, false), true);
+	server.bind(Address(server_port, false), true);
 
-	if (!server.start(2))
+	if (!server.start(sys_api::get_cpu_counts()))
 		return 1;
 
 	server.join();
