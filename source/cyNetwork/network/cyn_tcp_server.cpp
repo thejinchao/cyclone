@@ -59,11 +59,15 @@ bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 	socket_api::set_close_onexec(sfd, true);
 
 	//set accept socket option
+#ifdef CY_SYS_WINDOWS
+	(void)enable_reuse_port;
+#else
 	if (enable_reuse_port) {
 		//http://stackoverflow.com/questions/14388706/socket-options-so-reuseaddr-and-so-reuseport-how-do-they-differ-do-they-mean-t
 		socket_api::set_reuse_port(sfd, true);
 		socket_api::set_reuse_addr(sfd, true);
 	}
+#endif
 
 	//bind address
 	if (!(socket_api::bind(sfd, bind_addr.get_sockaddr_in()))){
