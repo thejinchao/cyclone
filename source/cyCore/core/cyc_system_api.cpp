@@ -189,7 +189,6 @@ void mutex_destroy(mutex_t m)
 {
 #ifdef CY_SYS_WINDOWS
 	::DeleteCriticalSection(m);
-	CY_FREE(m);
 #else
 	::pthread_mutex_destroy(m);
 	CY_FREE(m);
