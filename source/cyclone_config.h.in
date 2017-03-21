@@ -73,6 +73,7 @@ Copyright(C) thecodeway.com
 #include <vector>
 #include <list>
 #include <set>
+#include <map>
 #include <unordered_map>
 #include <functional>
 #include <thread>
