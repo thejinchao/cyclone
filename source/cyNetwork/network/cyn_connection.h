@@ -60,7 +60,7 @@ public:
 
 	/// set/get connection debug name(NOT thread safe)
 	void set_name(const char* name);
-	const char* get_name(void) const { return m_name; }
+	const char* get_name(void) const { return m_name.c_str(); }
 
 	/// get listener
 	Listener* get_listener(void) { return m_listener; }
@@ -94,7 +94,7 @@ private:
 	Listener* m_listener;
 	atomic_ptr_t m_proxy;
 
-	char m_name[MAX_PATH];
+	std::string m_name;
 
 	size_t m_max_sendbuf_len;
 

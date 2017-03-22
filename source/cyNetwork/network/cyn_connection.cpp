@@ -15,7 +15,7 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	, m_socket(sfd)
 	, m_state(kConnecting)
 	, m_looper(looper)
-	, m_event_id(0)
+	, m_event_id(Looper::INVALID_EVENT_ID)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_listener(listener)
@@ -33,7 +33,9 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	m_writeBufLock = sys_api::mutex_create();
 
 	//set default debug name
-	snprintf(m_name, MAX_PATH, "connection_%d", id);
+	char temp[MAX_PATH] = { 0 };
+	snprintf(temp, MAX_PATH, "connection_%d", id);
+	m_name = temp;
 }
 
 //-------------------------------------------------------------------------------------
@@ -306,7 +308,7 @@ void Connection::set_name(const char* name)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	strncpy(m_name, name, MAX_PATH);
+	m_name = name;
 }
 
 //-------------------------------------------------------------------------------------
@@ -316,13 +318,13 @@ void Connection::debug(DebugInterface* debuger)
 
 	char key_temp[MAX_PATH] = { 0 };
 
-	snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name);
+	snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
 	debuger->set_debug_value(key_temp, (int32_t)m_readBuf.capacity());
 
-	snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name);
+	snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
 	debuger->set_debug_value(key_temp, (int32_t)m_writeBuf.capacity());
 
-	snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name);
+	snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
 	debuger->set_debug_value(key_temp, (int32_t)m_max_sendbuf_len);
 }
 
@@ -333,13 +335,13 @@ void Connection::del_debug_value(DebugInterface* debuger)
 
 	char key_name[MAX_PATH] = { 0 };
 
-	snprintf(key_name, MAX_PATH, "Connection:%s:readbuf_capcity", m_name);
+	snprintf(key_name, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
 	debuger->del_debug_value(key_name);
 
-	snprintf(key_name, MAX_PATH, "Connection:%s:writebuf_capcity", m_name);
+	snprintf(key_name, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
 	debuger->del_debug_value(key_name);
 
-	snprintf(key_name, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name);
+	snprintf(key_name, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
 	debuger->del_debug_value(key_name);
 }
 
