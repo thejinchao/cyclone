@@ -37,6 +37,12 @@ TcpClient::~TcpClient()
 	sys_api::mutex_destroy(m_connection_lock);
 	m_connection_lock = 0;
 
+	if (m_socket_event_id != Looper::INVALID_EVENT_ID) {
+		m_looper->disable_all(m_socket_event_id);
+		m_looper->delete_event(m_socket_event_id);
+		m_socket_event_id = Looper::INVALID_EVENT_ID;
+	}
+
 	if (m_connection) {
 		m_looper->disable_all(m_connection->get_event_id());
 		m_looper->delete_event(m_connection->get_event_id());
@@ -129,7 +135,7 @@ void TcpClient::_check_connect_status(bool abort)
 	{
 		// abort
 		m_looper->disable_all(m_socket_event_id);
-		m_socket_event_id = 0;
+		m_socket_event_id = Looper::INVALID_EVENT_ID;
 
 		//logic callback
 		if (m_listener) {
@@ -159,7 +165,7 @@ void TcpClient::_check_connect_status(bool abort)
 		//remove from event system, taked by Connection
 		m_looper->disable_all(m_socket_event_id);
 		m_looper->delete_event(m_socket_event_id);
-		m_socket_event_id = 0;
+		m_socket_event_id = Looper::INVALID_EVENT_ID;
 
 		//established the connection
 		m_connection->established();
