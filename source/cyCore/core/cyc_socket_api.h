@@ -65,6 +65,9 @@ bool set_reuse_port(socket_t s, bool on);
 /// Enable/disable SO_KEEPALIVE
 bool set_keep_alive(socket_t s, bool on);
 
+/// Enable/disable TCP_NODELAY
+bool set_nodelay(socket_t s, bool on);
+
 /// Set socket SO_LINGER
 bool set_linger(socket_t s, bool on, uint16_t linger_time);
 
@@ -76,6 +79,9 @@ bool getsockname(socket_t s, struct sockaddr_in& addr);
 
 /// get peer name of socket
 bool getpeername(socket_t s, struct sockaddr_in& addr);
+
+///resolve hostname to IP address, not changing port or sin_family
+bool resolve_hostname(const char* hostname, struct sockaddr_in& addr);
 
 /// big-endian/little-endian convert
 uint16_t ntoh_16(uint16_t x);

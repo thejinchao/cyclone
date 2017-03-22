@@ -6,6 +6,9 @@ Copyright(C) thecodeway.com
 
 #ifdef CY_SYS_WINDOWS
 #include <io.h>
+#else
+#include <netdb.h>
+#include <netinet/tcp.h>
 #endif
 #include <fcntl.h>
 
@@ -270,6 +273,13 @@ bool set_keep_alive(socket_t s, bool on)
 }
 
 //-------------------------------------------------------------------------------------
+bool set_nodelay(socket_t s, bool on)
+{
+	int optval = on ? 1 : 0;
+	return setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &optval, static_cast<socklen_t>(sizeof optval));
+}
+
+//-------------------------------------------------------------------------------------
 bool set_linger(socket_t s, bool on, uint16_t linger_time)
 {
 	struct linger linger_;
@@ -335,6 +345,41 @@ bool getpeername(socket_t s, struct sockaddr_in& addr)
 		return false;
 	}
 	return true;
+}
+
+//-------------------------------------------------------------------------------------
+bool resolve_hostname(const char* hostname, struct sockaddr_in& addr)
+{
+	socket_api::global_init();
+
+	struct addrinfo hints;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+
+	struct addrinfo *result = nullptr;
+	if (getaddrinfo(hostname, nullptr, &hints, &result) != 0) {
+		CY_LOG(L_ERROR, "socket_api::resolve %s failed, errno=%d", hostname, socket_api::get_lasterror());
+		return false;
+	}
+
+	bool find_ipv4_address = false;
+	for (auto ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
+		if (ptr->ai_family != AF_INET) continue;
+
+		//AF_INET (IPv4)
+		addr.sin_addr = ((struct sockaddr_in*) ptr->ai_addr)->sin_addr;
+		find_ipv4_address = true;
+		break;
+	}
+
+	if (!find_ipv4_address) {
+		CY_LOG(L_ERROR, "socket_api::resolve %s failed, IPV4 address not found", hostname);
+	}
+
+	freeaddrinfo(result);
+	return find_ipv4_address;
 }
 
 //-------------------------------------------------------------------------------------
