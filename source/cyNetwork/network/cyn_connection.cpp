@@ -19,7 +19,6 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_listener(listener)
-	, m_proxy(0)
 	, m_max_sendbuf_len(0)
 {
 	//set socket to non-block and close-onexec
@@ -148,11 +147,7 @@ void Connection::_send(const char* buf, size_t len)
 			nwrote = 0;
 			int err = socket_api::get_lasterror();
 
-#ifdef CY_SYS_WINDOWS
-			if(err != WSAEWOULDBLOCK)
-#else
-			if(err != EWOULDBLOCK)
-#endif
+			if(!socket_api::is_lasterror_WOULDBLOCK())
 			{
 				CY_LOG(L_ERROR, "socket send error, err=%d", err);
 
@@ -289,18 +284,6 @@ void Connection::_on_socket_close(void)
 void Connection::_on_socket_error(void)
 {
 	_on_socket_close();
-}
-
-//-------------------------------------------------------------------------------------
-void Connection::set_proxy(void* proxy)
-{
-	m_proxy = proxy;
-}
-
-//-------------------------------------------------------------------------------------
-void* Connection::get_proxy(void)
-{
-	return m_proxy;
 }
 
 //-------------------------------------------------------------------------------------

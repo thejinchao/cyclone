@@ -54,9 +54,8 @@ public:
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
 
-	/// set/get proxy param (thread safe)
-	void set_proxy(void* param);
-	void* get_proxy(void);
+	/// get native socket
+	socket_t get_socket(void) { return m_socket; }
 
 	/// set/get connection debug name(NOT thread safe)
 	void set_name(const char* name);
@@ -92,7 +91,6 @@ private:
 	sys_api::mutex_t m_writeBufLock;	//for multithread lock
 
 	Listener* m_listener;
-	atomic_ptr_t m_proxy;
 
 	std::string m_name;
 
