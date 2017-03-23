@@ -9,3 +9,4 @@ cmake_minimum_required (VERSION 2.8)
 ########
 add_subdirectory(simple)
 add_subdirectory(chat)
+add_subdirectory(socks5)
