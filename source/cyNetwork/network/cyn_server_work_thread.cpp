@@ -72,7 +72,7 @@ Connection* ServerWorkThread::get_connection(int32_t connection_id)
 //-------------------------------------------------------------------------------------
 bool ServerWorkThread::on_workthread_start(void)
 {
-	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name);
+	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name.c_str());
 	TcpServer::Listener* server_listener = m_server->get_listener();
 	server_listener->on_workthread_start(m_server, get_index(), m_work_thread->get_looper());
 	return true;
