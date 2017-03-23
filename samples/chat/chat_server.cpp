@@ -11,8 +11,19 @@ using namespace cyclone;
 class ServerListener : public TcpServer::Listener
 {
 	//-------------------------------------------------------------------------------------
-	virtual void on_connection_callback(TcpServer*, int32_t thread_index, Connection* conn)
+	virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper)
 	{
+		(void)server;
+		(void)thread_index;
+		(void)looper;
+	};
+
+	//-------------------------------------------------------------------------------------
+	virtual void on_connected(TcpServer* server, int32_t thread_index, Connection* conn)
+	{
+		(void)server;
+		(void)thread_index;
+
 		//new connection
 		sys_api::auto_mutex lock(this->clients_lock);
 		this->clients.insert({ conn->get_id(), { conn->get_id(), conn} });
@@ -25,8 +36,11 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message_callback(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn)
 	{
+		(void)server;
+		(void)thread_index;
+
 		RingBuf& buf = conn->get_input_buf();
 
 		for (;;)
@@ -45,8 +59,11 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close_callback(TcpServer*, int32_t thread_index, Connection* conn)
+	virtual void on_close(TcpServer* server, int32_t thread_index, Connection* conn)
 	{
+		(void)server;
+		(void)thread_index;
+
 		sys_api::auto_mutex lock(this->clients_lock);
 
 		this->clients.erase(conn->get_id());
@@ -56,9 +73,11 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	void on_extra_workthread_msg(TcpServer* server, int32_t thread_index, Packet* msg)
+	void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* msg)
 	{
-
+		(void)server;
+		(void)thread_index;
+		(void)msg;
 	}
 
 

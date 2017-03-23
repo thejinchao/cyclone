@@ -136,7 +136,7 @@ void TcpClient::_check_connect_status(bool abort)
 
 		//logic callback
 		if (m_listener) {
-			uint32_t retry_sleep_ms = m_listener->on_connection_callback(this, false);
+			uint32_t retry_sleep_ms = m_listener->on_connected(this, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {
@@ -169,7 +169,7 @@ void TcpClient::_check_connect_status(bool abort)
 
 		//logic callback
 		if (m_listener) {
-			m_listener->on_connection_callback(this, true);
+			m_listener->on_connected(this, true);
 		}
 	}
 }
@@ -189,13 +189,13 @@ void TcpClient::on_connection_event(Connection::Event event, Connection* conn)
 
 	case Connection::kOnMessage:
 		if (m_listener) {
-			m_listener->on_message_callback(this, conn);
+			m_listener->on_message(this, conn);
 		}
 		break;
 
 	case Connection::kOnClose:
 		if (m_listener) {
-			m_listener->on_close_callback(this);
+			m_listener->on_close(this);
 		}
 	}
 }
@@ -213,7 +213,7 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 	{
 		//failed at once!, logic callback
 		if (m_listener) {
-			uint32_t retry_sleep_ms = m_listener->on_connection_callback(this, false);
+			uint32_t retry_sleep_ms = m_listener->on_connected(this, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {

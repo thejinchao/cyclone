@@ -59,10 +59,12 @@ public:
 	class Listener
 	{
 	public:
-		virtual void on_connection_callback(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
-		virtual void on_message_callback(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
-		virtual void on_close_callback(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
-		virtual void on_extra_workthread_msg(TcpServer* server, int32_t thread_index, Packet* msg) = 0;
+		virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper) = 0;
+		virtual void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* cmd) = 0;
+
+		virtual void on_connected(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
+		virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
+		virtual void on_close(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
 	};
 
 	Listener* get_listener(void) { 	return m_listener; }

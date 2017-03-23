@@ -11,7 +11,15 @@ using namespace cyclone;
 class ServerListener : public TcpServer::Listener
 {
 	//-------------------------------------------------------------------------------------
-	virtual void on_connection_callback(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper)
+	{
+		(void)server;
+		(void)thread_index;
+		(void)looper;
+	};
+
+	//-------------------------------------------------------------------------------------
+	virtual void on_connected(TcpServer* server, int32_t thread_index, Connection* conn)
 	{
 		(void)server;
 
@@ -24,7 +32,7 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message_callback(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn)
 	{
 		RingBuf& buf = conn->get_input_buf();
 
@@ -46,7 +54,7 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close_callback(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_close(TcpServer* server, int32_t thread_index, Connection* conn)
 	{
 		(void)server;
 
@@ -57,7 +65,7 @@ class ServerListener : public TcpServer::Listener
 	}
 	
 	//-------------------------------------------------------------------------------------
-	void on_extra_workthread_msg(TcpServer* server, int32_t thread_index, Packet* msg)
+	void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* msg)
 	{
 		(void)server;
 		(void)thread_index;

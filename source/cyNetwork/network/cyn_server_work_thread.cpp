@@ -73,6 +73,8 @@ Connection* ServerWorkThread::get_connection(int32_t connection_id)
 bool ServerWorkThread::on_workthread_start(void)
 {
 	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name);
+	TcpServer::Listener* server_listener = m_server->get_listener();
+	server_listener->on_workthread_start(m_server, get_index(), m_work_thread->get_looper());
 	return true;
 }
 
@@ -169,7 +171,7 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		//extra message
 		TcpServer::Listener* server_listener = m_server->get_listener();
 		if (server_listener) {
-			server_listener->on_extra_workthread_msg(m_server, get_index(), message);
+			server_listener->on_workthread_cmd(m_server, get_index(), message);
 		}
 	}
 }
@@ -184,19 +186,19 @@ void ServerWorkThread::on_connection_event(Connection::Event event, Connection* 
 	switch (event) {
 	case Connection::kOnConnection:
 		if (server_listener) {
-			server_listener->on_connection_callback(m_server, get_index(), conn);
+			server_listener->on_connected(m_server, get_index(), conn);
 		}
 		break;
 
 	case Connection::kOnMessage:
 		if (server_listener) {
-			server_listener->on_message_callback(m_server, get_index(), conn);
+			server_listener->on_message(m_server, get_index(), conn);
 		}
 		break;
 
 	case Connection::kOnClose:
 		if (server_listener) {
-			server_listener->on_close_callback(m_server, get_index(), conn);
+			server_listener->on_close(m_server, get_index(), conn);
 		}
 
 		//shutdown this connection

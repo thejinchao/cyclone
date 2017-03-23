@@ -13,7 +13,7 @@ class ClientListener : public TcpClient::Listener
 {
 public:
 	//-------------------------------------------------------------------------------------
-	virtual uint32_t on_connection_callback(TcpClient* client, bool success)
+	virtual uint32_t on_connected(TcpClient* client, bool success)
 	{
 		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
 			client->get_server_address().get_ip(),
@@ -34,7 +34,7 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message_callback(TcpClient* client, Connection* conn)
+	virtual void on_message(TcpClient* client, Connection* conn)
 	{
 		(void)client;
 
@@ -50,7 +50,7 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close_callback(TcpClient* client)
+	virtual void on_close(TcpClient* client)
 	{
 		(void)client;
 
