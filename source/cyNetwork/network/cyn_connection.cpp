@@ -41,6 +41,11 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 Connection::~Connection()
 {
 	sys_api::mutex_destroy(m_writeBufLock);
+
+	if (m_event_id != Looper::INVALID_EVENT_ID) {
+		m_looper->disable_all(m_event_id);
+		m_looper->delete_event(m_event_id);
+	}
 }
 
 //-------------------------------------------------------------------------------------
@@ -54,6 +59,7 @@ Connection::State Connection::get_state(void) const
 void Connection::established(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
+	assert(get_state() == kConnecting);
 
 	m_state = kConnected;
 

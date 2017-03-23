@@ -72,8 +72,6 @@ public:
 	void established(void);
 	void shutdown(void);
 
-	Looper::event_id_t get_event_id(void) const { return m_event_id; }
-
 private:
 	int32_t m_id;
 	socket_t m_socket;

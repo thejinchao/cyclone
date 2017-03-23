@@ -113,9 +113,6 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		}
 		else if (curr_state == Connection::kDisconnected)
 		{
-			//delete the event channel
-			m_work_thread->get_looper()->delete_event(conn->get_event_id());
-
 			//del debug value
 			conn->del_debug_value(m_debuger);
 

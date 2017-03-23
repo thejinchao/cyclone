@@ -44,9 +44,6 @@ TcpClient::~TcpClient()
 	}
 
 	if (m_connection) {
-		m_looper->disable_all(m_connection->get_event_id());
-		m_looper->delete_event(m_connection->get_event_id());
-
 		delete m_connection;
 		m_connection = 0;
 	}
