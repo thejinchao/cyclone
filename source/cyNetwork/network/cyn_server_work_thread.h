@@ -60,7 +60,7 @@ private:
 
 	ConnectionMap	m_connections;
 
-	char			m_name[MAX_PATH];
+	std::string		m_name;
 	DebugInterface*	m_debuger;
 
 private:

@@ -36,13 +36,13 @@ public:
 	Looper* get_looper(void) const { return m_looper; }
 
 	//// get work thread name (thread safe)
-	const char* get_name(void) const { return m_name; }
+	const char* get_name(void) const { return m_name.c_str(); }
 
 	//// join work thread(thread safe)
 	void join(void);
 
 private:
-	char			m_name[MAX_PATH];
+	std::string		m_name;
 	Listener*		m_listener;
 	thread_t		m_thread;
 	Looper*			m_looper;

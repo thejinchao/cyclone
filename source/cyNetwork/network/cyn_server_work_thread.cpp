@@ -16,11 +16,13 @@ ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char*
 {
 
 	//run the work thread
-	snprintf(m_name, MAX_PATH, "%s_%d", (name ? name : "worker"), m_index);
+	char temp[MAX_PATH] = { 0 };
+	snprintf(temp, MAX_PATH, "%s_%d", (name ? name : "worker"), m_index);
+	m_name = temp;
 
 	//run work thread
 	m_work_thread = new WorkThread();
-	m_work_thread->start(m_name, this);
+	m_work_thread->start(m_name.c_str(), this);
 }
 
 //-------------------------------------------------------------------------------------
@@ -217,15 +219,15 @@ void ServerWorkThread::_debug(DebugCmd&)
 
 	if (!m_debuger || !(m_debuger->is_enable())) return;
 
-	char key_temp[256] = { 0 };
+	char key_temp[MAX_PATH] = { 0 };
 
 	//Debug ConnectionMap
-	snprintf(key_temp, 256, "ServerWorkThread:%s:connection_map_counts", m_name);
+	snprintf(key_temp, MAX_PATH, "ServerWorkThread:%s:connection_map_counts", m_name.c_str());
 	m_debuger->set_debug_value(key_temp, (int32_t)m_connections.size());
 
 	//Debug Looper
 	Looper* looper = m_work_thread->get_looper();
-	looper->debug(m_debuger, m_name);
+	looper->debug(m_debuger, m_name.c_str());
 
 	//Debug all connections
 	int index = 0;

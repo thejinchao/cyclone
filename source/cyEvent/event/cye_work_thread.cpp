@@ -36,9 +36,9 @@ void WorkThread::start(const char* name, Listener* listener)
 	param._ready = 0;
 
 	//run the work thread
-	strncpy(m_name, (name ? name : "worker"), MAX_PATH);
+	m_name = name ? name : "worker";
 	m_thread = sys_api::thread_create(
-		std::bind(&WorkThread::_work_thread, this, std::placeholders::_1), &param, m_name);
+		std::bind(&WorkThread::_work_thread, this, std::placeholders::_1), &param, m_name.c_str());
 
 	//wait work thread ready signal
 	while (param._ready == 0) sys_api::thread_yield();	//BUSY LOOP!
