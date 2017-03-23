@@ -75,7 +75,7 @@ private:
 
 public:
 	TcpClient(Looper* looper, Listener* listener, void* param);
-	~TcpClient();
+	virtual ~TcpClient();
 };
 
 }

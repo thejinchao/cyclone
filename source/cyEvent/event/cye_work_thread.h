@@ -66,7 +66,7 @@ private:
 
 public:
 	WorkThread();
-	~WorkThread();
+	virtual ~WorkThread();
 };
 
 }
