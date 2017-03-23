@@ -32,7 +32,7 @@ public:
 	class Listener
 	{
 	public:
-		virtual uint32_t on_connected(TcpClient* client, bool success) = 0;
+		virtual uint32_t on_connected(TcpClient* client, Connection* conn, bool success) = 0;
 		virtual void     on_message(TcpClient* client, Connection* conn) = 0;
 		virtual void     on_close(TcpClient* client) = 0;
 	};

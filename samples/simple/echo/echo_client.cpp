@@ -13,8 +13,10 @@ class ClientListener : public TcpClient::Listener
 {
 public:
 	//-------------------------------------------------------------------------------------
-	virtual uint32_t on_connected(TcpClient* client, bool success)
+	virtual uint32_t on_connected(TcpClient* client, Connection* conn, bool success)
 	{
+		(void)conn;
+
 		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
 			client->get_server_address().get_ip(),
 			client->get_server_address().get_port(),
