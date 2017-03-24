@@ -1,21 +1,7 @@
 #include "s5_protocol.h"
 
-
-/* -------------------------------------------------------------------------------------
-*Build version packet ack in buf
-*
-* From RFC1928:
-* The server selects from one of the methods given in METHODS, and
-* sends a METHOD selection message:
-*
-* +----+--------+
-* |VER | METHOD |
-* +----+--------+
-* | 1  |   1    |
-* +----+--------+
-* 
-*/
-static void _build_handshake_act(RingBuf& outputBuf)
+//-------------------------------------------------------------------------------------
+void s5_build_handshake_act(RingBuf& outputBuf)
 {
 	uint8_t socks5_version_ack[2];
 
@@ -38,7 +24,7 @@ void s5_build_connect_act(RingBuf& outputBuf, uint8_t reply, const Address& addr
 }
 
 //-------------------------------------------------------------------------------------
-int32_t s5_handshake(RingBuf& inputBuf, RingBuf& outputBuf)
+int32_t s5_get_handshake(RingBuf& inputBuf)
 {
 	const size_t max_peek_size = 260;
 
@@ -56,15 +42,13 @@ int32_t s5_handshake(RingBuf& inputBuf, RingBuf& outputBuf)
 
 	for (uint8_t i = 0; i < nmethods; i++) {
 		if (temp[i + 2] == S5_METHOD_NO_AUTH) {
-			//handshake ok, build response
-			_build_handshake_act(outputBuf);
+			//handshake ok
 			inputBuf.discard(peek_size);
 			return S5ERR_SUCCESS;
 		}
 	}
 	return S5ERR_WRONG_METHOD;
 }
-
 
 //-------------------------------------------------------------------------------------
 int32_t s5_get_connect_request(RingBuf& inputBuf, Address& address, std::string& domain)

@@ -40,8 +40,24 @@ using namespace cyclone;
 * o  X'03' to X'7F' IANA ASSIGNED (not supported)
 * o  X'80' to X'FE' RESERVED FOR PRIVATE METHODS (not supported)
 * o  X'FF' NO ACCEPTABLE METHODS
+*
 */
-int32_t s5_handshake(RingBuf& inputBuf, RingBuf& outputBuf);
+int32_t s5_get_handshake(RingBuf& inputBuf);
+
+/*Build version packet ack in buf
+*
+* From RFC1928:
+* The server selects from one of the methods given in METHODS, and
+* sends a METHOD selection message:
+*
+* +----+--------+
+* |VER | METHOD |
+* +----+--------+
+* | 1  |   1    |
+* +----+--------+
+*
+*/
+void s5_build_handshake_act(RingBuf& outputBuf);
 
 /* Test request packet in buf, and execute the request
 *

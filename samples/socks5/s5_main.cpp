@@ -144,7 +144,7 @@ class S5ServerListener : public TcpServer::Listener
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
-
+        
 		threadContext.set_looper(server, looper);
 	};
 
@@ -182,10 +182,8 @@ class S5ServerListener : public TcpServer::Listener
 		switch (tunnel->get_state()) {
 		case S5_OPENING:
 		{
-			RingBuf outputBuf;
-
 			//handshake
-			int32_t s5_ret = s5_handshake(inputBuf, outputBuf);
+			int32_t s5_ret = s5_get_handshake(inputBuf);
 			if (s5_ret != S5ERR_SUCCESS) {
 				CY_LOG(L_WARN, "tunnel[%d]: handshake error, code=%d", conn->get_id(), s5_ret);
 				server->shutdown_connection(conn);
@@ -194,6 +192,9 @@ class S5ServerListener : public TcpServer::Listener
 			CY_LOG(L_INFO, "tunnel[%d]: handshake ok", conn->get_id());
 
 			//handshake ok, send handshake act
+			RingBuf outputBuf;
+			s5_build_handshake_act(outputBuf);
+
 			tunnel->set_state(S5_OPENED);
 			conn->send((const char*)outputBuf.normalize(), outputBuf.size());
 		}
@@ -252,7 +253,7 @@ private:
 	typedef std::vector<S5ThreadContext> ThreadContextVec;
 
 	ThreadContextVec m_threadContext;
-
+    
 public:
 	S5ServerListener(int32_t work_thread_counts)
 	{
