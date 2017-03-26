@@ -12,7 +12,7 @@ namespace cyclone
 //pre-define 
 class Connection;
 
-class TcpClient : public Connection::Listener
+class TcpClient : public Connection::Listener, noncopyable
 {
 public:
 	//// connect to remote server(NOT thread safe)

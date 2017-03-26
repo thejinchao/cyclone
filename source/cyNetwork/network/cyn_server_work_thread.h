@@ -10,6 +10,7 @@ namespace cyclone
 class ServerWorkThread 
 	: public Connection::Listener
 	, public WorkThread::Listener
+	, noncopyable
 {
 public:
 	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID, kDebugCmdID };

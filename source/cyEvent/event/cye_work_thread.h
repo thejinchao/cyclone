@@ -11,7 +11,7 @@ namespace cyclone
 //pre-define
 class Packet;
 
-class WorkThread
+class WorkThread : noncopyable
 {
 public:
 	class Listener

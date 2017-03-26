@@ -14,7 +14,7 @@ namespace cyclone
 //pre-define
 class ServerWorkThread;
 
-class TcpServer
+class TcpServer : noncopyable
 {
 public:
 	/// add a bind port, return false means too much port has beed binded or bind failed

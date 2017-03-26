@@ -11,7 +11,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class Looper
+class Looper : noncopyable
 {
 public:
 	typedef uint32_t event_id_t;

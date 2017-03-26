@@ -10,7 +10,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class Connection
+class Connection : noncopyable
 {
 public:
 	//connection  event

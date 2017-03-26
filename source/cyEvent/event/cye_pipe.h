@@ -11,7 +11,7 @@ namespace cyclone
 
 typedef socket_t pipe_port_t;
 
-class Pipe
+class Pipe : noncopyable
 {
 public:
 	pipe_port_t get_read_port(void) { return m_pipe_fd[0]; }

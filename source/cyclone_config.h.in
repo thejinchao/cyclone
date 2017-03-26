@@ -126,5 +126,15 @@ Copyright(C) thecodeway.com
 #define INLINE __inline
 #endif
 
+class noncopyable
+{  
+protected:  
+    noncopyable() {}  
+    ~noncopyable() {}  
+private:
+    noncopyable( const noncopyable& ) = delete;  
+    const noncopyable& operator=(const noncopyable&) = delete;  
+};
+
 #endif
 

@@ -28,7 +28,7 @@ MEMORY_SAFE_TAIL_SIZE   |         Safe Tail        |
 namespace cyclone
 {
 
-class Packet
+class Packet : noncopyable
 {
 public:
 	void clean(void);
@@ -72,9 +72,6 @@ public:
 
 	static Packet* alloc_packet(const Packet* other = 0);
 	static void free_packet(Packet*);
-
-private:
-	Packet(const Packet&){}
 };
 
 }
