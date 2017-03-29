@@ -11,9 +11,9 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 WorkThread::WorkThread()
-	: m_listener(0)
-	, m_thread(0)
-	, m_looper(0)
+	: m_listener(nullptr)
+	, m_thread(nullptr)
+	, m_looper(nullptr)
 {
 }
 
@@ -26,7 +26,7 @@ WorkThread::~WorkThread()
 //-------------------------------------------------------------------------------------
 void WorkThread::start(const char* name, Listener* listener)
 {
-	assert(m_thread==0);
+	assert(m_thread== nullptr);
 	assert(name && listener);
 
 	m_listener = listener;
@@ -61,10 +61,8 @@ void WorkThread::_work_thread(void* param)
 	thread_param = nullptr;//we don't use it again!
 
 	//we start!
-	if (m_listener)
-	{
-		if (!(m_listener->on_workthread_start())) 
-		{
+	if (m_listener) {
+		if (!(m_listener->on_workthread_start())) {
 			Looper::destroy_looper(m_looper);
 			m_looper = 0;
 			return;
@@ -76,15 +74,14 @@ void WorkThread::_work_thread(void* param)
 
 	//delete the looper
 	Looper::destroy_looper(m_looper);
-	m_looper = 0;
+	m_looper = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
 void WorkThread::_on_message(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	for (;;)
-	{
+	for (;;) {
 		int32_t counts;
 		if (m_pipe.read((char*)&counts, sizeof(counts)) <= 0) break;
 		assert(counts > 0);
@@ -139,7 +136,10 @@ void WorkThread::send_message(const Packet** message, int32_t counts)
 //-------------------------------------------------------------------------------------
 void WorkThread::join(void)
 {
-	sys_api::thread_join(m_thread);
+	if (m_thread != nullptr) {
+		sys_api::thread_join(m_thread);
+		m_thread = nullptr;
+	}
 }
 
 

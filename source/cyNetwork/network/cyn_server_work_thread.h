@@ -75,10 +75,6 @@ private:
 public:
 	ServerWorkThread(int32_t index, TcpServer* server, const char* name, DebugInterface* debuger);
 	virtual ~ServerWorkThread();
-
-	//not-copyable
-private:
-	ServerWorkThread & operator=(const ServerWorkThread &) { return *this; }
 };
 
 }
