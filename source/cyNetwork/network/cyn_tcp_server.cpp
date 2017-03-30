@@ -127,6 +127,18 @@ Address TcpServer::get_bind_address(size_t index)
 }
 
 //-------------------------------------------------------------------------------------
+void TcpServer::stop_listen(size_t index)
+{
+	assert(m_running.load()>0);
+	assert(index<m_acceptor_sockets.size());
+	if (index >= m_acceptor_sockets.size()) return;
+
+	StopListenCmd cmd;
+	cmd.index = index;
+	m_accept_thread.send_message(StopListenCmd::ID, sizeof(cmd), (const char*)&cmd);
+}
+
+//-------------------------------------------------------------------------------------
 void TcpServer::stop(void)
 {
 	//not running?
@@ -235,6 +247,28 @@ void TcpServer::on_workthread_message(Packet* message)
 	}
 	else if (msg_id == DebugCmd::ID) {
 		//TODO: debug accept thread
+	}
+	else if (msg_id == StopListenCmd::ID) {
+		assert(message->get_packet_size() == sizeof(StopListenCmd));
+		StopListenCmd stopListenCmd;
+		memcpy(&stopListenCmd, message->get_packet_content(), sizeof(stopListenCmd));
+
+		Looper* looper = m_accept_thread.get_looper();
+		auto& listen_socket = m_acceptor_sockets[stopListenCmd.index];
+		auto& sfd = std::get<0>(listen_socket);
+		auto& event_id = std::get<1>(listen_socket);
+
+		//disable event
+		if (event_id != Looper::INVALID_EVENT_ID) {
+			looper->disable_all(event_id);
+			looper->delete_event(event_id);
+			event_id = Looper::INVALID_EVENT_ID;
+		}
+		//close socket
+		if (sfd != INVALID_SOCKET) {
+			socket_api::close_socket(sfd);
+			sfd = INVALID_SOCKET;
+		}
 	}
 
 }

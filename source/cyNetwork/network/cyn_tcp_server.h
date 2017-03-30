@@ -38,6 +38,9 @@ public:
 	/// get bind address, if index is invalid return default Address value
 	Address get_bind_address(size_t index);
 
+	/// stop listen binded port(thread safe, after start the server)
+	void stop_listen(size_t index);
+
 	/// send work message to one of work thread(thread safe)
 	void send_work_message(int32_t work_thread_index, const Packet* message);
 	void send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts);
@@ -98,7 +101,7 @@ private:
 
 private:
 	//accept thread command
-	enum { kShutdownCmdID=1, kDebugCmdID };
+	enum { kShutdownCmdID=1, kDebugCmdID, kStopListenCmdID };
 	struct ShutdownCmd
 	{
 		enum { ID = kShutdownCmdID };
@@ -107,6 +110,12 @@ private:
 	struct DebugCmd
 	{
 		enum { ID = kDebugCmdID };
+	};
+
+	struct StopListenCmd
+	{
+		enum { ID = kStopListenCmdID };
+		size_t index;
 	};
 
 	/// accept thread function start
