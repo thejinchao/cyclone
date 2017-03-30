@@ -14,7 +14,7 @@ namespace cyclone
 //pre-define
 class ServerWorkThread;
 
-class TcpServer : noncopyable
+class TcpServer : public WorkThread::Listener, noncopyable
 {
 public:
 	/// add a bind port, return false means too much port has beed binded or bind failed
@@ -71,12 +71,11 @@ public:
 
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
-	typedef std::vector< socket_t > SocketVector;
+	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
 	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
 
 	SocketVector	m_acceptor_sockets;
-	Looper*			m_accept_looper;
-	thread_t		m_acceptor_thread;
+	WorkThread		m_accept_thread;
 
 	ServerWorkThreadArray	m_work_thread_pool;
 	int32_t			m_work_thread_counts;
@@ -98,8 +97,23 @@ private:
 	DebugInterface*	m_debuger;
 
 private:
-	/// accept thread function
-	void _accept_thread(void);
+	//accept thread command
+	enum { kShutdownCmdID=1, kDebugCmdID };
+	struct ShutdownCmd
+	{
+		enum { ID = kShutdownCmdID };
+	};
+
+	struct DebugCmd
+	{
+		enum { ID = kDebugCmdID };
+	};
+
+	/// accept thread function start
+	virtual bool on_workthread_start(void);
+
+	/// accept thread message
+	virtual void on_workthread_message(Packet*);
 
 	/// on acception callback function
 	void _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);

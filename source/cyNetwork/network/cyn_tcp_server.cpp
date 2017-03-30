@@ -12,9 +12,7 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debuger)
-	: m_accept_looper(0)
-	, m_acceptor_thread(0)
-	, m_work_thread_counts(0)
+	: m_work_thread_counts(0)
 	, m_next_work(0)
 	, m_listener(listener)
 	, m_running(0)
@@ -29,10 +27,8 @@ TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debug
 //-------------------------------------------------------------------------------------
 TcpServer::~TcpServer()
 {
-	for (auto sfd : m_acceptor_sockets) {
-		socket_api::close_socket(sfd);
-	}
-	m_acceptor_sockets.clear();
+	assert(m_running.load()==0);
+	assert(m_acceptor_sockets.empty());
 }
 
 //-------------------------------------------------------------------------------------
@@ -77,7 +73,7 @@ bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 	}
 
 	CY_LOG(L_TRACE, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
-	m_acceptor_sockets.push_back(sfd);
+	m_acceptor_sockets.push_back(std::make_tuple(sfd, Looper::INVALID_EVENT_ID));
 	return true;
 }
 
@@ -107,8 +103,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//start listen thread
-	m_acceptor_thread = sys_api::thread_create(
-		std::bind(&TcpServer::_accept_thread, this), this, "accept");
+	m_accept_thread.start("accept", this);
 
 	//write debug variable
 	if (m_debuger && m_debuger->is_enable()) {
@@ -126,7 +121,7 @@ Address TcpServer::get_bind_address(size_t index)
 	if (index >= m_acceptor_sockets.size()) return address;
 
 	sockaddr_in addr;
-	socket_api::getsockname(m_acceptor_sockets[index], addr);
+	socket_api::getsockname(std::get<0>(m_acceptor_sockets[index]), addr);
 
 	return Address(addr);
 }
@@ -148,35 +143,14 @@ void TcpServer::stop(void)
 	//is shutdown in processing?
 	if (m_shutdown_ing.exchange(1) > 0)return;
 
-	//touch the first listen socket, cause the accept thread quit
-	Address address(get_bind_address(0).get_port(), true);
-	socket_t s = socket_api::create_socket();
-	socket_api::connect(s, address.get_sockaddr_in());
-	socket_api::close_socket(s);
+	//shutdown the the accept thread
+	ShutdownCmd shutdownCmd;
+	m_accept_thread.send_message(ShutdownCmd::ID, sizeof(shutdownCmd), (const char*)&shutdownCmd);
 
-	//first shutdown all connection
+	//shutdown all connection
 	for (auto work : m_work_thread_pool){
 		work->send_message(ServerWorkThread::ShutdownCmd::ID, 0, 0);
 	}
-
-	//wait all thread quit
-	for (auto work : m_work_thread_pool){
-		work->join();
-		delete work;
-	}
-	m_work_thread_pool.clear();
-
-	//wait accept thread quit
-	sys_api::thread_join(m_acceptor_thread);
-
-	//close the listen socket
-	for (auto sfd : m_acceptor_sockets){
-		socket_api::close_socket(sfd);
-	}
-	m_acceptor_sockets.clear();
-
-	//OK!
-	return;
 }
 
 //-------------------------------------------------------------------------------------
@@ -186,11 +160,7 @@ void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 	(void)event;
 
 	//is shutdown in processing?		
-	if (m_shutdown_ing > 0) {
-		//push loop request command
-		m_accept_looper->push_stop_request();
-		return;
-	}
+	if (m_shutdown_ing.load() > 0) return;
 
 	//call accept and create peer socket		
 	socket_t connfd = socket_api::accept(fd, 0);
@@ -214,16 +184,16 @@ void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_accept_thread(void)
+bool TcpServer::on_workthread_start(void)
 {
-	//create a event looper		
-	m_accept_looper = Looper::create_looper();
-
-	//registe listen event	
 	int32_t counts = 0;
-	for (auto sfd : m_acceptor_sockets)
+	for (auto& listen_socket : m_acceptor_sockets)
 	{
-		m_accept_looper->register_event(sfd,
+		socket_t sfd = std::get<0>(listen_socket);
+		auto& event_id = std::get<1>(listen_socket);
+
+		//register accept event
+		event_id = m_accept_thread.get_looper()->register_event(sfd,
 			Looper::kRead,
 			this,
 			std::bind(&TcpServer::_on_accept_function, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
@@ -235,27 +205,60 @@ void TcpServer::_accept_thread(void)
 	}
 
 	CY_LOG(L_TRACE, "accept thread run, listen %d port(s)", counts);
-	m_accept_looper->loop();
+	return true;
+}
 
-	//it's time to disppear...
-	Looper::destroy_looper(m_accept_looper);
-	m_accept_looper = nullptr;
+//-------------------------------------------------------------------------------------
+void TcpServer::on_workthread_message(Packet* message)
+{
+	//accept thread command
+	assert(message);
+
+	uint16_t msg_id = message->get_packet_id();
+	if (msg_id == ShutdownCmd::ID) {
+		Looper* looper = m_accept_thread.get_looper();
+
+		//close all listen socket(s)
+		for (auto listen_socket : m_acceptor_sockets){
+			auto& event_id = std::get<1>(listen_socket);
+
+			if (event_id != Looper::INVALID_EVENT_ID) {
+				looper->disable_all(event_id);
+				looper->delete_event(event_id);
+				event_id = Looper::INVALID_EVENT_ID;
+			}
+		}
+		m_acceptor_sockets.clear();
+
+		//stop looper
+		looper->push_stop_request();
+	}
+	else if (msg_id == DebugCmd::ID) {
+		//TODO: debug accept thread
+	}
+
 }
 
 //-------------------------------------------------------------------------------------
 void TcpServer::join(void)
 {
-	assert(m_acceptor_thread);
+	//wait accept thread quit
+	m_accept_thread.join();
 
-	//join accept thread
-	sys_api::thread_join(m_acceptor_thread);
+	//wait all thread quit
+	for (auto work : m_work_thread_pool) {
+		work->join();
+		delete work;
+	}
+	m_work_thread_pool.clear();
+	m_running = 0;
+
+	CY_LOG(L_TRACE, "accept thread stop!");
 }
 
 //-------------------------------------------------------------------------------------
 void TcpServer::shutdown_connection(Connection* conn)
 {
-	assert(m_acceptor_thread);
-
 	ServerWorkThread* work = (ServerWorkThread*)(conn->get_listener());
 
 	ServerWorkThread::CloseConnectionCmd closeConnectionCmd;
@@ -295,11 +298,15 @@ Connection* TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id
 //-------------------------------------------------------------------------------------
 void TcpServer::debug(void)
 {
+	//send to work thread
 	ServerWorkThread::DebugCmd cmd;
-
 	for (auto work : m_work_thread_pool) {
 		work->send_message(ServerWorkThread::DebugCmd::ID, sizeof(cmd), (const char*)&cmd);
 	}
+
+	//send to accept thread
+	DebugCmd acceptDebugCmd;
+	m_accept_thread.send_message(DebugCmd::ID, sizeof(acceptDebugCmd), (const char*)&acceptDebugCmd);
 }
 
 }
