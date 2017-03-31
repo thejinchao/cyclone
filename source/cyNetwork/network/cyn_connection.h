@@ -28,11 +28,11 @@ public:
 
 public:
 	//connection state
-	//                         established()                         shutdown()
-	//  O ----> kConnecting ---------------------> kConnected ----------------------> kDisconnecting---
-	//               |                                                                                 |
-	//               |      _on_socket_close()                         _on_socket_close()              |
-	//                ---------------------------> kDisconnected <-------------------------------------
+	//                         established()                                           shutdown()
+	//  O ----> kConnecting -------------------> kConnected ---------------------------------------------------------------> kDisconnecting
+	//                                               |                                                                              |
+	//                                               |      _on_socket_close()                         _on_socket_close()           |
+	//                                                ---------------------------> kDisconnected <----------------------------------
 	//
 	enum State { kDisconnected, kConnecting, kConnected, kDisconnecting };
 
