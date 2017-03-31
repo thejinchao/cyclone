@@ -44,7 +44,8 @@ public:
 
 	uint16_t get_packet_size(void) const;
 	uint16_t get_packet_id(void) const;
-	const char* get_packet_content(void) const;
+	char* get_packet_content(void) { return m_content; }
+	const char* get_packet_content(void) const { return m_content; }
 
 private:
 	void _resize(size_t head_size, size_t packet_size);

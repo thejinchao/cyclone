@@ -87,12 +87,6 @@ uint16_t Packet::get_packet_id(void) const
 }
 
 //-------------------------------------------------------------------------------------
-const char* Packet::get_packet_content(void) const
-{
-	return m_content;
-}
-
-//-------------------------------------------------------------------------------------
 void Packet::_resize(size_t head_size, size_t packet_size)
 {
 	assert(head_size >= 2 * sizeof(uint16_t));
