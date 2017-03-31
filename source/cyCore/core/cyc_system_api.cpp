@@ -99,6 +99,9 @@ void _thread_entry(thread_data_s* data)
 	signal_wait(data->resume_signal);
 	signal_destroy(data->resume_signal);
 	data->resume_signal = 0;
+	
+	//set random seed
+	srand((uint32_t)::time(0));
 
 	if (data->entry_func)
 		data->entry_func(data->param);
