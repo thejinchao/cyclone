@@ -41,9 +41,15 @@ class ServerListener : public TcpServer::Listener
 
 		CY_LOG(L_INFO, "[T=%d]receive:%s", thread_index, temp);
 
-		if (strcmp(temp, "exit") == 0)
-		{
+		if (strcmp(temp, "exit") == 0){
 			server->shutdown_connection(conn);
+			return;
+		}
+
+		if (strcmp(temp, "shutdown") == 0) {
+			sys_api::thread_create_detached([server](void*){
+				server->stop();
+			}, 0, nullptr);
 			return;
 		}
 
