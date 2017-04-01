@@ -119,7 +119,7 @@ thread_t _thread_create(thread_function func, void* param, const char* name, boo
 	data->param = param;
 	data->entry_func = func;
 	data->detached = detached;
-	data->name = name;
+	data->name = name?name:"";
 	data->resume_signal = signal_create();
 	data->thandle = std::thread(_thread_entry, data);
 	data->tid = data->thandle.get_id();
