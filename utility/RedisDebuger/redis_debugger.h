@@ -35,9 +35,9 @@ public:
 	bool init_monitor_thread(int32_t debug_fraq, debug_entry_func func, void* param);
 
 	virtual bool is_enable(void) { return m_enable; }
-	virtual void update_value(const char* key, const char* value);
-	virtual void update_value(const char* key, int32_t value);
-	virtual void del_value(const char* key);
+	virtual void set_debug_value(const char* key, const char* value);
+	virtual void set_debug_value(const char* key, int32_t value);
+	virtual void del_debug_value(const char* key);
 
 private:
 	bool		m_enable;

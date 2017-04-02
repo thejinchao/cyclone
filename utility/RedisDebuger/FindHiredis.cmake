@@ -5,6 +5,21 @@
 #  HIREDIS_INCLUDE_DIR - The Hiredis include directory
 #  HIREDIS_LIBRARIES - The libraries needed to use Hiredis
 #  HIREDIS_DEFINITIONS - Compiler switches required for using Hiredis
+#
+# Usage(cyclone project):
+# 
+#   list(APPEND CMAKE_MODULE_PATH "${CY_UTILITY_PATH}/RedisDebuger")
+#   find_package(Hiredis)
+#   if(HIREDIS_FOUND)
+#       set(CY_REDIS_DEBUGER_UTILITY 
+#           ${CY_UTILITY_PATH}/RedisDebuger/redis_debugger.h
+#           ${CY_UTILITY_PATH}/RedisDebuger/redis_debugger.cpp
+#       )
+#    
+#       add_definitions(-DCY_HIREDIS_ENABLED)
+#   endif()
+#
+#
 
 #SET(HIREDIS_DEFINITIONS ${PC_HIREDIS_CFLAGS_OTHER})
 

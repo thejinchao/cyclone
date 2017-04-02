@@ -142,18 +142,18 @@ void RedisDebuger::_redis_thread_func(RedisThread* param)
 }
 
 //-------------------------------------------------------------------------------------
-void RedisDebuger::update_value(const char* key, int32_t value)
+void RedisDebuger::set_debug_value(const char* key, int32_t value)
 {
 	if (!m_enable) return;
 
 	char str_value[32];
 	snprintf(str_value, 32, "%d", value);
 
-	update_value(key, str_value);
+	set_debug_value(key, str_value);
 }
 
 //-------------------------------------------------------------------------------------
-void RedisDebuger::update_value(const char* key, const char* value)
+void RedisDebuger::set_debug_value(const char* key, const char* value)
 {
 	if(!m_enable) return;
 
@@ -170,7 +170,7 @@ void RedisDebuger::update_value(const char* key, const char* value)
 }
 
 //-------------------------------------------------------------------------------------
-void RedisDebuger::del_value(const char* key)
+void RedisDebuger::del_debug_value(const char* key)
 {
 	if (!m_enable) return;
 
