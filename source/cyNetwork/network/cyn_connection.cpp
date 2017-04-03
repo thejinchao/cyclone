@@ -18,6 +18,7 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	, m_event_id(Looper::INVALID_EVENT_ID)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
+	, m_writeBufLock(nullptr)
 	, m_listener(listener)
 	, m_max_sendbuf_len(0)
 {
@@ -28,9 +29,6 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	socket_api::set_keep_alive(sfd, true);
 	socket_api::set_linger(sfd, false, 0);
 
-	//init write buf lock
-	m_writeBufLock = sys_api::mutex_create();
-
 	//set default debug name
 	char temp[MAX_PATH] = { 0 };
 	snprintf(temp, MAX_PATH, "connection_%d", id);
@@ -40,12 +38,10 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 //-------------------------------------------------------------------------------------
 Connection::~Connection()
 {
-	sys_api::mutex_destroy(m_writeBufLock);
-
-	if (m_event_id != Looper::INVALID_EVENT_ID) {
-		m_looper->disable_all(m_event_id);
-		m_looper->delete_event(m_event_id);
-	}
+	assert(get_state()==kDisconnected);
+	assert(m_socket == INVALID_SOCKET);
+	assert(m_event_id == Looper::INVALID_EVENT_ID);
+	assert(m_writeBufLock == nullptr);
 }
 
 //-------------------------------------------------------------------------------------
@@ -60,6 +56,9 @@ void Connection::established(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(get_state() == kConnecting);
+
+	//init write buf lock
+	m_writeBufLock = sys_api::mutex_create();
 
 	m_state = kConnected;
 
@@ -140,13 +139,6 @@ void Connection::_send(const char* buf, size_t len)
 		if (nwrote >= 0)
 		{
 			remaining = len - (size_t)nwrote;
-			if (remaining == 0)
-			{
-				//TODO: notify logic layer
-				//if (m_server && m_server->get_write_complete_callback()) {
-				//	m_server->get_write_complete_callback()(m_server, this);
-				//}
-			}
 		}
 		else
 		{
@@ -202,6 +194,10 @@ void Connection::shutdown(void)
 	//ok, we can close the socket now
 	socket_api::shutdown(m_socket);
 	_on_socket_close();
+
+	//clean write buf lock
+	sys_api::mutex_destroy(m_writeBufLock);
+	m_writeBufLock = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -250,11 +246,6 @@ void Connection::_on_socket_write(void)
 			if (m_writeBuf.empty()) {
 				m_looper->disable_write(m_event_id);
 
-				//TODO: notify logic layer
-				//if (m_server && m_server->get_write_complete_callback()) {
-				//	m_server->get_write_complete_callback()(m_server, this);
-				//}
-
 				//disconnecting? this is the last message send to client, we can shut it down again
 				if (m_state == kDisconnecting) {
 					shutdown();
@@ -277,13 +268,24 @@ void Connection::_on_socket_close(void)
 
 	//disable all event
 	m_state = kDisconnected;
-	m_looper->disable_all(m_event_id);
-	m_writeBuf.reset();
 
+	//delete looper event
+	m_looper->disable_all(m_event_id);
+	m_looper->delete_event(m_event_id);
+	m_event_id = Looper::INVALID_EVENT_ID;
+	
 	//logic callback
 	if (m_listener) {
 		m_listener->on_connection_event(kOnClose, this);
 	}
+
+	//reset read/write buf
+	m_writeBuf.reset();
+	m_readBuf.reset();
+
+	//close socket
+	socket_api::close_socket(m_socket);
+	m_socket = INVALID_SOCKET;
 }
 
 //-------------------------------------------------------------------------------------
