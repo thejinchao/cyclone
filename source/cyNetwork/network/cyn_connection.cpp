@@ -194,10 +194,6 @@ void Connection::shutdown(void)
 	//ok, we can close the socket now
 	socket_api::shutdown(m_socket);
 	_on_socket_close();
-
-	//clean write buf lock
-	sys_api::mutex_destroy(m_writeBufLock);
-	m_writeBufLock = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -286,6 +282,10 @@ void Connection::_on_socket_close(void)
 	//close socket
 	socket_api::close_socket(m_socket);
 	m_socket = INVALID_SOCKET;
+
+	//destroy write buf lock
+	sys_api::mutex_destroy(m_writeBufLock);
+	m_writeBufLock = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
