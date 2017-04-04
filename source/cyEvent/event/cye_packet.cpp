@@ -119,6 +119,8 @@ void Packet::build(size_t head_size, uint16_t packet_id, uint16_t packet_size, c
 
 	if (m_content && packet_content)
 		memcpy(m_content, packet_content, packet_size);
+	else
+		memset(m_content, 0, packet_size);
 }
 
 //-------------------------------------------------------------------------------------
