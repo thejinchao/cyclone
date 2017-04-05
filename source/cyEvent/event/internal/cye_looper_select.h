@@ -28,6 +28,10 @@ private:
 	fd_set	m_work_read_fd_set;
 	fd_set	m_work_write_fd_set;
 
+#ifdef CY_SYS_WINDOWS
+	fd_set	m_work_expt_fd_set;
+#endif
+
 	int32_t m_max_read_counts;
 	int32_t m_max_write_counts;
 

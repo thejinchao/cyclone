@@ -53,6 +53,9 @@ void Looper_select::_poll(
 
 	m_work_read_fd_set = m_master_read_fd_set;
 	m_work_write_fd_set = m_master_write_fd_set;
+#ifdef CY_SYS_WINDOWS
+	m_work_expt_fd_set = m_master_read_fd_set;
+#endif
 
 	int ready = 0;
 	if (m_max_read_counts > 0 || m_max_write_counts>0)
@@ -61,11 +64,13 @@ void Looper_select::_poll(
 		ready = ::select(
 #ifdef CY_SYS_WINDOWS
 			0,
+			&m_work_read_fd_set, &m_work_write_fd_set, &m_work_expt_fd_set, 
+			block ? 0 : &time_out);
 #else
-			(int)(m_max_fd+1), 
-#endif
+			(int)(m_max_fd + 1), 
 			&m_work_read_fd_set, &m_work_write_fd_set, 0, 
 			block ? 0 : &time_out);
+#endif
 	}
 	else 
 	{
@@ -100,7 +105,11 @@ void Looper_select::_poll(
 		{
 			channel_s& channel = m_channelBuffer[i];
 
-			if (FD_ISSET(channel.fd, &m_work_read_fd_set))
+			if (   FD_ISSET(channel.fd, &m_work_read_fd_set) 
+#ifdef CY_SYS_WINDOWS
+				|| FD_ISSET(channel.fd, &m_work_expt_fd_set)
+#endif
+				)
 			{
 				assert(channel.event & kRead);
 				assert(channel.on_read);
