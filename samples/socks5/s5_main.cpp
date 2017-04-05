@@ -30,7 +30,7 @@ public:
 	void connect(const Address& address){
 		m_address = address;
 		m_remoteConnection = new TcpClient(m_looper, this, this);
-		m_remoteConnection->connect(address, 5 * 1000);
+		m_remoteConnection->connect(address);
 	}
 	void forword_up(RingBuf& inputBuf) {
 		m_remoteConnection->send((const char*)inputBuf.normalize(), inputBuf.size());

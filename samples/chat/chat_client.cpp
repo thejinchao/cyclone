@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 		Looper* looper = Looper::create_looper();
 
 		TcpClient client(looper, &client_listener, 0);
-		client.connect(Address(server_ip, server_port), 1000 * 10);
+		client.connect(Address(server_ip, server_port));
 
 		looper->loop();
 

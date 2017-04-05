@@ -30,7 +30,7 @@ public:
 		else
 		{
 			uint32_t retry_time = 1000 * 5;
-			CY_LOG(L_INFO, "connect failed!, retry after %d milliseconds...\n", retry_time);
+			CY_LOG(L_INFO, "connect failed!, retry after %d milliseconds...", retry_time);
 			return 1000 * 5;
 		}
 	}
@@ -43,10 +43,10 @@ public:
 		RingBuf& buf = conn->get_input_buf();
 
 		char temp[MAX_ECHO_LENGTH +1] = { 0 };
-		buf.memcpy_out(temp, MAX_ECHO_LENGTH);
+			buf.memcpy_out(temp, MAX_ECHO_LENGTH);
 
-		CY_LOG(L_INFO, "%s", temp);
-	}
+			CY_LOG(L_INFO, "%s", temp);
+		}
 
 	//-------------------------------------------------------------------------------------
 	virtual void on_close(TcpClient* client)
@@ -95,11 +95,12 @@ int main(int argc, char* argv[])
 	sys_api::thread_create_detached([&](void*) {
 		Looper* looper = Looper::create_looper();
 
-		TcpClient client(looper, &client_listener, 0);
-		client.connect(Address(server_ip, server_port), 1000 * 10);
+		TcpClient* client = new TcpClient(looper, &client_listener, 0);
+		client->connect(Address(server_ip, server_port));
 
 		looper->loop();
 
+		delete client;
 		Looper::destroy_looper(looper);
 	}, 0, "client");
 
