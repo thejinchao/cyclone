@@ -111,6 +111,18 @@ TEST(Packet, Basic)
 	EXPECT_TRUE(packet.build(HEAD_SIZE, pipe));
 	PACKET_CHECK_WITH_RESERVED(buf_size, PACKET_ID, HEAD_SIZE, temp_buf, &RESERVED, sizeof(RESERVED));
 
+	//large memory
+	const size_t max_size = 0xFFFF;
+	char* large_buf = (char*)CY_MALLOC(max_size);
+	for (size_t i = 0; i < max_size; i++) {
+		((uint8_t*)large_buf)[i] = (uint8_t)(rand() & 0xFF);
+	}
+	packet.build(HEAD_SIZE, PACKET_ID, (uint16_t)max_size, large_buf);
+	PACKET_CHECK(max_size, PACKET_ID, HEAD_SIZE, large_buf);
+
+	CY_FREE(large_buf);
+	large_buf = nullptr;
+
 	packet.clean();
 	PACKET_CHECK_ZERO();
 }
