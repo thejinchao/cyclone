@@ -37,6 +37,10 @@ public:
 		inputBuf.reset();
 	}
 
+	void disconnect(void) {
+		if (m_remoteConnection)
+			m_remoteConnection->disconnect();
+	}
 public:
 	virtual uint32_t on_connected(TcpClient* client, Connection* conn, bool success) {
 		(void)client;
@@ -125,6 +129,7 @@ public:
 		auto it = m_tunnelMap.find(conn_id);
 		if (it == m_tunnelMap.end()) return;
 
+		it->second.disconnect();
 		m_tunnelMap.erase(it);
 	}
 
