@@ -151,4 +151,51 @@ TEST(XorShift128, Basic)
 
 }
 
+//-------------------------------------------------------------------------------------
+void _fillRandom(uint8_t* mem, size_t len)
+{
+	for (size_t i = 0; i < len; i++) {
+		mem[i] = (uint8_t)(rand() & 0xFF);
+	}
+}
+
+//-------------------------------------------------------------------------------------
+TEST(Rijndael, Basic)
+{
+	Rijndael::KEY key = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+	Rijndael aes(key);
+
+	const char* plain_text = "And God called the light Day,  and the darkness he called Night.";
+	const uint8_t encrypt_text[] = {
+		0xec, 0x0f, 0xd1, 0x5b, 0xae, 0x29, 0xd3, 0xcb, 0xd6, 0x94, 0x51, 0x6c, 0x06, 0xc9, 0x24, 0x47, 0xeb, 0xea, 0x14, 0x8b, 0x72, 0xd9, 0x33, 0xda, 0x75, 0xbe,
+		0xa0, 0x1c, 0x08, 0x38, 0x5f, 0x67, 0x60, 0xdb, 0xf6, 0xf9, 0x27, 0xc6, 0x8b, 0x7d, 0x0c, 0xfb, 0x19, 0xed, 0x47, 0xc9, 0x1b, 0x68, 0xd5, 0x0b, 0xdb, 0x3d,
+		0xf6, 0x7e, 0x0b, 0x76, 0xfe, 0x96, 0x94, 0x23, 0x6e, 0x8c, 0x16, 0x8c };
+
+	size_t text_len = strlen(plain_text);
+	EXPECT_EQ(text_len%Rijndael::BLOCK_SIZE, 0ull);
+
+	uint8_t buf1[128] = { 0 }, buf2[128] = { 0 };
+	memcpy(buf1, plain_text, text_len);
+
+	aes.encrypt(buf1, text_len);
+	EXPECT_EQ(0, memcmp(buf1, encrypt_text, text_len));
+	aes.decrypt(buf1, text_len);
+	EXPECT_EQ(0, memcmp(buf1, plain_text, text_len));
+
+	//encrypt with random seed
+	const int32_t TEST_COUNTS = 20;
+	for (int32_t i = 0; i < TEST_COUNTS; i++) {
+		Rijndael::KEY key_random;
+		_fillRandom(key_random, Rijndael::BLOCK_SIZE);
+
+		const size_t buf_size = 128;
+		_fillRandom(buf1, buf_size);
+		memcpy(buf2, buf1, buf_size);
+
+		aes.encrypt(buf2, buf_size);
+		aes.decrypt(buf2, buf_size);
+		EXPECT_EQ(0, memcmp(buf1, buf2, buf_size));
+	}
+}
+
 }
