@@ -42,7 +42,7 @@ public:
 			m_remoteConnection->disconnect();
 	}
 public:
-	virtual uint32_t on_connected(TcpClient* client, Connection* conn, bool success) {
+	virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success) {
 		(void)client;
 
 		assert(get_state()== S5_CONNECTING);
@@ -69,7 +69,7 @@ public:
 		}
 		return 0;
 	}
-	virtual void on_message(TcpClient* client, Connection* conn) {
+	virtual void on_message(TcpClient* client, ConnectionPtr conn) {
 		(void)client;
 
 		RingBuf& buf = conn->get_input_buf();
@@ -88,11 +88,11 @@ private:
 	TcpServer* m_localServer;
 	Looper* m_looper;
 	TcpClient* m_remoteConnection;
-	Connection* m_localConnection;
+	ConnectionPtr m_localConnection;
 	Address m_address;
 
 public:
-	S5Tunnel(TcpServer* localServer, Looper* looper, Connection* localConnection)
+	S5Tunnel(TcpServer* localServer, Looper* looper, ConnectionPtr localConnection)
 		: m_state(S5_OPENING)
 		, m_localServer(localServer)
 		, m_looper(looper)
@@ -116,7 +116,7 @@ public:
 		m_looper = looper;
 		m_localServer = localServer;
 	}
-	void add_new_tunnel(Connection* conn) {
+	void add_new_tunnel(ConnectionPtr conn) {
 		m_tunnelMap.insert({ conn->get_id(), S5Tunnel(m_localServer, m_looper, conn)});
 	}
 	S5Tunnel* get_tunnel(int32_t conn_id) {
@@ -154,7 +154,7 @@ class S5ServerListener : public TcpServer::Listener
 	};
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_connected(TcpServer*, int32_t thread_index, Connection* conn)
+	virtual void on_connected(TcpServer*, int32_t thread_index, ConnectionPtr conn)
 	{
 		assert(thread_index>=0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -168,7 +168,7 @@ class S5ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -236,7 +236,7 @@ class S5ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpServer*, int32_t thread_index, Connection* conn)
+	virtual void on_close(TcpServer*, int32_t thread_index, ConnectionPtr conn)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];

@@ -13,7 +13,7 @@ class ClientListener : public TcpClient::Listener
 {
 public:
 	//-------------------------------------------------------------------------------------
-	virtual uint32_t on_connected(TcpClient* client, Connection* conn, bool success)
+	virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success)
 	{
 		(void)conn;
 
@@ -36,7 +36,7 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpClient* client, Connection* conn)
+	virtual void on_message(TcpClient* client, ConnectionPtr conn)
 	{
 		(void)client;
 

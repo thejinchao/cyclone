@@ -19,7 +19,7 @@ class ServerListener : public TcpServer::Listener
 	};
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_connected(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_connected(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		(void)server;
 		(void)thread_index;
@@ -36,7 +36,7 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		(void)server;
 		(void)thread_index;
@@ -59,7 +59,7 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_close(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		(void)server;
 		(void)thread_index;
@@ -85,7 +85,7 @@ private:
 	struct Client
 	{
 		int32_t agent_id;
-		Connection* connection;
+		ConnectionPtr connection;
 	};
 	std::map< int32_t, Client > clients;
 	sys_api::mutex_t clients_lock;

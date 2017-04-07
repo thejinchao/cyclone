@@ -19,7 +19,7 @@ class ServerListener : public TcpServer::Listener
 	};
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_connected(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_connected(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		(void)server;
 
@@ -32,7 +32,7 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		RingBuf& buf = conn->get_input_buf();
 
@@ -60,7 +60,7 @@ class ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpServer* server, int32_t thread_index, Connection* conn)
+	virtual void on_close(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		(void)server;
 
