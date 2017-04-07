@@ -1,6 +1,7 @@
 #include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
+#include <SimpleOpt.h>
 
 #ifndef CY_SYS_WINDOWS
 #include <netinet/in.h>
@@ -10,6 +11,17 @@
 #include "s5_protocol.h"
 
 using namespace cyclone;
+
+////////////////////////////////////////////////////////////////////////////////////////////
+enum { OPT_PORT, OPT_THREADS, OPT_HELP };
+
+CSimpleOptA::SOption g_rgOptions[] = {
+	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
+	{ OPT_THREADS, "-t",  SO_REQ_SEP }, // "-t THREAD_COUNTS"
+	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
+	{ OPT_HELP, "--help", SO_NONE },	// "--help"
+	SO_END_OF_OPTIONS                   // END
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 enum S5State {
@@ -272,13 +284,37 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+static void printUsage(const char* moduleName)
+{
+	printf("===== Socks5 Server(Powerd by Cyclone) =====\n");
+	printf("Usage: %s [-p LISTEN_PORT] [-t THREAD_COUNTS] [-?] [--help]\n", moduleName);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+	CSimpleOptA args(argc, argv, g_rgOptions);
 	uint16_t server_port = 1984;
 	int32_t work_thread_counts = sys_api::get_cpu_counts();
 
-	if (argc > 1)
-		server_port = (uint16_t)atoi(argv[1]);
+	while (args.Next()) {
+		if (args.LastError() == SO_SUCCESS) {
+			if (args.OptionId() == OPT_HELP) {
+				printUsage(argv[0]);
+				return 0;
+			}
+			else if (args.OptionId() == OPT_PORT) {
+				server_port = (uint16_t)atoi(args.OptionArg());
+			}
+			else if (args.OptionId() == OPT_THREADS) {
+				work_thread_counts = (int32_t)atoi(args.OptionArg());
+			}
+		}
+		else {
+			printf("Invalid argument: %s\n", args.OptionText());
+			return 1;
+		}
+	}
 
 	S5ServerListener listener(work_thread_counts);
 	TcpServer server(&listener, "s5", 0);

@@ -1,12 +1,22 @@
 #include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
+#include <SimpleOpt.h>
 
 #include <ctype.h>
 
 using namespace cyclone;
 
 #define MAX_ECHO_LENGTH (255)
+
+enum { OPT_PORT, OPT_HELP };
+
+CSimpleOptA::SOption g_rgOptions[] = {
+	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
+	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
+	{ OPT_HELP, "--help", SO_NONE },	// "--help"
+	SO_END_OF_OPTIONS                   // END
+};
 
 class ServerListener : public TcpServer::Listener
 {
@@ -80,12 +90,34 @@ class ServerListener : public TcpServer::Listener
 };
 
 //-------------------------------------------------------------------------------------
+static void printUsage(const char* moduleName)
+{
+	printf("===== Echo Server(Powerd by Cyclone) =====\n");
+	printf("Usage: %s [-p LISTEN_PORT] [-?] [--help]\n", moduleName);
+}
+
+//-------------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
+	CSimpleOptA args(argc, argv, g_rgOptions);
 	uint16_t server_port = 1978;
 
-	if (argc > 1)
-		server_port = (uint16_t)atoi(argv[1]);
+	while (args.Next()) {
+		if (args.LastError() == SO_SUCCESS) {
+			if (args.OptionId() == OPT_HELP) {
+				printUsage(argv[0]);
+				return 0;
+			}
+			else if (args.OptionId() == OPT_PORT) {
+				server_port = (uint16_t)atoi(args.OptionArg());
+			}
+
+		}
+		else {
+			printf("Invalid argument: %s\n", args.OptionText());
+			return 1;
+		}
+	}
 
 	CY_LOG(L_DEBUG, "listen port %d", server_port);
 

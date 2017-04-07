@@ -1,12 +1,23 @@
 #include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
+#include <SimpleOpt.h>
 
 #include <iostream>
 
 using namespace cyclone;
 
 #define MAX_ECHO_LENGTH (255)
+
+enum { OPT_HOST, OPT_PORT, OPT_HELP };
+
+CSimpleOptA::SOption g_rgOptions[] = {
+	{ OPT_HOST, "-h",     SO_REQ_SEP }, // "-h HOST_IP"
+	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
+	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
+	{ OPT_HELP, "--help", SO_NONE },	// "--help"
+	SO_END_OF_OPTIONS                   // END
+};
 
 //-------------------------------------------------------------------------------------
 class ClientListener : public TcpClient::Listener
@@ -79,15 +90,38 @@ public:
 };
 
 //-------------------------------------------------------------------------------------
+static void printUsage(const char* moduleName)
+{
+	printf("===== Echo Client(Powerd by Cyclone) =====\n");
+	printf("Usage: %s [-h HOST_IP][-p HOST_PORT] [-?] [--help]\n", moduleName);
+}
+
+//-------------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-	const char* server_ip = "127.0.0.1";
-	if (argc > 1)
-		server_ip = argv[1];
+	CSimpleOptA args(argc, argv, g_rgOptions);
 
+	std::string server_ip = "127.0.0.1";
 	uint16_t server_port = 1978;
-	if (argc > 2)
-		server_port = (uint16_t)atoi(argv[2]);
+
+	while (args.Next()) {
+		if (args.LastError() == SO_SUCCESS) {
+			if (args.OptionId() == OPT_HELP) {
+				printUsage(argv[0]);
+				return 0;
+			}
+			else if (args.OptionId() == OPT_HOST) {
+				server_ip =args.OptionArg();
+			}
+			else if (args.OptionId() == OPT_PORT) {
+				server_port = (uint16_t)atoi(args.OptionArg());
+			}
+		}
+		else {
+			printf("Invalid argument: %s\n", args.OptionText());
+			return 1;
+		}
+	}
 
 	ClientListener client_listener;
 
@@ -96,7 +130,7 @@ int main(int argc, char* argv[])
 		Looper* looper = Looper::create_looper();
 
 		TcpClient* client = new TcpClient(looper, &client_listener, 0);
-		client->connect(Address(server_ip, server_port));
+		client->connect(Address(server_ip.c_str(), server_port));
 
 		looper->loop();
 
@@ -104,7 +138,7 @@ int main(int argc, char* argv[])
 		Looper::destroy_looper(looper);
 	}, 0, "client");
 
-	CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip, server_port);
+	CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip.c_str(), server_port);
 
 	//wait connect completed
 	client_listener.wait_connected();

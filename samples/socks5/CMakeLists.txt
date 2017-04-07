@@ -9,6 +9,7 @@ include_directories(
 	${CY_SOURCE_CORE_PATH}
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
+	${CY_UTILITY_PATH}/SimpleOpt
 )
 
 add_executable(socks5
