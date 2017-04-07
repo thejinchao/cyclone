@@ -43,8 +43,8 @@ TcpClient::~TcpClient()
 	RELEASE_EVENT(m_looper, m_retry_timer_id);
 
 	if (m_connection) {
-		delete m_connection;
-		m_connection = nullptr;
+		assert(m_connection->get_state() == Connection::kDisconnected);
+		m_connection.reset();
 	}
 }
 
@@ -112,8 +112,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		RELEASE_EVENT(m_looper, m_socket_event_id);
 
 		//established the connection
-		m_connection = new Connection(0, m_socket, m_looper, this);
-		m_connection->established();
+		m_connection = Connection::established(0, m_socket, m_looper, this);
 
 		//send cached message
 		if (!m_sendCache.empty()) {
@@ -169,7 +168,7 @@ void TcpClient::disconnect(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpClient::on_connection_event(Connection::Event event, Connection* conn)
+void TcpClient::on_connection_event(Connection::Event event, ConnectionPtr conn)
 {
 	switch (event) {
 	case Connection::kOnConnection:
@@ -192,7 +191,7 @@ void TcpClient::on_connection_event(Connection::Event event, Connection* conn)
 void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 {
 	assert(id == m_retry_timer_id);
-	assert(m_connection == nullptr);
+	assert(m_connection);
 
 	//remove the timer
 	RELEASE_EVENT(m_looper, m_retry_timer_id);

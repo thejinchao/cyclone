@@ -60,7 +60,7 @@ bool ServerWorkThread::is_in_workthread(void) const
 }
 
 //-------------------------------------------------------------------------------------
-Connection* ServerWorkThread::get_connection(int32_t connection_id)
+ConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
 {
 	assert(is_in_workthread());
 
@@ -92,11 +92,8 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		memcpy(&newConnectionCmd, message->get_packet_content(), sizeof(NewConnectionCmd));
 
 		//create tcp connection 
-		Connection* conn = new Connection(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
+		ConnectionPtr conn = Connection::established(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
 		m_connections.insert(std::make_pair(conn->get_id(), conn));
-
-		//established the connection
-		conn->established();
 	}
 	else if (msg_id == CloseConnectionCmd::ID)
 	{
@@ -107,7 +104,7 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		ConnectionMap::iterator it = m_connections.find(closeConnectionCmd.conn_id);
 		if (it == m_connections.end()) return;
 
-		Connection* conn = it->second;
+		ConnectionPtr conn = it->second;
 		Connection::State curr_state = conn->get_state();
 
 		if (curr_state == Connection::kConnected)
@@ -122,7 +119,6 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 
 			//delete the connection object
 			m_connections.erase(conn->get_id());
-			delete conn;
 		}
 		else
 		{
@@ -150,7 +146,7 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		ConnectionMap::iterator it, end = m_connections.end();
 		for (it = m_connections.begin(); it != end; ++it)
 		{
-			Connection* conn = it->second;
+			ConnectionPtr conn = it->second;
 			if (conn->get_state() == Connection::kConnected)
 			{
 				conn->shutdown();
@@ -177,7 +173,7 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::on_connection_event(Connection::Event event, Connection* conn)
+void ServerWorkThread::on_connection_event(Connection::Event event, ConnectionPtr conn)
 {
 	assert(is_in_workthread());
 	assert(m_server);

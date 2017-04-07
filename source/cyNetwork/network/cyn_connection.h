@@ -10,7 +10,10 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class Connection : noncopyable
+class Connection;
+typedef std::shared_ptr<Connection> ConnectionPtr;
+
+class Connection : public std::enable_shared_from_this<Connection>, noncopyable
 {
 public:
 	//connection  event
@@ -23,18 +26,24 @@ public:
 	class Listener
 	{
 	public:
-		virtual void on_connection_event(Event event, Connection* conn) = 0;
+		virtual void on_connection_event(Event event, ConnectionPtr conn) = 0;
 	};
 
 public:
-	//connection state
-	//                         established()                                           shutdown()
-	//  O ----> kConnecting -------------------> kConnected ---------------------------------------------------------------> kDisconnecting
-	//                                               |                                                                              |
-	//                                               |      _on_socket_close()                         _on_socket_close()           |
-	//                                                ---------------------------> kDisconnected <----------------------------------
+	//the only way to create a Connection from a socket has connected to peer socket
+	//NOT thread safe, must call from looper thread
+	static ConnectionPtr established(int32_t id, socket_t sfd, Looper* looper, Listener* listener);
+	void shutdown(void);
+
+public:
+	//connection state(kConnecting should not appear in Connection)
+	//         established()                                           shutdown()
+	//  O -------------------> kConnected ---------------------------------------------------------------> kDisconnecting
+	//                             |                                                                              |
+	//                             |      _on_socket_close()                         _on_socket_close()           |
+	//                              ---------------------------> kDisconnected <----------------------------------
 	//
-	enum State { kDisconnected, kConnecting, kConnected, kDisconnecting };
+	enum State { kConnecting, kConnected, kDisconnecting, kDisconnected };
 
 	/// get id(thread safe)
 	int32_t get_id(void) const { return m_id; }
@@ -67,10 +76,6 @@ public:
 	/// debug
 	void debug(DebugInterface* debuger);
 	void del_debug_value(DebugInterface* debuger);
-
-public:
-	void established(void);
-	void shutdown(void);
 
 private:
 	int32_t m_id;
@@ -113,8 +118,9 @@ private:
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
 
-public:
+private:
 	Connection(int32_t id, socket_t sfd, Looper* looper, Listener* listener);
+public:
 	~Connection();
 };
 

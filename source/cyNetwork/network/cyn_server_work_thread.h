@@ -50,14 +50,14 @@ public:
 	//// join work thread(thread safe)
 	void join(void);
 	//// get connection(NOT thread safe, MUST call in work thread)
-	Connection* get_connection(int32_t connection_id);
+	ConnectionPtr get_connection(int32_t connection_id);
 
 private:
 	const int32_t	m_index;
 	TcpServer*		m_server;
 	WorkThread*		m_work_thread;
 
-	typedef std::unordered_map< int32_t, Connection* > ConnectionMap;
+	typedef std::unordered_map< int32_t, ConnectionPtr > ConnectionMap;
 
 	ConnectionMap	m_connections;
 
@@ -66,7 +66,7 @@ private:
 
 private:
 	//// called by connection(in work thread)
-	virtual void on_connection_event(Connection::Event event, Connection* conn);
+	virtual void on_connection_event(Connection::Event event, ConnectionPtr conn);
 	//// called by message port (in work thread)
 	virtual bool on_workthread_start(void);
 	virtual void on_workthread_message(Packet*);

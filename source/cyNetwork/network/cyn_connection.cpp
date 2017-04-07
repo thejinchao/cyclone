@@ -13,7 +13,7 @@ namespace cyclone
 Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* listener)
 	: m_id(id)
 	, m_socket(sfd)
-	, m_state(kConnecting)
+	, m_state(kConnected)
 	, m_looper(looper)
 	, m_event_id(Looper::INVALID_EVENT_ID)
 	, m_readBuf(kDefaultReadBufSize)
@@ -29,10 +29,24 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* liste
 	socket_api::set_keep_alive(sfd, true);
 	socket_api::set_linger(sfd, false, 0);
 
+	//init write buf lock
+	m_writeBufLock = sys_api::mutex_create();
+
+	m_local_addr = Address(false, m_socket); //create local address
+	m_peer_addr = Address(true, m_socket); //create peer address
+
 	//set default debug name
 	char temp[MAX_PATH] = { 0 };
 	snprintf(temp, MAX_PATH, "connection_%d", id);
 	m_name = temp;
+
+	//register socket event
+	m_event_id = m_looper->register_event(m_socket,
+		Looper::kRead,			//care read event only
+		this,
+		std::bind(&Connection::_on_socket_read, this),
+		std::bind(&Connection::_on_socket_write, this)
+	);
 }
 
 //-------------------------------------------------------------------------------------
@@ -52,31 +66,17 @@ Connection::State Connection::get_state(void) const
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::established(void)
+ConnectionPtr Connection::established(int32_t id, socket_t sfd, Looper* looper, Listener* listener)
 {
-	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	assert(get_state() == kConnecting);
+	assert(sys_api::thread_get_current_id() == looper->get_thread_id());
 
-	//init write buf lock
-	m_writeBufLock = sys_api::mutex_create();
-
-	m_state = kConnected;
-
-	m_local_addr = Address(false, m_socket); //create local address
-	m_peer_addr = Address(true, m_socket); //create peer address
-
-	//register socket event
-	m_event_id = m_looper->register_event(m_socket,
-		Looper::kRead,			//care read event only
-		this,
-		std::bind(&Connection::_on_socket_read, this),
-		std::bind(&Connection::_on_socket_write,this)
-	);
+	ConnectionPtr conn = ConnectionPtr(new Connection(id, sfd, looper, listener));
 
 	//logic callback
-	if (m_listener) {
-		m_listener->on_connection_event(kOnConnection, this);
+	if (listener) {
+		listener->on_connection_event(kOnConnection, conn);
 	}
+	return conn;
 }
 
 //-------------------------------------------------------------------------------------
@@ -207,7 +207,7 @@ void Connection::_on_socket_read(void)
 	{
 		//notify logic layer...
 		if (m_listener) {
-			m_listener->on_connection_event(kOnMessage, this);
+			m_listener->on_connection_event(kOnMessage, shared_from_this());
 		}
 	}
 	else if (len == 0)
@@ -272,7 +272,7 @@ void Connection::_on_socket_close(void)
 	
 	//logic callback
 	if (m_listener) {
-		m_listener->on_connection_event(kOnClose, this);
+		m_listener->on_connection_event(kOnClose, shared_from_this());
 	}
 
 	//reset read/write buf

@@ -33,7 +33,7 @@ public:
 	void stop(void);
 
 	/// shutdown one of connection(thread safe)
-	void shutdown_connection(Connection* conn); 
+	void shutdown_connection(ConnectionPtr conn);
 
 	/// get bind address, if index is invalid return default Address value
 	Address get_bind_address(size_t index);
@@ -46,7 +46,7 @@ public:
 	void send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts);
 
 	/// get connection (NOT thread safe, MUST call in the work thread)
-	Connection* get_connection(int32_t work_thread_index, int32_t conn_id);
+	ConnectionPtr get_connection(int32_t work_thread_index, int32_t conn_id);
 
 	/// get work thread counts
 	int32_t get_work_thread_counts(void) const { return m_work_thread_counts; }
@@ -65,9 +65,9 @@ public:
 		virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper) = 0;
 		virtual void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* cmd) = 0;
 
-		virtual void on_connected(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
-		virtual void on_message(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
-		virtual void on_close(TcpServer* server, int32_t thread_index, Connection* conn) = 0;
+		virtual void on_connected(TcpServer* server, int32_t thread_index, ConnectionPtr conn) = 0;
+		virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn) = 0;
+		virtual void on_close(TcpServer* server, int32_t thread_index, ConnectionPtr conn) = 0;
 	};
 
 	Listener* get_listener(void) { 	return m_listener; }

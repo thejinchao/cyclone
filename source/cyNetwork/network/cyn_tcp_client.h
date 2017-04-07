@@ -32,8 +32,8 @@ public:
 	class Listener
 	{
 	public:
-		virtual uint32_t on_connected(TcpClient* client, Connection* conn, bool success) = 0;
-		virtual void     on_message(TcpClient* client, Connection* conn) = 0;
+		virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success) = 0;
+		virtual void     on_message(TcpClient* client, ConnectionPtr conn) = 0;
 		virtual void     on_close(TcpClient* client) = 0;
 	};
 
@@ -48,13 +48,13 @@ private:
 	Looper*	m_looper;
 	Listener* m_listener;
 	void* m_param;
-	Connection* m_connection;
+	ConnectionPtr m_connection;
 	sys_api::mutex_t m_connection_lock;
 	RingBuf m_sendCache;
 
 public:
 	//// called by connection(in work thread)
-	virtual void on_connection_event(Connection::Event event, Connection* conn);
+	virtual void on_connection_event(Connection::Event event, ConnectionPtr conn);
 
 private:
 	/// on read/write callback function

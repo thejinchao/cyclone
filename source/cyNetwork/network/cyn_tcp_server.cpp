@@ -291,7 +291,7 @@ void TcpServer::join(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::shutdown_connection(Connection* conn)
+void TcpServer::shutdown_connection(ConnectionPtr conn)
 {
 	ServerWorkThread* work = (ServerWorkThread*)(conn->get_listener());
 
@@ -320,7 +320,7 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 }
 
 //-------------------------------------------------------------------------------------
-Connection* TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id)
+ConnectionPtr TcpServer::get_connection(int32_t work_thread_index, int32_t conn_id)
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_work_thread_counts);
 	ServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
