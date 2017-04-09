@@ -24,7 +24,11 @@ namespace cyclone
     class Rijndael
     {
         public static readonly int BLOCK_SIZE = 16;
-        public Rijndael(sbyte[] key)
+        public static readonly byte[] DefaultIV = {
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+        };
+
+        public Rijndael(byte[] key)
         {
             for (int i = 0; i <= ROUNDS; i++)
             {
@@ -98,32 +102,55 @@ namespace cyclone
         //@remark In CBC Mode a ciphertext block is obtained by first xoring the
         //plaintext block with the previous ciphertext block, and encrypting the resulting value.
         //@remark size should be > 0 and multiple of m_blockSize
+        public void encrypt(byte[] input, int size, ref byte[] result, ref byte[] iv)
+        {
+            if (size <= 0 || size % BLOCK_SIZE != 0) return;
+
+            for (int i = 0; i < (size / BLOCK_SIZE); i++)
+            {
+                _xor(ref iv, input, 0, i * BLOCK_SIZE);
+                _encryptBlock(iv, ref result, i * BLOCK_SIZE);
+                Array.Copy(result, i * BLOCK_SIZE, iv, 0, BLOCK_SIZE);
+            }
+        }
         public void encrypt(byte[] input, int size, ref byte[] result)
         {
             if (size <= 0 || size % BLOCK_SIZE != 0) return;
 
-            byte[] chain = new byte[BLOCK_SIZE];
+            byte[] iv = (byte[])DefaultIV.Clone();
 
             for (int i = 0; i < (size / BLOCK_SIZE); i++)
             {
-                _xor(ref chain, input, 0, i * BLOCK_SIZE);
-                _encryptBlock(chain, ref result, i * BLOCK_SIZE);
-                Array.Copy(result, i * BLOCK_SIZE, chain, 0, BLOCK_SIZE);
+                _xor(ref iv, input, 0, i * BLOCK_SIZE);
+                _encryptBlock(iv, ref result, i * BLOCK_SIZE);
+                Array.Copy(result, i * BLOCK_SIZE, iv, 0, BLOCK_SIZE);
             }
-        }
-        
+        }   
+             
         //Decrypt memory, use CBC mode
         //@remark size should be > 0 and multiple of m_blockSize
-        public void decrypt(byte[] input, int size, ref byte[] result)
+        public void decrypt(byte[] input, int size, ref byte[] result, ref byte[] iv)
         {
             if (size <= 0 || size % BLOCK_SIZE != 0) return;
-            byte[] chain = new byte[BLOCK_SIZE];
 
             for (int i = 0; i < (size / BLOCK_SIZE); i++)
             {
                 _decryptBlock(input, ref result, i * BLOCK_SIZE);
-                _xor(ref result, chain, i * BLOCK_SIZE, 0);
-                Array.Copy(input, i * BLOCK_SIZE, chain, 0, BLOCK_SIZE);
+                _xor(ref result, iv, i * BLOCK_SIZE, 0);
+                Array.Copy(input, i * BLOCK_SIZE, iv, 0, BLOCK_SIZE);
+            }
+        }
+        public void decrypt(byte[] input, int size, ref byte[] result)
+        {
+            if (size <= 0 || size % BLOCK_SIZE != 0) return;
+            
+            byte[] iv = (byte[])DefaultIV.Clone();
+
+            for (int i = 0; i < (size / BLOCK_SIZE); i++)
+            {
+                _decryptBlock(input, ref result, i * BLOCK_SIZE);
+                _xor(ref result, iv, i * BLOCK_SIZE, 0);
+                Array.Copy(input, i * BLOCK_SIZE, iv, 0, BLOCK_SIZE);
             }
         }
 
