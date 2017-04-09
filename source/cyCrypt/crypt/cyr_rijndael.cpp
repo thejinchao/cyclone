@@ -500,8 +500,11 @@ static const uint8_t sm_rcon[30] =
 	0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91
 };
 
+const Rijndael::BLOCK Rijndael::DefaultIV = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+
 //-------------------------------------------------------------------------------------
-Rijndael::Rijndael(const KEY key)
+Rijndael::Rijndael(const BLOCK key)
 {
 	for (int i = 0; i <= ROUNDS; i++)
 	{
@@ -582,43 +585,53 @@ void Rijndael::_xor(uint8_t* buff, const uint8_t* chain)
 }
 
 //-------------------------------------------------------------------------------------
-void Rijndael::encrypt(uint8_t* buff, size_t size)
+void Rijndael::encrypt(const uint8_t* input, uint8_t* output, size_t size, BLOCK iv)
 {
-	assert(buff);
+	assert(input && input);
 	assert((size%BLOCK_SIZE) == 0);
 
-	uint8_t chain[BLOCK_SIZE] = { 0 };
-	uint8_t* p = buff;
+	//initial vector space
+	BLOCK chain;
+	if (iv)
+		memcpy(chain, iv, BLOCK_SIZE);
+	else
+		memcpy(chain, DefaultIV, BLOCK_SIZE);
 
-	for (size_t i = 0; i<(size / BLOCK_SIZE); i++)
-	{
-		_xor(chain, p);
-		_encryptBlock(chain, p);
-		memcpy(chain, p, BLOCK_SIZE);
-
-		p += BLOCK_SIZE;
+	for (size_t i = 0; i < size; i += BLOCK_SIZE, input += BLOCK_SIZE, output += BLOCK_SIZE) {
+		_xor(chain, input);
+		_encryptBlock(chain, output);
+		memcpy(chain, output, BLOCK_SIZE);
 	}
+
+	//return iv
+	if (iv)
+		memcpy(iv, chain, BLOCK_SIZE);
 }
 
 //-------------------------------------------------------------------------------------
-void Rijndael::decrypt(uint8_t* buff, size_t size)
+void Rijndael::decrypt(const uint8_t* input, uint8_t* output, size_t size, BLOCK iv)
 {
-	assert(buff);
+	assert(input && input);
 	assert((size%BLOCK_SIZE) == 0);
 
-	uint8_t chain[BLOCK_SIZE] = { 0 };
-	uint8_t temp[BLOCK_SIZE] = { 0 };
-	uint8_t* p = buff;
+	//initial vector space
+	BLOCK chain;
+	if (iv)
+		memcpy(chain, iv, BLOCK_SIZE);
+	else
+		memcpy(chain, DefaultIV, BLOCK_SIZE);
 
-	for (size_t i = 0; i<(size / BLOCK_SIZE); i++)
-	{
-		_decryptBlock(p, temp);
+	BLOCK temp;
+	for (size_t i = 0; i < size; i += BLOCK_SIZE, input += BLOCK_SIZE, output += BLOCK_SIZE) {
+		_decryptBlock(input, temp);
 		_xor(temp, chain);
-		memcpy(chain, p, BLOCK_SIZE);
-		memcpy(p, temp, BLOCK_SIZE);
-
-		p += BLOCK_SIZE;
+		memcpy(chain, input, BLOCK_SIZE);
+		memcpy(output, temp, BLOCK_SIZE);
 	}
+
+	//return iv
+	if (iv)
+		memcpy(iv, chain, BLOCK_SIZE);
 }
 
 //-------------------------------------------------------------------------------------

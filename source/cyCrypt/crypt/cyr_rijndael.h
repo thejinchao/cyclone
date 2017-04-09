@@ -1,8 +1,8 @@
 /*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CRYPT_AES_H_
-#define _CYCLONE_CRYPT_AES_H_
+#ifndef _CYCLONE_CRYPT_RIJNDAEL_H_
+#define _CYCLONE_CRYPT_RIJNDAEL_H_
 
 #include <cyclone_config.h>
 
@@ -13,10 +13,13 @@ class Rijndael
 {
 public:
 	enum { BLOCK_SIZE = 16 };
-	typedef uint8_t KEY[BLOCK_SIZE];
+	typedef uint8_t BLOCK[BLOCK_SIZE];
+
+	//Default Initial Vector
+	static const BLOCK DefaultIV;
 
 	//Construct, and expand a user-supplied key material into a session key.
-	Rijndael(const KEY key);
+	Rijndael(const BLOCK key);
 	~Rijndael();
 
 public:
@@ -24,11 +27,11 @@ public:
 	//@remark In CBC Mode a ciphertext block is obtained by first xoring the
 	//plaintext block with the previous ciphertext block, and encrypting the resulting value.
 	//@remark size should be > 0 and multiple of m_blockSize
-	void encrypt(uint8_t* buff, size_t size);
+	void encrypt(const uint8_t* input, uint8_t* output, size_t size, BLOCK iv=nullptr);
 
 	//Decrypt memory, use CBC mode
 	//@remark size should be > 0 and multiple of m_blockSize
-	void decrypt(uint8_t* buff, size_t size);
+	void decrypt(const uint8_t* input, uint8_t* output, size_t size, BLOCK iv = nullptr);
 
 private:
 	//Convenience method to encrypt exactly one block of plaintext, assuming

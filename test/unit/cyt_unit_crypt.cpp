@@ -5,6 +5,15 @@
 using namespace cyclone;
 
 namespace {
+
+//-------------------------------------------------------------------------------------
+void _fillRandom(uint8_t* mem, size_t len)
+{
+	for (size_t i = 0; i < len; i++) {
+		mem[i] = (uint8_t)(rand() & 0xFF);
+	}
+}
+
 //-------------------------------------------------------------------------------------
 TEST(Adler32, Basic)
 {
@@ -152,24 +161,18 @@ TEST(XorShift128, Basic)
 }
 
 //-------------------------------------------------------------------------------------
-void _fillRandom(uint8_t* mem, size_t len)
-{
-	for (size_t i = 0; i < len; i++) {
-		mem[i] = (uint8_t)(rand() & 0xFF);
-	}
-}
-
-//-------------------------------------------------------------------------------------
 TEST(Rijndael, Basic)
 {
-	Rijndael::KEY key = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+	Rijndael::BLOCK key = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	Rijndael aes(key);
 
 	const char* plain_text = "And God called the light Day,  and the darkness he called Night.";
 	const uint8_t encrypt_text[] = {
-		0xec, 0x0f, 0xd1, 0x5b, 0xae, 0x29, 0xd3, 0xcb, 0xd6, 0x94, 0x51, 0x6c, 0x06, 0xc9, 0x24, 0x47, 0xeb, 0xea, 0x14, 0x8b, 0x72, 0xd9, 0x33, 0xda, 0x75, 0xbe,
-		0xa0, 0x1c, 0x08, 0x38, 0x5f, 0x67, 0x60, 0xdb, 0xf6, 0xf9, 0x27, 0xc6, 0x8b, 0x7d, 0x0c, 0xfb, 0x19, 0xed, 0x47, 0xc9, 0x1b, 0x68, 0xd5, 0x0b, 0xdb, 0x3d,
-		0xf6, 0x7e, 0x0b, 0x76, 0xfe, 0x96, 0x94, 0x23, 0x6e, 0x8c, 0x16, 0x8c };
+		0xe7, 0x05, 0x0e, 0xdf, 0x2e, 0x5d, 0x97, 0x62, 0x36, 0xe9, 0x17, 0xb1, 0xc1, 0x73, 0xde, 0xca,
+		0xa2, 0x4b, 0x50, 0x4c, 0x02, 0x49, 0xea, 0xbd, 0x26, 0x25, 0x76, 0x92, 0x7a, 0xcf, 0x68, 0xee,
+		0xa7, 0xa6, 0xc3, 0x75, 0xa7, 0x32, 0x13, 0x74, 0x31, 0x0f, 0xa9, 0xca, 0x0e, 0x5e, 0xab, 0x99,
+		0xc5, 0x31, 0xc0, 0xe4, 0x26, 0x9c, 0x26, 0x92, 0x1a, 0xf4, 0xd0, 0xd0, 0xef, 0xa8, 0x7b, 0x23 };
+	const Rijndael::BLOCK iv_check = { 0xc5, 0x31, 0xc0, 0xe4, 0x26, 0x9c, 0x26, 0x92, 0x1a, 0xf4, 0xd0, 0xd0, 0xef, 0xa8, 0x7b, 0x23 };
 
 	size_t text_len = strlen(plain_text);
 	EXPECT_EQ(text_len%Rijndael::BLOCK_SIZE, 0ull);
@@ -177,23 +180,58 @@ TEST(Rijndael, Basic)
 	uint8_t buf1[128] = { 0 }, buf2[128] = { 0 };
 	memcpy(buf1, plain_text, text_len);
 
-	aes.encrypt(buf1, text_len);
+	//Encrypt once
+	aes.encrypt((const uint8_t*)plain_text, buf1, text_len);
 	EXPECT_EQ(0, memcmp(buf1, encrypt_text, text_len));
-	aes.decrypt(buf1, text_len);
-	EXPECT_EQ(0, memcmp(buf1, plain_text, text_len));
+
+	//Decrypt once
+	aes.decrypt(buf1, buf2, text_len);
+	EXPECT_EQ(0, memcmp(buf2, plain_text, text_len));
+
+	//Encrypt/Decrypt part
+	Rijndael::BLOCK iv_buf;
+
+	memcpy(iv_buf, Rijndael::DefaultIV, Rijndael::BLOCK_SIZE);
+	for (size_t i = 0; i < text_len; i += Rijndael::BLOCK_SIZE) {
+		aes.encrypt((const uint8_t*)plain_text + i, buf1 + i, Rijndael::BLOCK_SIZE, iv_buf);
+	}
+	EXPECT_EQ(0, memcmp(encrypt_text, buf1, text_len));
+	EXPECT_EQ(0, memcmp(iv_check, iv_buf, Rijndael::BLOCK_SIZE));
+	memset(buf1, 0, text_len);
+
+	memcpy(iv_buf, Rijndael::DefaultIV, Rijndael::BLOCK_SIZE);
+	for (size_t i = 0; i < text_len; i += Rijndael::BLOCK_SIZE) {
+		aes.decrypt(encrypt_text + i, buf1 + i, Rijndael::BLOCK_SIZE, iv_buf);
+	}
+	EXPECT_EQ(0, memcmp(plain_text, buf1, text_len));
+	EXPECT_EQ(0, memcmp(iv_check, iv_buf, Rijndael::BLOCK_SIZE));
+	memset(buf1, 0, text_len);
+
+	//Encrypt self
+	memcpy(buf1, plain_text, text_len);
+	aes.encrypt(buf1, buf1, text_len);
+	EXPECT_EQ(0, memcmp(encrypt_text, buf1, text_len));
+	memset(buf1, 0, text_len);
+
+	//Decrypt self
+	memcpy(buf1, encrypt_text, text_len);
+	aes.decrypt(buf1, buf1, text_len);
+	EXPECT_EQ(0, memcmp(plain_text, buf1, text_len));
+	memset(buf1, 0, text_len);
+
 
 	//encrypt with random seed
 	const int32_t TEST_COUNTS = 20;
 	for (int32_t i = 0; i < TEST_COUNTS; i++) {
-		Rijndael::KEY key_random;
+		Rijndael::BLOCK key_random;
 		_fillRandom(key_random, Rijndael::BLOCK_SIZE);
+		Rijndael aes2(key_random);
 
 		const size_t buf_size = 128;
 		_fillRandom(buf1, buf_size);
-		memcpy(buf2, buf1, buf_size);
 
-		aes.encrypt(buf2, buf_size);
-		aes.decrypt(buf2, buf_size);
+		aes2.encrypt(buf1, buf2, buf_size);
+		aes2.decrypt(buf2, buf2, buf_size);
 		EXPECT_EQ(0, memcmp(buf1, buf2, buf_size));
 	}
 }
