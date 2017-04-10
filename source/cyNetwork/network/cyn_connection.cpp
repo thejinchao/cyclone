@@ -262,6 +262,8 @@ void Connection::_on_socket_close(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
 
+	ConnectionPtr thisPtr = shared_from_this();
+
 	//disable all event
 	m_state = kDisconnected;
 
@@ -272,7 +274,7 @@ void Connection::_on_socket_close(void)
 	
 	//logic callback
 	if (m_listener) {
-		m_listener->on_connection_event(kOnClose, shared_from_this());
+		m_listener->on_connection_event(kOnClose, thisPtr);
 	}
 
 	//reset read/write buf
