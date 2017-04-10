@@ -44,7 +44,6 @@ TcpClient::~TcpClient()
 
 	if (m_connection) {
 		assert(m_connection->get_state() == Connection::kDisconnected);
-		m_connection.reset();
 	}
 }
 
