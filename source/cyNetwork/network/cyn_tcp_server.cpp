@@ -143,6 +143,8 @@ void TcpServer::stop(void)
 {
 	//not running?
 	if (m_running == 0) return;
+	//is shutdown in processing?
+	if (m_shutdown_ing.exchange(1) > 0)return;
 
 	//this function can't run in work thread
 	for (auto work : m_work_thread_pool){
@@ -151,9 +153,6 @@ void TcpServer::stop(void)
 			return;
 		}
 	}
-
-	//is shutdown in processing?
-	if (m_shutdown_ing.exchange(1) > 0)return;
 
 	//shutdown the the accept thread
 	ShutdownCmd shutdownCmd;
