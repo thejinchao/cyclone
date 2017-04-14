@@ -81,7 +81,7 @@ void Connection::send(const char* buf, size_t len)
 		if (get_state() != kConnected)
 		{
 			//log error, give up send message
-			CY_LOG(L_ERROR, "send message state error, state=%d", m_state);
+			CY_LOG(L_ERROR, "send message state error, state=%d", get_state());
 			return;
 		}
 
@@ -116,7 +116,7 @@ void Connection::_send(const char* buf, size_t len)
 	if (m_state != kConnected)
 	{
 		//log error, give up send message
-		CY_LOG(L_ERROR, "send message state error, state=%d", m_state);
+		CY_LOG(L_ERROR, "send message state error, state=%d", get_state());
 		return;
 	}
 
