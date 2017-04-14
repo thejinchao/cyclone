@@ -182,7 +182,7 @@ void TcpClient::disconnect(void)
 void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 {
 	assert(id == m_retry_timer_id);
-	assert(m_connection);
+	assert(m_connection == nullptr);
 
 	//remove the timer
 	RELEASE_EVENT(m_looper, m_retry_timer_id);
