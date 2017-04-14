@@ -16,28 +16,11 @@ typedef std::shared_ptr<Connection> ConnectionPtr;
 class Connection : public std::enable_shared_from_this<Connection>, noncopyable
 {
 public:
-	//connection  event
-	enum Event {
-		kOnConnection,
-		kOnMessage,
-		kOnClose
-	};
-
-	class Listener
-	{
-	public:
-		virtual void on_connection_event(Event event, ConnectionPtr conn) = 0;
-	};
-
-public:
-	//the only way to create a Connection from a socket has connected to peer socket
-	//NOT thread safe, must call from looper thread
-	static ConnectionPtr established(int32_t id, socket_t sfd, Looper* looper, Listener* listener);
-	void shutdown(void);
+	typedef std::function<void(ConnectionPtr conn)> EventCallback;
 
 public:
 	//connection state(kConnecting should not appear in Connection)
-	//         established()                                           shutdown()
+	//                                                                 shutdown()
 	//  O -------------------> kConnected ---------------------------------------------------------------> kDisconnecting
 	//                             |                                                                              |
 	//                             |      _on_socket_close()                         _on_socket_close()           |
@@ -70,12 +53,19 @@ public:
 	void set_name(const char* name);
 	const char* get_name(void) const { return m_name.c_str(); }
 
-	/// get listener
-	Listener* get_listener(void) { return m_listener; }
+	/// get param
+	void* get_param(void) { return m_param; }
+
+	///set callbackfunction
+	void setOnMessageFunction(EventCallback callback) { m_onMessage = callback; }
+	void setOnCloseFunction(EventCallback callback) { m_onClose = callback; }
 
 	/// debug
 	void debug(DebugInterface* debuger);
 	void del_debug_value(DebugInterface* debuger);
+
+	/// shutdown the connection
+	void shutdown(void);
 
 private:
 	int32_t m_id;
@@ -85,6 +75,7 @@ private:
 	Address m_peer_addr;
 	Looper* m_looper;
 	Looper::event_id_t m_event_id;
+	void* m_param;
 
 	enum { kDefaultReadBufSize=1024, kDefaultWriteBufSize=1024 };
 	
@@ -93,7 +84,8 @@ private:
 	RingBuf m_writeBuf;
 	sys_api::mutex_t m_writeBufLock;	//for multithread lock
 
-	Listener* m_listener;
+	EventCallback m_onMessage;
+	EventCallback m_onClose;
 
 	std::string m_name;
 
@@ -118,9 +110,8 @@ private:
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
 
-private:
-	Connection(int32_t id, socket_t sfd, Looper* looper, Listener* listener);
 public:
+	Connection(int32_t id, socket_t sfd, Looper* looper, void* param);
 	~Connection();
 };
 

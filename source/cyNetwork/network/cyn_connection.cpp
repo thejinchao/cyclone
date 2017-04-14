@@ -10,16 +10,16 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Listener* listener)
+Connection::Connection(int32_t id, socket_t sfd, Looper* looper, void* param)
 	: m_id(id)
 	, m_socket(sfd)
 	, m_state(kConnected)
 	, m_looper(looper)
 	, m_event_id(Looper::INVALID_EVENT_ID)
+	, m_param(param)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_writeBufLock(nullptr)
-	, m_listener(listener)
 	, m_max_sendbuf_len(0)
 {
 	//set socket to non-block and close-onexec
@@ -63,20 +63,6 @@ Connection::State Connection::get_state(void) const
 { 
 	//TODO: atom operation
 	return m_state; 
-}
-
-//-------------------------------------------------------------------------------------
-ConnectionPtr Connection::established(int32_t id, socket_t sfd, Looper* looper, Listener* listener)
-{
-	assert(sys_api::thread_get_current_id() == looper->get_thread_id());
-
-	ConnectionPtr conn = ConnectionPtr(new Connection(id, sfd, looper, listener));
-
-	//logic callback
-	if (listener) {
-		listener->on_connection_event(kOnConnection, conn);
-	}
-	return conn;
 }
 
 //-------------------------------------------------------------------------------------
@@ -206,8 +192,8 @@ void Connection::_on_socket_read(void)
 	if (len > 0)
 	{
 		//notify logic layer...
-		if (m_listener) {
-			m_listener->on_connection_event(kOnMessage, shared_from_this());
+		if (m_onMessage) {
+			m_onMessage(shared_from_this());
 		}
 	}
 	else if (len == 0)
@@ -273,8 +259,8 @@ void Connection::_on_socket_close(void)
 	m_event_id = Looper::INVALID_EVENT_ID;
 	
 	//logic callback
-	if (m_listener) {
-		m_listener->on_connection_event(kOnClose, thisPtr);
+	if (m_onClose) {
+		m_onClose(thisPtr);
 	}
 
 	//reset read/write buf

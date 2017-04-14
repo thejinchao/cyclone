@@ -111,7 +111,19 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		RELEASE_EVENT(m_looper, m_socket_event_id);
 
 		//established the connection
-		m_connection = Connection::established(0, m_socket, m_looper, this);
+		m_connection = std::make_shared<Connection>(0, m_socket, m_looper, this);
+
+		//bind callback functions
+		if (m_listener) {
+
+			m_connection->setOnMessageFunction([this](ConnectionPtr conn) {
+				m_listener->on_message(this, conn);
+			});
+
+			m_connection->setOnCloseFunction([this](ConnectionPtr conn) {
+				m_listener->on_close(this);
+			});
+		}
 
 		//send cached message
 		if (!m_sendCache.empty()) {
@@ -163,26 +175,6 @@ void TcpClient::disconnect(void)
 		assert(m_connection != nullptr);
 		m_connection->shutdown();
 		break;
-	}
-}
-
-//-------------------------------------------------------------------------------------
-void TcpClient::on_connection_event(Connection::Event event, ConnectionPtr conn)
-{
-	switch (event) {
-	case Connection::kOnConnection:
-		break;
-
-	case Connection::kOnMessage:
-		if (m_listener) {
-			m_listener->on_message(this, conn);
-		}
-		break;
-
-	case Connection::kOnClose:
-		if (m_listener) {
-			m_listener->on_close(this);
-		}
 	}
 }
 

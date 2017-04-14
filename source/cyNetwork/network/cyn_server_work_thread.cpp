@@ -83,6 +83,9 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 {
 	assert(is_in_workthread());
 	assert(message);
+	assert(m_server);
+
+	TcpServer::Listener* server_listener = m_server->get_listener();
 
 	uint16_t msg_id = message->get_packet_id();
 	if (msg_id == NewConnectionCmd::ID)
@@ -92,7 +95,24 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		memcpy(&newConnectionCmd, message->get_packet_content(), sizeof(NewConnectionCmd));
 
 		//create tcp connection 
-		ConnectionPtr conn = Connection::established(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
+		ConnectionPtr conn = std::make_shared<Connection>(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
+		
+		//bind callback functions
+		if (server_listener) {
+
+			conn->setOnMessageFunction([this](ConnectionPtr connection) {
+				m_server->get_listener()->on_message(m_server, get_index(), connection);
+			});
+
+			conn->setOnCloseFunction([this](ConnectionPtr connection) {
+				m_server->get_listener()->on_close(m_server, get_index(), connection);
+				//shutdown this connection next tick
+				m_server->shutdown_connection(connection);
+			});
+
+			//notify server listener 
+			server_listener->on_connected(m_server, get_index(), conn);
+		}
 		m_connections.insert(std::make_pair(conn->get_id(), conn));
 	}
 	else if (msg_id == CloseConnectionCmd::ID)
@@ -165,41 +185,9 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 	else
 	{
 		//extra message
-		TcpServer::Listener* server_listener = m_server->get_listener();
 		if (server_listener) {
 			server_listener->on_workthread_cmd(m_server, get_index(), message);
 		}
-	}
-}
-
-//-------------------------------------------------------------------------------------
-void ServerWorkThread::on_connection_event(Connection::Event event, ConnectionPtr conn)
-{
-	assert(is_in_workthread());
-	assert(m_server);
-
-	TcpServer::Listener* server_listener = m_server->get_listener();
-	switch (event) {
-	case Connection::kOnConnection:
-		if (server_listener) {
-			server_listener->on_connected(m_server, get_index(), conn);
-		}
-		break;
-
-	case Connection::kOnMessage:
-		if (server_listener) {
-			server_listener->on_message(m_server, get_index(), conn);
-		}
-		break;
-
-	case Connection::kOnClose:
-		if (server_listener) {
-			server_listener->on_close(m_server, get_index(), conn);
-		}
-
-		//shutdown this connection
-		m_server->shutdown_connection(conn);
-		break;
 	}
 }
 

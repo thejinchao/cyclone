@@ -8,8 +8,7 @@ namespace cyclone
 {
 
 class ServerWorkThread 
-	: public Connection::Listener
-	, public WorkThread::Listener
+	: public WorkThread::Listener
 	, noncopyable
 {
 public:
@@ -65,8 +64,6 @@ private:
 	DebugInterface*	m_debuger;
 
 private:
-	//// called by connection(in work thread)
-	virtual void on_connection_event(Connection::Event event, ConnectionPtr conn);
 	//// called by message port (in work thread)
 	virtual bool on_workthread_start(void);
 	virtual void on_workthread_message(Packet*);

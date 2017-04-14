@@ -12,7 +12,7 @@ namespace cyclone
 //pre-define 
 class Connection;
 
-class TcpClient : public Connection::Listener, noncopyable
+class TcpClient : noncopyable
 {
 public:
 	//// connect to remote server(NOT thread safe)
@@ -51,10 +51,6 @@ private:
 	ConnectionPtr m_connection;
 	sys_api::mutex_t m_connection_lock;
 	RingBuf m_sendCache;
-
-public:
-	//// called by connection(in work thread)
-	virtual void on_connection_event(Connection::Event event, ConnectionPtr conn);
 
 private:
 	/// on read/write callback function
