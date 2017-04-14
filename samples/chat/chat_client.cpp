@@ -8,6 +8,7 @@
 #include <iostream>
 
 using namespace cyclone;
+using namespace std::placeholders;
 
 enum { OPT_HOST, OPT_PORT, OPT_HELP };
 
@@ -20,14 +21,43 @@ CSimpleOptA::SOption g_rgOptions[] = {
 };
 
 //-------------------------------------------------------------------------------------
-class ClientListener : public TcpClient::Listener
+class ChatClient
 {
 public:
-	//-------------------------------------------------------------------------------------
-	virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success)
+	void startClientThread(const std::string& server_ip, uint16_t server_port)
 	{
-		(void)conn;
+		m_server_ip = server_ip;
+		m_server_port = server_port;
 
+		//start client thread
+		sys_api::thread_create_detached(std::bind(&ChatClient::clientThread, this), 0, "client");
+		CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip.c_str(), server_port);
+
+		//wait connect completed
+		sys_api::signal_wait(m_connected_signal);
+	}
+
+public:
+	//-------------------------------------------------------------------------------------
+	void clientThread(void)
+	{
+		Looper* looper = Looper::create_looper();
+
+		m_client = new TcpClient(looper, 0);
+		m_client->m_listener.onConnected = std::bind(&ChatClient::onConnected, this, _1, _3);
+		m_client->m_listener.onMessage = std::bind(&ChatClient::onMessage, this, _2);
+		m_client->m_listener.onClose = std::bind(&ChatClient::onClose, this);
+
+		m_client->connect(Address(m_server_ip.c_str(), m_server_port));
+		looper->loop();
+
+		delete m_client; m_client = nullptr;
+		Looper::destroy_looper(looper);
+	}
+
+	//-------------------------------------------------------------------------------------
+	virtual uint32_t onConnected(TcpClient* client, bool success)
+	{
 		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
 			client->get_server_address().get_ip(),
 			client->get_server_address().get_port(),
@@ -47,10 +77,8 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpClient* client, ConnectionPtr conn)
+	virtual void onMessage(ConnectionPtr conn)
 	{
-		(void)client;
-
 		RingBuf& buf = conn->get_input_buf();
 
 		Packet packet;
@@ -63,30 +91,29 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpClient* client)
+	virtual void onClose(void)
 	{
-		(void)client;
-
 		CY_LOG(L_INFO, "socket close");
 		exit(0);
 	}
 	
 public:
-	void wait_connected(void) { sys_api::signal_wait(m_connected_signal); }
 	TcpClient* get_client(void) { return m_client; }
 
 private:
 	TcpClient* m_client;
+	std::string m_server_ip;
+	uint16_t m_server_port;
 	sys_api::signal_t m_connected_signal;
 
 public:
-	ClientListener() 
+	ChatClient()
 		: m_client(nullptr)
-		, m_connected_signal(sys_api::signal_create())
 	{
+		m_connected_signal = sys_api::signal_create();
 	}
 
-	~ClientListener()
+	~ChatClient()
 	{
 		sys_api::signal_destroy(m_connected_signal);
 	}
@@ -126,24 +153,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	ClientListener client_listener;
-
-	//client thread
-	sys_api::thread_create_detached([&] (void*){
-		Looper* looper = Looper::create_looper();
-
-		TcpClient client(looper, &client_listener, 0);
-		client.connect(Address(server_ip.c_str(), server_port));
-
-		looper->loop();
-
-		Looper::destroy_looper(looper);
-	}, 0, "client");
-
-	CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip.c_str(), server_port);
-
-	//wait connect completed
-	client_listener.wait_connected();
+	ChatClient chatClient;
+	chatClient.startClientThread(server_ip, server_port);
 
 	//input
 	char line[MAX_CHAT_LENGTH + 1];
@@ -154,7 +165,7 @@ int main(int argc, char* argv[])
 		Packet packet;
 		packet.build(PACKET_HEAD_SIZE, 0, (uint16_t)strlen(line), line);
 
-		client_listener.get_client()->send(packet.get_memory_buf(), packet.get_memory_size());
+		chatClient.get_client()->send(packet.get_memory_buf(), packet.get_memory_size());
 	}
 
 	return 0;

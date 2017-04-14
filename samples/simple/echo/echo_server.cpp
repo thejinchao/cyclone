@@ -18,76 +18,57 @@ CSimpleOptA::SOption g_rgOptions[] = {
 	SO_END_OF_OPTIONS                   // END
 };
 
-class ServerListener : public TcpServer::Listener
+//-------------------------------------------------------------------------------------
+void onPeerConnected(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 {
-	//-------------------------------------------------------------------------------------
-	virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper)
-	{
-		(void)server;
-		(void)thread_index;
-		(void)looper;
-	};
+	(void)server;
 
-	//-------------------------------------------------------------------------------------
-	virtual void on_connected(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
-	{
-		(void)server;
+	CY_LOG(L_INFO, "[T=%d]new connection accept, from %s:%d to %s:%d",
+		thread_index,
+		conn->get_peer_addr().get_ip(),
+		conn->get_peer_addr().get_port(),
+		conn->get_local_addr().get_ip(),
+		conn->get_local_addr().get_port());
+}
 
-		CY_LOG(L_INFO, "[T=%d]new connection accept, from %s:%d to %s:%d",
-			thread_index,
-			conn->get_peer_addr().get_ip(),
-			conn->get_peer_addr().get_port(),
-			conn->get_local_addr().get_ip(),
-			conn->get_local_addr().get_port());
+//-------------------------------------------------------------------------------------
+void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+{
+	RingBuf& buf = conn->get_input_buf();
+
+	char temp[MAX_ECHO_LENGTH + 1] = { 0 };
+	buf.memcpy_out(temp, MAX_ECHO_LENGTH);
+
+	CY_LOG(L_INFO, "[T=%d]receive:%s", thread_index, temp);
+
+	if (strcmp(temp, "exit") == 0) {
+		server->shutdown_connection(conn);
+		return;
 	}
 
-	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
-	{
-		RingBuf& buf = conn->get_input_buf();
-
-		char temp[MAX_ECHO_LENGTH+1] = { 0 };
-		buf.memcpy_out(temp, MAX_ECHO_LENGTH);
-
-		CY_LOG(L_INFO, "[T=%d]receive:%s", thread_index, temp);
-
-		if (strcmp(temp, "exit") == 0){
-			server->shutdown_connection(conn);
-			return;
-		}
-
-		if (strcmp(temp, "shutdown") == 0) {
-			sys_api::thread_create_detached([server](void*){
-				server->stop();
-			}, 0, nullptr);
-			return;
-		}
-
-		size_t len = strlen(temp);
-		for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
-
-		conn->send(temp, strlen(temp));
+	if (strcmp(temp, "shutdown") == 0) {
+		sys_api::thread_create_detached([server](void*) {
+			server->stop();
+		}, 0, nullptr);
+		return;
 	}
 
-	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
-	{
-		(void)server;
+	size_t len = strlen(temp);
+	for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
 
-		CY_LOG(L_INFO, "[T=%d]connection %s:%d closed",
-			thread_index,
-			conn->get_peer_addr().get_ip(),
-			conn->get_peer_addr().get_port());
-	}
-	
-	//-------------------------------------------------------------------------------------
-	void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* msg)
-	{
-		(void)server;
-		(void)thread_index;
-		(void)msg;
-	}
-};
+	conn->send(temp, strlen(temp));
+}
+
+//-------------------------------------------------------------------------------------
+void onPeerClose(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+{
+	(void)server;
+
+	CY_LOG(L_INFO, "[T=%d]connection %s:%d closed",
+		thread_index,
+		conn->get_peer_addr().get_ip(),
+		conn->get_peer_addr().get_port());
+}
 
 //-------------------------------------------------------------------------------------
 static void printUsage(const char* moduleName)
@@ -121,9 +102,12 @@ int main(int argc, char* argv[])
 
 	CY_LOG(L_DEBUG, "listen port %d", server_port);
 
-	ServerListener listener;
+	TcpServer server("echo", 0);
 
-	TcpServer server(&listener, "echo", 0);
+	server.m_listener.onConnected = onPeerConnected;
+	server.m_listener.onClose = onPeerClose;
+	server.m_listener.onMessage = onPeerMessage;
+
 	server.bind(Address(server_port, false), true);
 
 	if (!server.start(sys_api::get_cpu_counts()))

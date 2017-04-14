@@ -15,6 +15,18 @@ class Connection;
 class TcpClient : noncopyable
 {
 public:
+	typedef std::function<uint32_t(TcpClient* client, ConnectionPtr conn, bool success)> ConnectedCallback;
+	typedef std::function<void(TcpClient* client, ConnectionPtr conn)> MessageCallback;
+	typedef std::function<void(TcpClient* client)> CloseCallback;
+
+	struct Listener {
+		ConnectedCallback onConnected;
+		MessageCallback onMessage;
+		CloseCallback onClose;
+	};
+	Listener m_listener;
+
+public:
 	//// connect to remote server(NOT thread safe)
 	bool connect(const Address& addr);
 	//// disconnect(NOT thread safe)
@@ -28,17 +40,6 @@ public:
 	/// get current connection state(thread safe);
 	Connection::State get_connection_state(void) const;
 
-public:
-	class Listener
-	{
-	public:
-		virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success) = 0;
-		virtual void     on_message(TcpClient* client, ConnectionPtr conn) = 0;
-		virtual void     on_close(TcpClient* client) = 0;
-	};
-
-	Listener* get_listener(void) { return m_listener; }
-
 private:
 	socket_t m_socket;
 	Looper::event_id_t m_socket_event_id;
@@ -46,7 +47,6 @@ private:
 
 	Address	 m_serverAddr;
 	Looper*	m_looper;
-	Listener* m_listener;
 	void* m_param;
 	ConnectionPtr m_connection;
 	sys_api::mutex_t m_connection_lock;
@@ -62,7 +62,7 @@ private:
 	void _abort_connect(uint32_t retry_sleep_ms);
 
 public:
-	TcpClient(Looper* looper, Listener* listener, void* param);
+	TcpClient(Looper* looper, void* param);
 	virtual ~TcpClient();
 };
 

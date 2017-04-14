@@ -11,9 +11,10 @@ namespace cyclone
 
 //-------------------------------------------------------------------------------------
 WorkThread::WorkThread()
-	: m_listener(nullptr)
-	, m_thread(nullptr)
+	: m_thread(nullptr)
 	, m_looper(nullptr)
+	, m_onStart(nullptr)
+	, m_onMessage(nullptr)
 {
 }
 
@@ -24,12 +25,10 @@ WorkThread::~WorkThread()
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::start(const char* name, Listener* listener)
+void WorkThread::start(const char* name)
 {
 	assert(m_thread== nullptr);
-	assert(name && listener);
-
-	m_listener = listener;
+	assert(name);
 
 	work_thread_param param;
 	param._this = this;
@@ -61,12 +60,10 @@ void WorkThread::_work_thread(void* param)
 	thread_param = nullptr;//we don't use it again!
 
 	//we start!
-	if (m_listener) {
-		if (!(m_listener->on_workthread_start())) {
-			Looper::destroy_looper(m_looper);
-			m_looper = 0;
-			return;
-		}
+	if (m_onStart && !m_onStart()) {
+		Looper::destroy_looper(m_looper);
+		m_looper = nullptr;
+		return;
 	}
 
 	//enter loop ...
@@ -87,14 +84,15 @@ void WorkThread::_on_message(void)
 		assert(counts > 0);
 
 		for (int32_t i = 0; i < counts; i++) {
-			Packet* packet = 0;
+			Packet* packet = nullptr;
 			if (!m_message_queue.pop(packet)) {
 				assert(false && "WorkThread message queue error");
 				break;
 			}
 
 			//call listener
-			m_listener->on_workthread_message(packet);
+			if (m_onMessage)
+				m_onMessage(packet);
 
 			Packet::free_packet(packet);
 		}

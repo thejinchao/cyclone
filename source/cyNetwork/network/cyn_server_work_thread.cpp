@@ -22,7 +22,10 @@ ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char*
 
 	//run work thread
 	m_work_thread = new WorkThread();
-	m_work_thread->start(m_name.c_str(), this);
+	m_work_thread->setOnStartFunction(std::bind(&ServerWorkThread::_on_workthread_start, this));
+	m_work_thread->setOnMessageFunction(std::bind(&ServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
+
+	m_work_thread->start(m_name.c_str());
 }
 
 //-------------------------------------------------------------------------------------
@@ -70,22 +73,24 @@ ConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerWorkThread::on_workthread_start(void)
+bool ServerWorkThread::_on_workthread_start(void)
 {
 	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name.c_str());
-	TcpServer::Listener* server_listener = m_server->get_listener();
-	server_listener->on_workthread_start(m_server, get_index(), m_work_thread->get_looper());
+	TcpServer::WorkThreadStartCallback& onWorkThreadStart = m_server->m_listener.onWorkThreadStart;
+
+	if(onWorkThreadStart)
+		onWorkThreadStart(m_server, get_index(), m_work_thread->get_looper());
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::on_workthread_message(Packet* message)
+void ServerWorkThread::_on_workthread_message(Packet* message)
 {
 	assert(is_in_workthread());
 	assert(message);
 	assert(m_server);
 
-	TcpServer::Listener* server_listener = m_server->get_listener();
+	const TcpServer::Listener& server_listener = m_server->m_listener;
 
 	uint16_t msg_id = message->get_packet_id();
 	if (msg_id == NewConnectionCmd::ID)
@@ -97,22 +102,27 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 		//create tcp connection 
 		ConnectionPtr conn = std::make_shared<Connection>(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
 		
-		//bind callback functions
-		if (server_listener) {
-
+		//bind onMessage function
+		if (server_listener.onMessage) {
 			conn->setOnMessageFunction([this](ConnectionPtr connection) {
-				m_server->get_listener()->on_message(m_server, get_index(), connection);
+				m_server->m_listener.onMessage(m_server, get_index(), connection);
 			});
+		}
 
+		//bind onClose function
+		if (server_listener.onClose) {
 			conn->setOnCloseFunction([this](ConnectionPtr connection) {
-				m_server->get_listener()->on_close(m_server, get_index(), connection);
+				m_server->m_listener.onClose(m_server, get_index(), connection);
 				//shutdown this connection next tick
 				m_server->shutdown_connection(connection);
 			});
-
-			//notify server listener 
-			server_listener->on_connected(m_server, get_index(), conn);
 		}
+
+		//notify server listener 
+		if (server_listener.onConnected) {
+			server_listener.onConnected(m_server, get_index(), conn);
+		}
+		
 		m_connections.insert(std::make_pair(conn->get_id(), conn));
 	}
 	else if (msg_id == CloseConnectionCmd::ID)
@@ -185,8 +195,8 @@ void ServerWorkThread::on_workthread_message(Packet* message)
 	else
 	{
 		//extra message
-		if (server_listener) {
-			server_listener->on_workthread_cmd(m_server, get_index(), message);
+		if (server_listener.onWorkThreadCommand) {
+			server_listener.onWorkThreadCommand(m_server, get_index(), message);
 		}
 	}
 }

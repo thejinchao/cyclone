@@ -14,18 +14,18 @@ class Packet;
 class WorkThread : noncopyable
 {
 public:
-	class Listener
-	{
-	public:
-		virtual bool on_workthread_start(void) = 0;
-		virtual void on_workthread_message(Packet*) = 0;
-	};
+	typedef std::function<bool(void)> StartCallback;
+	typedef std::function<void(Packet*)> MessageCallback;
 
 public:
 	enum { MESSAGE_HEAD_SIZE = 4 };
 
 	//// run thread
-	void start(const char* name, Listener* listener);
+	void start(const char* name);
+
+	//// set callback function
+	void setOnStartFunction(StartCallback func) { m_onStart = func; }
+	void setOnMessageFunction(MessageCallback func) { m_onMessage = func; }
 
 	//// send message to this work thread (thread safe)
 	void send_message(uint16_t id, uint16_t size, const char* message);
@@ -43,13 +43,15 @@ public:
 
 private:
 	std::string		m_name;
-	Listener*		m_listener;
 	thread_t		m_thread;
 	Looper*			m_looper;
 	Pipe			m_pipe;
 
 	typedef LockFreeQueue<Packet*> MessageQueue;
 	MessageQueue		m_message_queue;
+
+	StartCallback	m_onStart;
+	MessageCallback	m_onMessage;
 
 private:
 	/// work thread param

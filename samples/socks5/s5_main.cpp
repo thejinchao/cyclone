@@ -11,6 +11,7 @@
 #include "s5_protocol.h"
 
 using namespace cyclone;
+using namespace std::placeholders;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 enum { OPT_PORT, OPT_THREADS, OPT_HELP };
@@ -33,7 +34,7 @@ enum S5State {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-class S5Tunnel : public TcpClient::Listener
+class S5Tunnel
 {
 public:
 	void set_state(S5State state) { m_state = state; }
@@ -41,9 +42,14 @@ public:
 
 	void connect(const Address& address){
 		m_address = address;
-		m_remoteConnection = new TcpClient(m_looper, this, this);
+		m_remoteConnection = new TcpClient(m_looper, this);
+		m_remoteConnection->m_listener.onConnected = std::bind(&S5Tunnel::onServerConnected, this, _2, _3);
+		m_remoteConnection->m_listener.onMessage = std::bind(&S5Tunnel::onServerMessage, this, _2);
+		m_remoteConnection->m_listener.onClose = std::bind(&S5Tunnel::onServerClose, this);
+
 		m_remoteConnection->connect(address);
 	}
+
 	void forword_up(RingBuf& inputBuf) {
 		m_remoteConnection->send((const char*)inputBuf.normalize(), inputBuf.size());
 		inputBuf.reset();
@@ -53,10 +59,9 @@ public:
 		if (m_remoteConnection)
 			m_remoteConnection->disconnect();
 	}
-public:
-	virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success) {
-		(void)client;
-
+private:
+	uint32_t onServerConnected(ConnectionPtr conn, bool success) 
+	{
 		assert(get_state()== S5_CONNECTING);
 		RingBuf outputBuf;
 
@@ -81,16 +86,16 @@ public:
 		}
 		return 0;
 	}
-	virtual void on_message(TcpClient* client, ConnectionPtr conn) {
-		(void)client;
 
+	void onServerMessage(ConnectionPtr conn) 
+	{
 		RingBuf& buf = conn->get_input_buf();
 		m_localConnection->send((const char*)buf.normalize(), buf.size());
 		buf.reset();
 	}
-	virtual void on_close(TcpClient* client) {
-		(void)client;
 
+	void onServerClose(void) 
+	{
 		m_state = S5_DISCONNECTED;
 		m_localServer->shutdown_connection(m_localConnection);
 	}
@@ -154,10 +159,31 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-class S5ServerListener : public TcpServer::Listener
+class S5Server
 {
+public:
+	void startAndJoin(int32_t work_thread_counts, uint16_t server_port)
+	{
+		m_threadContext.resize((size_t)work_thread_counts);
+
+		TcpServer server("s5", 0);
+		server.m_listener.onWorkThreadStart = std::bind(&S5Server::onWorkthreadStart, this, _1, _2, _3);
+		server.m_listener.onConnected = std::bind(&S5Server::onPeerConnected, this, _1, _2, _3);
+		server.m_listener.onMessage = std::bind(&S5Server::onPeerMessage, this, _1, _2, _3);
+		server.m_listener.onClose = std::bind(&S5Server::onPeerClose, this, _1, _2, _3);
+
+		if (!server.bind(Address(server_port, false), false))
+			return;
+
+		if (!(server.start(work_thread_counts)))
+			return;
+
+		server.join();
+	}
+
+private:
 	//-------------------------------------------------------------------------------------
-	virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper)
+	void onWorkthreadStart(TcpServer* server, int32_t thread_index, Looper* looper)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -166,7 +192,7 @@ class S5ServerListener : public TcpServer::Listener
 	};
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_connected(TcpServer*, int32_t thread_index, ConnectionPtr conn)
+	void onPeerConnected(TcpServer*, int32_t thread_index, ConnectionPtr conn)
 	{
 		assert(thread_index>=0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -180,7 +206,7 @@ class S5ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+	void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -248,7 +274,7 @@ class S5ServerListener : public TcpServer::Listener
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpServer*, int32_t thread_index, ConnectionPtr conn)
+	virtual void onPeerClose(TcpServer*, int32_t thread_index, ConnectionPtr conn)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -258,29 +284,10 @@ class S5ServerListener : public TcpServer::Listener
 		CY_LOG(L_INFO, "tunnel[%d]: close", conn->get_id());
 	}
 
-	//-------------------------------------------------------------------------------------
-	void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* msg)
-	{
-		(void)server;
-		(void)thread_index;
-		(void)msg;
-	}
 
 private:
 	typedef std::vector<S5ThreadContext> ThreadContextVec;
-
 	ThreadContextVec m_threadContext;
-    
-public:
-	S5ServerListener(int32_t work_thread_counts)
-	{
-		m_threadContext.resize((size_t)work_thread_counts);
-	}
-	~S5ServerListener()
-	{
-
-	}
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -316,14 +323,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	S5ServerListener listener(work_thread_counts);
-	TcpServer server(&listener, "s5", 0);
-	if (!server.bind(Address(server_port, false), false))
-		return 1;
-
-	if (!(server.start(work_thread_counts)))
-		return 1;
-
-	server.join();
+	S5Server server;
+	server.startAndJoin(work_thread_counts, server_port);
+	
 	return 0;
 }

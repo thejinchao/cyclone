@@ -7,9 +7,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class ServerWorkThread 
-	: public WorkThread::Listener
-	, noncopyable
+class ServerWorkThread : noncopyable
 {
 public:
 	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID, kDebugCmdID };
@@ -64,9 +62,9 @@ private:
 	DebugInterface*	m_debuger;
 
 private:
-	//// called by message port (in work thread)
-	virtual bool on_workthread_start(void);
-	virtual void on_workthread_message(Packet*);
+	//// called by workthread
+	bool _on_workthread_start(void);
+	void _on_workthread_message(Packet*);
 
 	void _debug(DebugCmd& cmd);
 public:

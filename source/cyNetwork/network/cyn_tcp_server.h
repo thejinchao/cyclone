@@ -14,8 +14,22 @@ namespace cyclone
 //pre-define
 class ServerWorkThread;
 
-class TcpServer : public WorkThread::Listener, noncopyable
+class TcpServer : noncopyable
 {
+public:
+	typedef std::function<void(TcpServer* server, int32_t thread_index, Looper* looper)> WorkThreadStartCallback;
+	typedef std::function<void(TcpServer* server, int32_t thread_index, Packet* cmd)> WorkThreadCommandCallback;
+	typedef std::function<void(TcpServer* server, int32_t thread_index, ConnectionPtr conn)> EventCallback;
+
+	struct Listener {
+		WorkThreadStartCallback onWorkThreadStart;
+		WorkThreadCommandCallback onWorkThreadCommand;
+		EventCallback onConnected;
+		EventCallback onMessage;
+		EventCallback onClose;
+	};
+
+	Listener m_listener;
 public:
 	/// add a bind port, return false means too much port has beed binded or bind failed
 	// NOT thread safe, and this function must be called before start the server
@@ -58,20 +72,6 @@ public:
 	/// print debug variable to debuger cache system
 	void debug(void);
 
-public:
-	class Listener
-	{
-	public:
-		virtual void on_workthread_start(TcpServer* server, int32_t thread_index, Looper* looper) = 0;
-		virtual void on_workthread_cmd(TcpServer* server, int32_t thread_index, Packet* cmd) = 0;
-
-		virtual void on_connected(TcpServer* server, int32_t thread_index, ConnectionPtr conn) = 0;
-		virtual void on_message(TcpServer* server, int32_t thread_index, ConnectionPtr conn) = 0;
-		virtual void on_close(TcpServer* server, int32_t thread_index, ConnectionPtr conn) = 0;
-	};
-
-	Listener* get_listener(void) { 	return m_listener; }
-
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
@@ -87,8 +87,6 @@ private:
 	int32_t _get_next_work_thread(void) { 
 		return (m_next_work++) % m_work_thread_counts;
 	}
-
-	Listener* m_listener;
 
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
@@ -119,16 +117,16 @@ private:
 	};
 
 	/// accept thread function start
-	virtual bool on_workthread_start(void);
+	bool _on_accept_start(void);
 
 	/// accept thread message
-	virtual void on_workthread_message(Packet*);
+	void _on_accept_message(Packet*);
 
 	/// on acception callback function
-	void _on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event);
+	void _on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(Listener* listener, const char* name, DebugInterface* debuger);
+	TcpServer(const char* name, DebugInterface* debuger);
 	~TcpServer();
 };
 

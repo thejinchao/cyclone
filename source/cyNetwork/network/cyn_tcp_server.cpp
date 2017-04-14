@@ -11,17 +11,20 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(Listener* listener, const char* name, DebugInterface* debuger)
+TcpServer::TcpServer(const char* name, DebugInterface* debuger)
 	: m_work_thread_counts(0)
 	, m_next_work(0)
-	, m_listener(listener)
 	, m_running(0)
 	, m_shutdown_ing(0)
 	, m_next_connection_id(0)
 	, m_name(name ? name : "server")
 	, m_debuger(debuger)
 {
-
+	m_listener.onWorkThreadStart = nullptr;
+	m_listener.onWorkThreadCommand = nullptr;
+	m_listener.onConnected = nullptr;
+	m_listener.onMessage = nullptr;
+	m_listener.onClose = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -103,7 +106,9 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//start listen thread
-	m_accept_thread.start("accept", this);
+	m_accept_thread.setOnStartFunction(std::bind(&TcpServer::_on_accept_start, this));
+	m_accept_thread.setOnMessageFunction(std::bind(&TcpServer::_on_accept_message, this, std::placeholders::_1));
+	m_accept_thread.start("accept");
 
 	//write debug variable
 	if (m_debuger && m_debuger->is_enable()) {
@@ -165,7 +170,7 @@ void TcpServer::stop(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::event_t event)
+void TcpServer::_on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
 	(void)id;
 	(void)event;
@@ -195,7 +200,7 @@ void TcpServer::_on_accept_function(Looper::event_id_t id, socket_t fd, Looper::
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpServer::on_workthread_start(void)
+bool TcpServer::_on_accept_start(void)
 {
 	int32_t counts = 0;
 	for (auto& listen_socket : m_acceptor_sockets)
@@ -207,7 +212,7 @@ bool TcpServer::on_workthread_start(void)
 		event_id = m_accept_thread.get_looper()->register_event(sfd,
 			Looper::kRead,
 			this,
-			std::bind(&TcpServer::_on_accept_function, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+			std::bind(&TcpServer::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 			0);
 
 		//begin listen
@@ -220,7 +225,7 @@ bool TcpServer::on_workthread_start(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::on_workthread_message(Packet* message)
+void TcpServer::_on_accept_message(Packet* message)
 {
 	//accept thread command
 	assert(message);

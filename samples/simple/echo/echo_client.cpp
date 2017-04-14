@@ -6,6 +6,7 @@
 #include <iostream>
 
 using namespace cyclone;
+using namespace std::placeholders;
 
 #define MAX_ECHO_LENGTH (255)
 
@@ -20,21 +21,49 @@ CSimpleOptA::SOption g_rgOptions[] = {
 };
 
 //-------------------------------------------------------------------------------------
-class ClientListener : public TcpClient::Listener
+class EchoClient
 {
 public:
-	//-------------------------------------------------------------------------------------
-	virtual uint32_t on_connected(TcpClient* client, ConnectionPtr conn, bool success)
+	void startClientThread(const std::string& server_ip, uint16_t server_port)
 	{
-		(void)conn;
+		m_server_ip = server_ip;
+		m_server_port = server_port;
 
+		//start client thread
+		sys_api::thread_create_detached(std::bind(&EchoClient::clientThread, this), 0, "client");
+		CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip.c_str(), server_port);
+
+		//wait connect completed
+		sys_api::signal_wait(m_connected_signal);
+	}
+
+private:
+	//-------------------------------------------------------------------------------------
+	void clientThread(void)
+	{
+		Looper* looper = Looper::create_looper();
+
+		m_client = new TcpClient(looper, 0);
+		m_client->m_listener.onConnected = std::bind(&EchoClient::onConnected, this, _1, _3);
+		m_client->m_listener.onMessage = std::bind(&EchoClient::onMessage, this, _2);
+		m_client->m_listener.onClose = std::bind(&EchoClient::onClose, this);
+
+		m_client->connect(Address(m_server_ip.c_str(), m_server_port));
+		looper->loop();
+
+		delete m_client; m_client = nullptr;
+		Looper::destroy_looper(looper);
+	}
+
+	//-------------------------------------------------------------------------------------
+	uint32_t onConnected(TcpClient* client, bool success)
+	{
 		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
 			client->get_server_address().get_ip(),
 			client->get_server_address().get_port(),
 			success ? "OK" : "FAILED");
 
 		if (success) {
-			m_client = client;
 			sys_api::signal_notify(m_connected_signal);
 			return 0;
 		}
@@ -47,43 +76,40 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_message(TcpClient* client, ConnectionPtr conn)
+	void onMessage(ConnectionPtr conn)
 	{
-		(void)client;
-
 		RingBuf& buf = conn->get_input_buf();
 
 		char temp[MAX_ECHO_LENGTH +1] = { 0 };
-			buf.memcpy_out(temp, MAX_ECHO_LENGTH);
+		buf.memcpy_out(temp, MAX_ECHO_LENGTH);
 
-			CY_LOG(L_INFO, "%s", temp);
-		}
+		CY_LOG(L_INFO, "%s", temp);
+	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void on_close(TcpClient* client)
+	void onClose(void)
 	{
-		(void)client;
-
 		CY_LOG(L_INFO, "socket close");
 		exit(0);
 	}
 
 public:
-	void wait_connected(void) { sys_api::signal_wait(m_connected_signal); }
 	TcpClient* get_client(void) { return m_client; }
 
 private:
 	TcpClient* m_client;
+	std::string m_server_ip;
+	uint16_t m_server_port;
 	sys_api::signal_t m_connected_signal;
 
 public:
-	ClientListener()
+	EchoClient()
 		: m_client(nullptr)
-		, m_connected_signal(sys_api::signal_create())
 	{
+		m_connected_signal = sys_api::signal_create();
 	}
 
-	~ClientListener()
+	~EchoClient()
 	{
 		sys_api::signal_destroy(m_connected_signal);
 	}
@@ -123,32 +149,15 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	ClientListener client_listener;
-
-	//client thread
-	sys_api::thread_create_detached([&](void*) {
-		Looper* looper = Looper::create_looper();
-
-		TcpClient* client = new TcpClient(looper, &client_listener, 0);
-		client->connect(Address(server_ip.c_str(), server_port));
-
-		looper->loop();
-
-		delete client;
-		Looper::destroy_looper(looper);
-	}, 0, "client");
-
-	CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip.c_str(), server_port);
-
-	//wait connect completed
-	client_listener.wait_connected();
+	EchoClient echoClient;
+	echoClient.startClientThread(server_ip, server_port);
 
 	//input
 	char line[MAX_ECHO_LENGTH + 1] = { 0 };
 	while (std::cin.getline(line, MAX_ECHO_LENGTH + 1))
 	{
 		if (line[0] == 0) continue;
-		client_listener.get_client()->send(line, strlen(line));
+		echoClient.get_client()->send(line, strlen(line));
 	}
 
 	return 0;

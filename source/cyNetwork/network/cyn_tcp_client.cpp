@@ -16,12 +16,11 @@ namespace cyclone
 		id = Looper::INVALID_EVENT_ID; \
 	}
 //-------------------------------------------------------------------------------------
-TcpClient::TcpClient(Looper* looper, Listener* listener, void* param)
+TcpClient::TcpClient(Looper* looper, void* param)
 	: m_socket(INVALID_SOCKET)
 	, m_socket_event_id(Looper::INVALID_EVENT_ID)
 	, m_retry_timer_id(Looper::INVALID_EVENT_ID)
 	, m_looper(looper)
-	, m_listener(listener)
 	, m_param(param)
 	, m_connection(nullptr)
 {
@@ -29,6 +28,10 @@ TcpClient::TcpClient(Looper* looper, Listener* listener, void* param)
 	assert(looper);
 
 	m_connection_lock = sys_api::mutex_create();
+
+	m_listener.onConnected = nullptr;
+	m_listener.onMessage = nullptr;
+	m_listener.onClose = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -99,8 +102,8 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 	if (timeout || socket_api::get_socket_error(m_socket) != 0) {
 		//logic callback
 		uint32_t retry_sleep_ms = 0;
-		if (m_listener) {
-			retry_sleep_ms = m_listener->on_connected(this, nullptr, false);
+		if (m_listener.onConnected) {
+			retry_sleep_ms = m_listener.onConnected(this, nullptr, false);
 		}
 		_abort_connect(retry_sleep_ms);
 	}
@@ -114,14 +117,15 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		m_connection = std::make_shared<Connection>(0, m_socket, m_looper, this);
 
 		//bind callback functions
-		if (m_listener) {
-
+		if (m_listener.onMessage) {
 			m_connection->setOnMessageFunction([this](ConnectionPtr conn) {
-				m_listener->on_message(this, conn);
+				m_listener.onMessage(this, conn);
 			});
+		}
 
+		if(m_listener.onClose) {
 			m_connection->setOnCloseFunction([this](ConnectionPtr conn) {
-				m_listener->on_close(this);
+				m_listener.onClose(this);
 			});
 		}
 
@@ -131,8 +135,8 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 			m_sendCache.reset();
 		}
 		//logic callback
-		if (m_listener) {
-			m_listener->on_connected(this, m_connection, true);
+		if (m_listener.onConnected) {
+			m_listener.onConnected(this, m_connection, true);
 		}
 	}
 }
@@ -190,8 +194,8 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 	//connect again
 	if (!connect(m_serverAddr)) {
 		//failed at once!, logic callback
-		if (m_listener) {
-			uint32_t retry_sleep_ms = m_listener->on_connected(this, nullptr, false);
+		if (m_listener.onConnected) {
+			uint32_t retry_sleep_ms = m_listener.onConnected(this, nullptr, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {
