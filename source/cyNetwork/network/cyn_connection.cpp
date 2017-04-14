@@ -64,8 +64,7 @@ Connection::~Connection()
 //-------------------------------------------------------------------------------------
 Connection::State Connection::get_state(void) const
 { 
-	//TODO: atom operation
-	return m_state; 
+	return m_state.load(); 
 }
 
 //-------------------------------------------------------------------------------------

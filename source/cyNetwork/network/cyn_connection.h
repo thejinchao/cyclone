@@ -69,7 +69,7 @@ public:
 private:
 	int32_t m_id;
 	socket_t m_socket;
-	State m_state;
+	std::atomic<State> m_state;
 	Address m_local_addr;
 	Address m_peer_addr;
 	Looper* m_looper;
