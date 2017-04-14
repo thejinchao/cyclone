@@ -144,9 +144,6 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		}
 		else if (curr_state == Connection::kDisconnected)
 		{
-			//del debug value
-			conn->del_debug_value(m_debuger);
-
 			//delete the connection object
 			m_connections.erase(conn->get_id());
 		}

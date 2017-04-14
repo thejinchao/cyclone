@@ -62,7 +62,6 @@ public:
 
 	/// debug
 	void debug(DebugInterface* debuger);
-	void del_debug_value(DebugInterface* debuger);
 
 	/// shutdown the connection
 	void shutdown(void);
@@ -91,6 +90,8 @@ private:
 
 	size_t m_max_sendbuf_len;
 
+	DebugInterface* m_debuger;
+
 private:
 	//// on socket read event
 	void _on_socket_read(void);
@@ -109,6 +110,9 @@ private:
 
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
+
+	//// clean all debug value
+	void _del_debug_value(void);
 
 public:
 	Connection(int32_t id, socket_t sfd, Looper* looper, void* param);
