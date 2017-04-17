@@ -222,12 +222,7 @@ private:
 				//update state
 				m_upState = kHandshaked;
 
-				//debug output
-				char debug_out[128] = { 0 };
-				for (int i = 0; i < DH_KEY_LENGTH; i++) {
-					snprintf(debug_out + i * 2, 4, "%02x", m_secretKey.bytes[i]);
-				}
-				CY_LOG(L_DEBUG, "Connect to up server(%s:%d), key=%s", conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port(), debug_out);
+				CY_LOG(L_DEBUG, "Connect to up server(%s:%d)", conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
 
 				//clean secret key memory(for safe)
 				memset(m_secretKey.bytes, 0, Rijndael::BLOCK_SIZE);
