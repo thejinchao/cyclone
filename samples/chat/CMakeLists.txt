@@ -2,8 +2,6 @@
 #Copyright(C) thecodeway.com
 #
 
-cmake_minimum_required (VERSION 2.8)
-
 include_directories(
 	${CY_AUTO_INCLUDE_PATH}
 	${CY_SOURCE_CORE_PATH}
