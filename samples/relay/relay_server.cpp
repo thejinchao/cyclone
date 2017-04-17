@@ -22,8 +22,6 @@ CSimpleOptA::SOption g_rgOptions[] = {
 	SO_END_OF_OPTIONS                   // END
 };
 
-typedef std::shared_ptr<TcpClient> TcpClientPtr;
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 class RelaySession
 {
@@ -52,7 +50,7 @@ public:
 		assert(m_upState==kDisconnected);
 		if (m_upClient) {
 			assert(m_upClient->get_connection_state() == Connection::kDisconnected);
-			assert(m_upClient.unique());
+            m_upClient = nullptr;
 		}
 	}
 };
@@ -277,7 +275,7 @@ private:
 
 private:
 	//-------------------------------------------------------------------------------------
-	uint32_t onServerConnected(TcpClient* client, ConnectionPtr conn, bool success)
+	uint32_t onServerConnected(TcpClientPtr client, ConnectionPtr conn, bool success)
 	{
 		if (m_downState != kHandshaked) return 0;
 
@@ -323,7 +321,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onServerMessage(TcpClient* client, ConnectionPtr conn)
+	void onServerMessage(TcpClientPtr client, ConnectionPtr conn)
 	{
 		if (m_downState != kHandshaked) return;
 
@@ -358,7 +356,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onServerClose(TcpClient* client)
+	void onServerClose(TcpClientPtr client)
 	{
 		int32_t id = (int32_t)(intptr_t)(client->get_callback_param());
 		auto it = m_relaySessionMap.find(id);

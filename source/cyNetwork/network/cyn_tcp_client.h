@@ -11,13 +11,15 @@ namespace cyclone
 
 //pre-define 
 class Connection;
-
-class TcpClient : noncopyable
+class TcpClient;
+typedef std::shared_ptr<TcpClient> TcpClientPtr;
+    
+class TcpClient : public std::enable_shared_from_this<TcpClient>, noncopyable
 {
 public:
-	typedef std::function<uint32_t(TcpClient* client, ConnectionPtr conn, bool success)> ConnectedCallback;
-	typedef std::function<void(TcpClient* client, ConnectionPtr conn)> MessageCallback;
-	typedef std::function<void(TcpClient* client)> CloseCallback;
+	typedef std::function<uint32_t(TcpClientPtr client, ConnectionPtr conn, bool success)> ConnectedCallback;
+	typedef std::function<void(TcpClientPtr client, ConnectionPtr conn)> MessageCallback;
+	typedef std::function<void(TcpClientPtr client)> CloseCallback;
 
 	struct Listener {
 		ConnectedCallback onConnected;
@@ -39,7 +41,7 @@ public:
 	const void* get_callback_param(void) const { return m_param; }
 	/// get current connection state(thread safe);
 	Connection::State get_connection_state(void) const;
-
+    
 private:
 	socket_t m_socket;
 	Looper::event_id_t m_socket_event_id;

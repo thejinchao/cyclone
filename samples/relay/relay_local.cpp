@@ -69,7 +69,7 @@ private:
 	{
 		assert(m_upState == kConnecting);
 		m_downServer = server;
-		m_upClient = new TcpClient(looper, this);
+        m_upClient = std::make_shared<TcpClient>(looper, this);
 		m_upClient->m_listener.onConnected = std::bind(&RelayLocal::onUpConnected, this, _2, _3);
 		m_upClient->m_listener.onMessage = std::bind(&RelayLocal::onUpMessage, this, _1, _2);
 		m_upClient->m_listener.onClose = std::bind(&RelayLocal::onUpClose, this);
@@ -136,15 +136,17 @@ private:
 		if (it == m_sessionMap.end()) return;
 
 		m_sessionMap.erase(it);
+        if(m_upState==kHandshaked)
+        {
+            RelayCloseSessionMsg closeSessionMsg;
+            closeSessionMsg.id = conn->get_id();
 
-		RelayCloseSessionMsg closeSessionMsg;
-		closeSessionMsg.id = conn->get_id();
+            Packet packet;
+            packet.build((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayCloseSessionMsg::ID, sizeof(closeSessionMsg), (const char*)&closeSessionMsg);
+            m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
 
-		Packet packet;
-		packet.build((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayCloseSessionMsg::ID, sizeof(closeSessionMsg), (const char*)&closeSessionMsg);
-		m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
-
-		CY_LOG(L_TRACE, "[%d]down client closed!, send close session message to up server", conn->get_id());
+            CY_LOG(L_TRACE, "[%d]down client closed!, send close session message to up server", conn->get_id());
+        }
 	}
 
 private:
@@ -176,7 +178,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onUpMessage(TcpClient* client, ConnectionPtr conn)
+	void onUpMessage(TcpClientPtr client, ConnectionPtr conn)
 	{
 		for (;;) {
 			if (m_upState == kHandshaking) {
@@ -297,6 +299,9 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onUpClose(void)
 	{
+        m_upClient = nullptr;
+        m_upState = kDisConnected;
+        
 		sys_api::thread_create_detached([](void* server) {
 			((TcpServer*)server)->stop();
 		}, m_downServer, "");
@@ -316,7 +321,7 @@ private:
 		kDisConnected
 	};
 	Address m_upAddress;
-	TcpClient* m_upClient;
+	TcpClientPtr m_upClient;
 	UpState m_upState;
 	dhkey_t m_publicKey;
 	dhkey_t m_privateKey;

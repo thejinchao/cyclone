@@ -42,7 +42,7 @@ public:
 
 	void connect(const Address& address){
 		m_address = address;
-		m_remoteConnection = new TcpClient(m_looper, this);
+        m_remoteConnection = std::make_shared<TcpClient>(m_looper, this);
 		m_remoteConnection->m_listener.onConnected = std::bind(&S5Tunnel::onServerConnected, this, _2, _3);
 		m_remoteConnection->m_listener.onMessage = std::bind(&S5Tunnel::onServerMessage, this, _2);
 		m_remoteConnection->m_listener.onClose = std::bind(&S5Tunnel::onServerClose, this);
@@ -104,7 +104,7 @@ private:
 	S5State m_state;
 	TcpServer* m_localServer;
 	Looper* m_looper;
-	TcpClient* m_remoteConnection;
+	TcpClientPtr m_remoteConnection;
 	ConnectionPtr m_localConnection;
 	Address m_address;
 
@@ -119,7 +119,7 @@ public:
 	}
 	~S5Tunnel() {
 		if (m_remoteConnection) {
-			delete m_remoteConnection;
+            assert(m_remoteConnection.unique());
 			m_remoteConnection = nullptr;
 		}
 	}

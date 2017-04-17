@@ -103,7 +103,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		//logic callback
 		uint32_t retry_sleep_ms = 0;
 		if (m_listener.onConnected) {
-			retry_sleep_ms = m_listener.onConnected(this, nullptr, false);
+			retry_sleep_ms = m_listener.onConnected(shared_from_this(), nullptr, false);
 		}
 		_abort_connect(retry_sleep_ms);
 	}
@@ -119,13 +119,13 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		//bind callback functions
 		if (m_listener.onMessage) {
 			m_connection->setOnMessageFunction([this](ConnectionPtr conn) {
-				m_listener.onMessage(this, conn);
+				m_listener.onMessage(shared_from_this(), conn);
 			});
 		}
 
 		if(m_listener.onClose) {
 			m_connection->setOnCloseFunction([this](ConnectionPtr conn) {
-				m_listener.onClose(this);
+				m_listener.onClose(shared_from_this());
 			});
 		}
 
@@ -136,7 +136,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		}
 		//logic callback
 		if (m_listener.onConnected) {
-			m_listener.onConnected(this, m_connection, true);
+			m_listener.onConnected(shared_from_this(), m_connection, true);
 		}
 	}
 }
@@ -195,7 +195,7 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 	if (!connect(m_serverAddr)) {
 		//failed at once!, logic callback
 		if (m_listener.onConnected) {
-			uint32_t retry_sleep_ms = m_listener.onConnected(this, nullptr, false);
+			uint32_t retry_sleep_ms = m_listener.onConnected(shared_from_this(), nullptr, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {

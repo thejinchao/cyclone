@@ -43,7 +43,7 @@ private:
 	{
 		Looper* looper = Looper::create_looper();
 
-		m_client = new TcpClient(looper, 0);
+        m_client = std::make_shared<TcpClient>(looper, nullptr);
 		m_client->m_listener.onConnected = std::bind(&EchoClient::onConnected, this, _1, _3);
 		m_client->m_listener.onMessage = std::bind(&EchoClient::onMessage, this, _2);
 		m_client->m_listener.onClose = std::bind(&EchoClient::onClose, this);
@@ -51,12 +51,12 @@ private:
 		m_client->connect(Address(m_server_ip.c_str(), m_server_port));
 		looper->loop();
 
-		delete m_client; m_client = nullptr;
+		m_client = nullptr;
 		Looper::destroy_looper(looper);
 	}
 
 	//-------------------------------------------------------------------------------------
-	uint32_t onConnected(TcpClient* client, bool success)
+	uint32_t onConnected(TcpClientPtr client, bool success)
 	{
 		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
 			client->get_server_address().get_ip(),
@@ -94,10 +94,10 @@ private:
 	}
 
 public:
-	TcpClient* get_client(void) { return m_client; }
+	TcpClientPtr get_client(void) { return m_client; }
 
 private:
-	TcpClient* m_client;
+	TcpClientPtr m_client;
 	std::string m_server_ip;
 	uint16_t m_server_port;
 	sys_api::signal_t m_connected_signal;
