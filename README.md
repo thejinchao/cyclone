@@ -37,7 +37,7 @@ Cyclone depends on following libraries
 4. Right click the project *RUN TESTS* and slect *Build* to run unit test
 
 ## On Android
-Build on the windows host machine, make sure the flowing envionment variables have been set correctly. `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT'
+Build on the windows host machine, make sure the flowing envionment variables have been set correctly. `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT`
 ```
 git clone https://github.com/thejinchao/cyclone
 mkdir _build && cd _build
