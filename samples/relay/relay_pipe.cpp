@@ -442,7 +442,6 @@ int main(int argc, char* argv[])
 	bool first_in=false, second_in=false;
 	bool verbose_mode = false;
 
-	//::DebugBreak();
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
 			if (args.OptionId() == OPT_HELP) {
