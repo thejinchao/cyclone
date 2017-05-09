@@ -11,7 +11,7 @@ include_directories(
 
 add_executable(timer timer.cpp)
 
-set_property(TARGET timer PROPERTY FOLDER "samples/simple/timer")
+set_property(TARGET timer PROPERTY FOLDER "samples/timer")
 
 if(CY_SYS_WINDOWS)
 target_link_libraries(timer

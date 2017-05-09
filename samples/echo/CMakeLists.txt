@@ -13,8 +13,8 @@ include_directories(
 add_executable(echo-server echo_server.cpp)
 add_executable(echo-client echo_client.cpp)
 
-set_property(TARGET echo-server PROPERTY FOLDER "samples/simple/echo")
-set_property(TARGET echo-client PROPERTY FOLDER "samples/simple/echo")
+set_property(TARGET echo-server PROPERTY FOLDER "samples/echo")
+set_property(TARGET echo-client PROPERTY FOLDER "samples/echo")
 
 if(CY_SYS_WINDOWS)
 target_link_libraries(echo-server
