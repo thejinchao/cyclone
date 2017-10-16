@@ -56,4 +56,4 @@ target_link_libraries(cyt_unit
 
 endif()
 
-GTEST_ADD_TESTS(cyt_unit "" ${cyt_unit_sources})
+gtest_add_tests(cyt_unit SOURCES ${cyt_unit_sources})
