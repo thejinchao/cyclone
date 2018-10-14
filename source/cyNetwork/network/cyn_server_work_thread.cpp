@@ -110,13 +110,13 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		}
 
 		//bind onClose function
-		if (server_listener.onClose) {
-			conn->setOnCloseFunction([this](ConnectionPtr connection) {
+		conn->setOnCloseFunction([this](ConnectionPtr connection) {
+			if(m_server->m_listener.onClose)
 				m_server->m_listener.onClose(m_server, get_index(), connection);
-				//shutdown this connection next tick
-				m_server->shutdown_connection(connection);
-			});
-		}
+			//shutdown this connection next tick
+			m_server->shutdown_connection(connection);
+		});
+		
 
 		//notify server listener 
 		if (server_listener.onConnected) {
