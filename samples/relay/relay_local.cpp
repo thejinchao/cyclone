@@ -10,12 +10,13 @@ using namespace cyclone;
 using namespace std::placeholders;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_HELP };
+enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP },  // "-p LISTEN_PORT"
 	{ OPT_UP_HOST, "-uh",  SO_REQ_SEP }, // "-uh UP_SERVER_HOST"
 	{ OPT_UP_PORT, "-up",  SO_REQ_SEP }, // "-up UP_SERVER_PORT"
+	{ OPT_ENCRYPT_MODE, "-e",  SO_NONE }, // "-e"
 	{ OPT_VERBOSE_MODE, "-v",  SO_NONE },	// "-v"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	 // "--help"
@@ -122,8 +123,11 @@ private:
 			ringBuf.memcpy_out(packet.get_packet_content() + sizeof(forwardMsg), msgSize);
 
 			//encrypt and send
-			uint8_t* buf = (uint8_t*)packet.get_packet_content() + sizeof(forwardMsg);
-			m_encrypt->encrypt(buf, buf, buf_round_size);
+			if (m_encryptMode)
+			{
+				uint8_t* buf = (uint8_t*)packet.get_packet_content() + sizeof(forwardMsg);
+				m_encrypt->encrypt(buf, buf, buf_round_size);
+			}
 			m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
 			CY_LOG(L_TRACE, "[%d]receive message from CLIENT(%zd/%zd), send to UP after encrypt", conn->get_id(), (size_t)msgSize, buf_round_size);
 		}
@@ -208,16 +212,28 @@ private:
 				RelayHandshakeMsg handshake;
 				memcpy(&handshake, handshakePacket.get_packet_content(), sizeof(handshake));
 
+				bool bRemoteEncrypt = (handshake.dh_key.dq.low != 0 && handshake.dh_key.dq.low != 0);
+				if (m_encryptMode != bRemoteEncrypt)
+				{
+					CY_LOG(L_ERROR, "Encrypt Mode not match, relay_server:%s , relay_local: %s", bRemoteEncrypt?"true":"false", m_encryptMode ? "true" : "false");
+					client->disconnect();
+					m_upState = kDisConnected;
+					return;
+				}
+
 				//handshake
-				DH_generate_key_secret(m_secretKey, m_privateKey, handshake.dh_key);
+				if (m_encryptMode)
+				{
+					DH_generate_key_secret(m_secretKey, m_privateKey, handshake.dh_key);
 
-				//create encrypter
-				m_encrypt = new Rijndael(m_secretKey.bytes);
+					//create encrypter
+					m_encrypt = new Rijndael(m_secretKey.bytes);
 
-				//create decrypter
-				for (size_t i = 0; i < Rijndael::BLOCK_SIZE; i++)
-					m_privateKey.bytes[i] = (uint8_t)(~m_privateKey.bytes[i]);
-				m_decrypt = new Rijndael(m_secretKey.bytes);
+					//create decrypter
+					for (size_t i = 0; i < Rijndael::BLOCK_SIZE; i++)
+						m_privateKey.bytes[i] = (uint8_t)(~m_privateKey.bytes[i]);
+					m_decrypt = new Rijndael(m_secretKey.bytes);
+				}
 
 				//update state
 				m_upState = kHandshaked;
@@ -244,8 +260,11 @@ private:
 					memcpy(&forwardMsg, packet.get_packet_content(), sizeof(RelayForwardMsg));
 
 					//decrypt
-					uint8_t* buf = (uint8_t*)packet.get_packet_content() + sizeof(RelayForwardMsg);
-					m_decrypt->decrypt(buf, buf, packet.get_packet_size() - sizeof(RelayForwardMsg));
+					if (m_encryptMode)
+					{
+						uint8_t* buf = (uint8_t*)packet.get_packet_content() + sizeof(RelayForwardMsg);
+						m_decrypt->decrypt(buf, buf, packet.get_packet_size() - sizeof(RelayForwardMsg));
+					}
 
 					auto it = m_sessionMap.find(forwardMsg.id);
 					if (it == m_sessionMap.end()) {
@@ -324,23 +343,36 @@ private:
 	TcpServer* m_downServer;
 	Rijndael* m_encrypt;
 	Rijndael* m_decrypt;
+	bool m_encryptMode;
 
 	typedef std::map<int32_t, RelaySession> RelaySessionMap;
 	RelaySessionMap m_sessionMap;
 
 public:
-	RelayLocal()
+	RelayLocal(bool encryptMode)
 		: m_upClient(nullptr)
 		, m_upState(kConnecting)
 		, m_downServer(nullptr)
 		, m_encrypt(nullptr)
 		, m_decrypt(nullptr)
+		, m_encryptMode(encryptMode)
 	{
-		DH_generate_key_pair(m_publicKey, m_privateKey);
+		if (m_encryptMode)
+			DH_generate_key_pair(m_publicKey, m_privateKey);
+		else
+			m_publicKey.dq.low = m_publicKey.dq.high = 0;
 	}
 	~RelayLocal()
 	{
+		if (m_encrypt)
+		{
+			delete m_encrypt; m_encrypt = nullptr;
+		}
 
+		if (m_decrypt)
+		{
+			delete m_decrypt; m_decrypt = nullptr;
+		}
 	}
 };
 
@@ -352,6 +384,7 @@ static void printUsage(const char* moduleName)
 	printf("\t -p  LISTEN_PORT\t Local Listen Port, Default 2000\n");
 	printf("\t -uh UP_HOST\tUp Server(Relay Server) IP, Default 127.0.0.1\n");
 	printf("\t -up UP_PORT\tUp Server(Relay Server) Port, Default 3000\n");
+	printf("\t -e\t\tEncrypt Message\n");
 	printf("\t -v\t\tVerbose Mode\n");
 	printf("\t --help -?\tShow this help\n");
 }
@@ -365,6 +398,7 @@ int main(int argc, char* argv[])
 	std::string up_ip  = "127.0.0.1";
 	uint16_t up_port = 3000;
 	bool verbose_mode = false;
+	bool encrypt_mode = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -381,6 +415,9 @@ int main(int argc, char* argv[])
 			else if (args.OptionId() == OPT_UP_PORT) {
 				up_port = (uint16_t)atoi(args.OptionArg());
 			}
+			else if (args.OptionId() == OPT_ENCRYPT_MODE) {
+				encrypt_mode = true;
+			}
 			else if (args.OptionId() == OPT_VERBOSE_MODE) {
 				verbose_mode = true;
 			}
@@ -396,8 +433,9 @@ int main(int argc, char* argv[])
 
 	CY_LOG(L_DEBUG, "listen port %d", local_port);
 	CY_LOG(L_DEBUG, "up address %s:%d", up_ip.c_str(), up_port);
+	CY_LOG(L_DEBUG, "encrypt mode %s", encrypt_mode ? "true" : "false");
 
-	RelayLocal relayLocal;
+	RelayLocal relayLocal(encrypt_mode);
 	relayLocal.startAndJoin(local_port, Address(up_ip.c_str(), up_port));
 	return 0;
 }
