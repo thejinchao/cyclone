@@ -115,7 +115,7 @@ private:
 			forwardMsg.id = conn->get_id();
 			forwardMsg.size = (int32_t)msgSize;
 
-			size_t buf_round_size = _round16(msgSize);
+			size_t buf_round_size = m_encryptMode ? _round16(msgSize) : msgSize;
 			Packet packet;
 			packet.build((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayForwardMsg::ID, (uint16_t)(sizeof(RelayForwardMsg) + buf_round_size), nullptr);
 

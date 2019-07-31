@@ -360,7 +360,7 @@ private:
 			msg.id = session->m_id;
 			msg.size = (int32_t)msgSize;
 
-			size_t buf_round_size = _round16(msgSize);
+			size_t buf_round_size = m_encryptMode ? _round16(msgSize) : msgSize;
 			CY_LOG(L_TRACE, "[%d]receive from UP(%zd/%zd), send to DOWN after encrypt", msg.id, (size_t)msg.size, buf_round_size);
 
 			Packet packet;
