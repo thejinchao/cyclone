@@ -74,38 +74,38 @@ struct DiskLogFile
 };
 
 //-------------------------------------------------------------------------------------
-static DiskLogFile& _get_disk_log(void)
+static DiskLogFile& _getDiskLog(void)
 {
 	static DiskLogFile thefile;
 	return thefile;
 }
 
 //-------------------------------------------------------------------------------------
-const char* get_logfile_name(void)
+const char* getLogFileName(void)
 {
-	DiskLogFile& thefile = _get_disk_log();
+	DiskLogFile& thefile = _getDiskLog();
 	return thefile.file_name;
 }
 
 //-------------------------------------------------------------------------------------
-void set_log_threshold(LOG_LEVEL level)
+void setLogThreshold(LOG_LEVEL level)
 {
 	assert(level >= 0 && level <= L_MAXIMUM_LEVEL);
 	if (level < 0 || level > L_MAXIMUM_LEVEL)return;
 
-	DiskLogFile& thefile = _get_disk_log();
+	DiskLogFile& thefile = _getDiskLog();
 	sys_api::auto_mutex guard(thefile.lock);
 
 	thefile.level_threshold = level;
 }
 
 //-------------------------------------------------------------------------------------
-void disk_log(LOG_LEVEL level, const char* message, ...)
+void diskLog(LOG_LEVEL level, const char* message, ...)
 {
 	assert(level >= 0 && level < L_MAXIMUM_LEVEL);
 	if (level < 0 || level >= L_MAXIMUM_LEVEL)return;
 
-	DiskLogFile& thefile = _get_disk_log();
+	DiskLogFile& thefile = _getDiskLog();
 	sys_api::auto_mutex guard(thefile.lock);
 
 	//check the level

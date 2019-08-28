@@ -111,10 +111,10 @@ bool TcpServer::start(int32_t work_thread_counts)
 	m_accept_thread.start("accept");
 
 	//write debug variable
-	if (m_debuger && m_debuger->is_enable()) {
+	if (m_debuger && m_debuger->isEnable()) {
 		char key_value[256] = { 0 };
 		snprintf(key_value, 256, "TcpServer:%s:thread_counts", m_name.c_str());
-		m_debuger->set_debug_value(key_value, m_work_thread_counts);
+		m_debuger->updateDebugValue(key_value, m_work_thread_counts);
 	}
 	return true;
 }

@@ -17,7 +17,7 @@ typedef std::atomic<void*>		atomic_ptr_t;
 typedef std::atomic<bool>		atomic_bool_t;
 
 template<typename T>
-inline bool atomic_compare_exchange(std::atomic<T>& obj, T expected, T desired) {
+inline bool atomicCompareExchange(std::atomic<T>& obj, T expected, T desired) {
 	return obj.compare_exchange_weak(expected, desired);
 }
 

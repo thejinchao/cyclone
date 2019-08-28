@@ -210,13 +210,13 @@ void ServerWorkThread::_debug(DebugCmd&)
 	assert(is_in_workthread());
 	assert(m_server);
 
-	if (!m_debuger || !(m_debuger->is_enable())) return;
+	if (!m_debuger || !(m_debuger->isEnable())) return;
 
 	char key_temp[MAX_PATH] = { 0 };
 
 	//Debug ConnectionMap
 	snprintf(key_temp, MAX_PATH, "ServerWorkThread:%s:connection_map_counts", m_name.c_str());
-	m_debuger->set_debug_value(key_temp, (int32_t)m_connections.size());
+	m_debuger->updateDebugValue(key_temp, (int32_t)m_connections.size());
 
 	//Debug Looper
 	Looper* looper = m_work_thread->get_looper();

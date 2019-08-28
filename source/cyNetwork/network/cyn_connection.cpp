@@ -295,36 +295,36 @@ void Connection::set_name(const char* name)
 //-------------------------------------------------------------------------------------
 void Connection::debug(DebugInterface* debuger)
 {
-	if (!debuger || !(debuger->is_enable())) return;
+	if (!debuger || !(debuger->isEnable())) return;
 
 	m_debuger = debuger;
 	char key_temp[MAX_PATH] = { 0 };
 
 	snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
-	debuger->set_debug_value(key_temp, (int32_t)m_readBuf.capacity());
+	debuger->updateDebugValue(key_temp, (int32_t)m_readBuf.capacity());
 
 	snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
-	debuger->set_debug_value(key_temp, (int32_t)m_writeBuf.capacity());
+	debuger->updateDebugValue(key_temp, (int32_t)m_writeBuf.capacity());
 
 	snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
-	debuger->set_debug_value(key_temp, (int32_t)m_max_sendbuf_len);
+	debuger->updateDebugValue(key_temp, (int32_t)m_max_sendbuf_len);
 }
 
 //-------------------------------------------------------------------------------------
 void Connection::_del_debug_value(void)
 {
-	if (!m_debuger || !(m_debuger->is_enable())) return;
+	if (!m_debuger || !(m_debuger->isEnable())) return;
 
 	char key_name[MAX_PATH] = { 0 };
 
 	snprintf(key_name, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
-	m_debuger->del_debug_value(key_name);
+	m_debuger->delDebugValue(key_name);
 
 	snprintf(key_name, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
-	m_debuger->del_debug_value(key_name);
+	m_debuger->delDebugValue(key_name);
 
 	snprintf(key_name, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
-	m_debuger->del_debug_value(key_name);
+	m_debuger->delDebugValue(key_name);
 }
 
 }

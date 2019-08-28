@@ -433,15 +433,15 @@ void Looper::_on_inner_pipe_touched(event_id_t , socket_t fd, event_t , void* pa
 //-------------------------------------------------------------------------------------
 void Looper::debug(DebugInterface* debuger, const char* name)
 {
-	if (!debuger || !(debuger->is_enable())) return;
+	if (!debuger || !(debuger->isEnable())) return;
 
 	char key_temp[256] = { 0 };
 
 	snprintf(key_temp, 256, "Looper:%s:channel_buffer_size", name);
-	debuger->set_debug_value(key_temp, (int32_t)m_channelBuffer.size());
+	debuger->updateDebugValue(key_temp, (int32_t)m_channelBuffer.size());
 
 	snprintf(key_temp, 256, "Looper:%s:active_channel_size", name);
-	debuger->set_debug_value(key_temp, m_active_channel_counts);
+	debuger->updateDebugValue(key_temp, m_active_channel_counts);
 }
 
 }

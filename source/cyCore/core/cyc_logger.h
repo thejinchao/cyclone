@@ -29,20 +29,20 @@ enum LOG_LEVEL
 //filename = process_name.date-time24h.hostname.pid.log
 // like "test.20150302-1736.server1.63581.log"
 // the time part is the time(LOCAL) of first log be written
-void disk_log(LOG_LEVEL level, const char* message, ...);
+void diskLog(LOG_LEVEL level, const char* message, ...);
 
 //get current log filename
-const char* get_logfile_name(void);
+const char* getLogFileName(void);
 
 //set the a global log level, default is L_TRACE, 
 //all the log message lower than this level will be ignored
-void set_log_threshold(LOG_LEVEL level);
+void setLogThreshold(LOG_LEVEL level);
 
 }
 
 //userful macro
 #ifdef CY_ENABLE_LOG
-#define CY_LOG cyclone::disk_log
+#define CY_LOG cyclone::diskLog
 #else
 #define CY_LOG (void)
 #endif
