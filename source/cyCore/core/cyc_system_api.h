@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_CORE_THREAD_API_H_
@@ -116,11 +116,11 @@ void signal_notify(signal_t s);
 // time functions
 //----------------------
 
-//// get time in microseconds(second*1000*1000) from Epoch
-int64_t time_now(void);
+//// get UTC time in microseconds(second*1000*1000) from Epoch
+int64_t utc_time_now(void);
 
-/// get time in format string(strftime)
-void time_now(char* time_dest, size_t max_size, const char* format);
+/// get local time in format string(strftime)
+void local_time_now(char* time_dest, size_t max_size, const char* format);
 
 //----------------------
 // utility functions
