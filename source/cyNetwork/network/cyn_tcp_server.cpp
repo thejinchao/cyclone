@@ -236,12 +236,17 @@ void TcpServer::_on_accept_message(Packet* message)
 
 		//close all listen socket(s)
 		for (auto listen_socket : m_acceptor_sockets){
+			auto& sfd = std::get<0>(listen_socket);
 			auto& event_id = std::get<1>(listen_socket);
 
 			if (event_id != Looper::INVALID_EVENT_ID) {
 				looper->disable_all(event_id);
 				looper->delete_event(event_id);
 				event_id = Looper::INVALID_EVENT_ID;
+			}
+			if (sfd != INVALID_SOCKET) {
+				socket_api::close_socket(sfd);
+				sfd = INVALID_SOCKET;
 			}
 		}
 		m_acceptor_sockets.clear();

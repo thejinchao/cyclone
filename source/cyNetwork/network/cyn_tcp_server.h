@@ -31,7 +31,7 @@ public:
 
 	Listener m_listener;
 public:
-	/// add a bind port, return false means too much port has beed binded or bind failed
+	/// add a bind port, return false means too much port has been binded or bind failed
 	// NOT thread safe, and this function must be called before start the server
 	bool bind(const Address& bind_addr, bool enable_reuse_port);
 
