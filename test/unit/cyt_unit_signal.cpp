@@ -30,9 +30,9 @@ TEST(Signal, Basic)
 	EXPECT_FALSE(sys_api::signal_timewait(signal, 1));
 
 	//time_wait
-	int64_t begin_time = sys_api::time_now();
+	int64_t begin_time = sys_api::utc_time_now();
 	EXPECT_FALSE(sys_api::signal_timewait(signal, 100));
-	int64_t end_time = sys_api::time_now();
+	int64_t end_time = sys_api::utc_time_now();
 	EXPECT_GE(end_time - begin_time, 100*1000);
 	EXPECT_LE(end_time - begin_time, 110*1000);
 
