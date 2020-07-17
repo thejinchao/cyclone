@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 
@@ -17,7 +17,7 @@ ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char*
 
 	//run the work thread
 	char temp[MAX_PATH] = { 0 };
-	snprintf(temp, MAX_PATH, "%s_%d", (name ? name : "worker"), m_index);
+	std::snprintf(temp, MAX_PATH, "%s_%d", (name ? name : "worker"), m_index);
 	m_name = temp;
 
 	//run work thread
@@ -215,7 +215,7 @@ void ServerWorkThread::_debug(DebugCmd&)
 	char key_temp[MAX_PATH] = { 0 };
 
 	//Debug ConnectionMap
-	snprintf(key_temp, MAX_PATH, "ServerWorkThread:%s:connection_map_counts", m_name.c_str());
+	std::snprintf(key_temp, MAX_PATH, "ServerWorkThread:%s:connection_map_counts", m_name.c_str());
 	m_debuger->updateDebugValue(key_temp, (int32_t)m_connections.size());
 
 	//Debug Looper

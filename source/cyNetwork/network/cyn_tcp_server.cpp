@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -113,7 +113,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	//write debug variable
 	if (m_debuger && m_debuger->isEnable()) {
 		char key_value[256] = { 0 };
-		snprintf(key_value, 256, "TcpServer:%s:thread_counts", m_name.c_str());
+		std::snprintf(key_value, 256, "TcpServer:%s:thread_counts", m_name.c_str());
 		m_debuger->updateDebugValue(key_value, m_work_thread_counts);
 	}
 	return true;

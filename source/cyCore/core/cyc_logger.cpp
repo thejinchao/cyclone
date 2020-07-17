@@ -51,7 +51,7 @@ struct DiskLogFile
 
 		//log filename patten
 		char name_patten[256] = { 0 };
-		snprintf(name_patten, 256, LOG_PATH"%s.%%Y%%m%%d-%%H%%M%%S.%s.%d.log", process_name, host_name, process_id);
+		std::snprintf(name_patten, 256, LOG_PATH"%s.%%Y%%m%%d-%%H%%M%%S.%s.%d.log", process_name, host_name, process_id);
 		sys_api::local_time_now(file_name, 256, name_patten);
 
 		//create lock

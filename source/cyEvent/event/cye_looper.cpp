@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -437,10 +437,10 @@ void Looper::debug(DebugInterface* debuger, const char* name)
 
 	char key_temp[256] = { 0 };
 
-	snprintf(key_temp, 256, "Looper:%s:channel_buffer_size", name);
+	std::snprintf(key_temp, 256, "Looper:%s:channel_buffer_size", name);
 	debuger->updateDebugValue(key_temp, (int32_t)m_channelBuffer.size());
 
-	snprintf(key_temp, 256, "Looper:%s:active_channel_size", name);
+	std::snprintf(key_temp, 256, "Looper:%s:active_channel_size", name);
 	debuger->updateDebugValue(key_temp, m_active_channel_counts);
 }
 

@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
 #include <cy_network.h>
@@ -418,7 +418,7 @@ bool _parserAddress(const std::string& address, std::string& ip, uint16_t& port)
 		port = (uint16_t)atoi(address.substr(colon+1).c_str());
 		
 		char check[64] = { 0 };
-		snprintf(check, 64, "%s:%d", ip.c_str(), port);
+		std::snprintf(check, 64, "%s:%d", ip.c_str(), port);
 		return (address.compare(check) == 0);
 	}
 	else {
@@ -426,7 +426,7 @@ bool _parserAddress(const std::string& address, std::string& ip, uint16_t& port)
 		port = (uint16_t)atoi(address.c_str());
 
 		char check[64] = { 0 };
-		snprintf(check, 64, "%d", port);
+		std::snprintf(check, 64, "%d", port);
 		return (address.compare(check) == 0);
 	}
 }

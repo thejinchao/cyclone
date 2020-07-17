@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_CONFIG_H_
@@ -114,10 +114,6 @@ Copyright(C) thecodeway.com
 
 #ifndef MAX_PATH
 	#define MAX_PATH	(260)
-#endif
-
-#ifdef CY_SYS_WINDOWS
-#define snprintf _snprintf 
 #endif
 
 #ifdef CY_SYS_WINDOWS

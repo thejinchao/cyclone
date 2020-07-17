@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -38,7 +38,7 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, void* param)
 
 	//set default debug name
 	char temp[MAX_PATH] = { 0 };
-	snprintf(temp, MAX_PATH, "connection_%d", id);
+	std::snprintf(temp, MAX_PATH, "connection_%d", id);
 	m_name = temp;
 
 	//register socket event
@@ -300,13 +300,13 @@ void Connection::debug(DebugInterface* debuger)
 	m_debuger = debuger;
 	char key_temp[MAX_PATH] = { 0 };
 
-	snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
+	std::snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
 	debuger->updateDebugValue(key_temp, (int32_t)m_readBuf.capacity());
 
-	snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
+	std::snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
 	debuger->updateDebugValue(key_temp, (int32_t)m_writeBuf.capacity());
 
-	snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
+	std::snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
 	debuger->updateDebugValue(key_temp, (int32_t)m_max_sendbuf_len);
 }
 
@@ -317,13 +317,13 @@ void Connection::_del_debug_value(void)
 
 	char key_name[MAX_PATH] = { 0 };
 
-	snprintf(key_name, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
+	std::snprintf(key_name, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
 	m_debuger->delDebugValue(key_name);
 
-	snprintf(key_name, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
+	std::snprintf(key_name, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
 	m_debuger->delDebugValue(key_name);
 
-	snprintf(key_name, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
+	std::snprintf(key_name, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
 	m_debuger->delDebugValue(key_name);
 }
 
