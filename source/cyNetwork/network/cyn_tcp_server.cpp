@@ -11,8 +11,9 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(const char* name, DebugInterface* debuger)
-	: m_work_thread_counts(0)
+TcpServer::TcpServer(const char* name, DebugInterface* debuger, void* param)
+	: m_param(param)
+	, m_work_thread_counts(0)
 	, m_next_work(0)
 	, m_running(0)
 	, m_shutdown_ing(0)

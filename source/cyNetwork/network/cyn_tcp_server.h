@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_NETWORK_TCP_SERVER_H_
@@ -72,10 +72,15 @@ public:
 	/// print debug variable to debuger cache system
 	void debug(void);
 
+	/// get custom param
+	void* get_param(void) const { return m_param; }
+
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
 	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
+
+	void* m_param;
 
 	SocketVector	m_acceptor_sockets;
 	WorkThread		m_accept_thread;
@@ -126,7 +131,7 @@ private:
 	void _on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	TcpServer(const char* name, DebugInterface* debuger);
+	TcpServer(const char* name, DebugInterface* debuger, void* param = nullptr);
 	~TcpServer();
 };
 
