@@ -79,7 +79,6 @@ private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
 	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
-	typedef std::unordered_map<int32_t, ConnectionPtr> ConnectionPtrMap;
 
 	void* m_param;
 
@@ -102,10 +101,6 @@ private:
 	std::string	m_name;
 
 	DebugInterface*	m_debuger;
-
-	ConnectionPtrMap m_connection_map;
-	sys_api::mutex_t m_connection_map_locker;
-
 private:
 	//accept thread command
 	enum { kShutdownCmdID=1, kDebugCmdID, kStopListenCmdID };
@@ -136,7 +131,6 @@ private:
 
 private:
 	// called by server work thread only
-
 	void _on_socket_connected(int32_t work_thread_index, ConnectionPtr conn);
 	void _on_socket_message(int32_t work_thread_index, ConnectionPtr conn);
 	void _on_socket_close(int32_t work_thread_index, ConnectionPtr conn);

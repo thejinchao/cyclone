@@ -26,7 +26,6 @@ TcpServer::TcpServer(const char* name, DebugInterface* debuger, void* param)
 	m_listener.onConnected = nullptr;
 	m_listener.onMessage = nullptr;
 	m_listener.onClose = nullptr;
-	m_connection_map_locker = sys_api::mutex_create();
 }
 
 //-------------------------------------------------------------------------------------
@@ -34,8 +33,6 @@ TcpServer::~TcpServer()
 {
 	assert(m_running.load()==0);
 	assert(m_acceptor_sockets.empty());
-	sys_api::mutex_destroy(m_connection_map_locker);
-	m_connection_map_locker = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -333,17 +330,6 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 }
 
 //-------------------------------------------------------------------------------------
-ConnectionPtr TcpServer::find_connection(int32_t conn_id)
-{
-	sys_api::auto_mutex auto_locker(this->m_connection_map_locker);
-
-	ConnectionPtrMap::iterator it = m_connection_map.find(conn_id);
-	if (it == m_connection_map.end()) return ConnectionPtr(nullptr);
-
-	return it->second;
-}
-
-//-------------------------------------------------------------------------------------
 void TcpServer::debug(void)
 {
 	//send to work thread
@@ -360,11 +346,6 @@ void TcpServer::debug(void)
 //-------------------------------------------------------------------------------------
 void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr conn)
 {
-	{
-		sys_api::auto_mutex auto_locker(this->m_connection_map_locker);
-		m_connection_map.insert(std::make_pair(conn->get_id(), conn));
-	}
-
 	if (m_listener.onConnected) {
 		m_listener.onConnected(this, work_thread_index, conn);
 	}
@@ -381,11 +362,6 @@ void TcpServer::_on_socket_message(int32_t work_thread_index, ConnectionPtr conn
 //-------------------------------------------------------------------------------------
 void TcpServer::_on_socket_close(int32_t work_thread_index, ConnectionPtr conn)
 {
-	{
-		sys_api::auto_mutex auto_locker(this->m_connection_map_locker);
-		m_connection_map.erase(conn->get_id());
-	}
-
 	if (m_listener.onClose) {
 		m_listener.onClose(this, work_thread_index, conn);
 	}
