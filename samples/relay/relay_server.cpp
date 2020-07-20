@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
 #include <cy_network.h>
@@ -303,7 +303,7 @@ private:
 			//set tcp nodelay
 			socket_api::set_nodelay(conn->get_socket(), true);
 
-			int32_t id = (int32_t)(intptr_t)(client->get_callback_param());
+			int32_t id = (int32_t)(intptr_t)(client->get_param());
 			auto it = m_relaySessionMap.find(id);
 			assert(it != m_relaySessionMap.end());
 			if (it == m_relaySessionMap.end()) {
@@ -315,7 +315,7 @@ private:
 			CY_LOG(L_TRACE, "[%d]Connect to UP success(%s:%d)", id, conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
 		}else {
 			//send close session msg to down
-			int32_t id = (int32_t)(intptr_t)(client->get_callback_param());
+			int32_t id = (int32_t)(intptr_t)(client->get_param());
 			auto it = m_relaySessionMap.find(id);
 			if (it == m_relaySessionMap.end()) {
 				return 0;
@@ -345,7 +345,7 @@ private:
 	{
 		if (m_downState != kHandshaked) return;
 
-		int32_t id = (int32_t)(intptr_t)(client->get_callback_param());
+		int32_t id = (int32_t)(intptr_t)(client->get_param());
 		auto it = m_relaySessionMap.find(id);
 		assert(it != m_relaySessionMap.end());
 		if (it == m_relaySessionMap.end()) return;
@@ -381,7 +381,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onServerClose(TcpClientPtr client)
 	{
-		int32_t id = (int32_t)(intptr_t)(client->get_callback_param());
+		int32_t id = (int32_t)(intptr_t)(client->get_param());
 		auto it = m_relaySessionMap.find(id);
 		assert(it != m_relaySessionMap.end());
 		if (it == m_relaySessionMap.end()) return;

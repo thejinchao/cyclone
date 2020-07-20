@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_event.h>
@@ -16,8 +16,9 @@ namespace cyclone
 		id = Looper::INVALID_EVENT_ID; \
 	}
 //-------------------------------------------------------------------------------------
-TcpClient::TcpClient(Looper* looper, void* param)
-	: m_socket(INVALID_SOCKET)
+TcpClient::TcpClient(Looper* looper, void* param, int id)
+	: m_id(id)
+	, m_socket(INVALID_SOCKET)
 	, m_socket_event_id(Looper::INVALID_EVENT_ID)
 	, m_retry_timer_id(Looper::INVALID_EVENT_ID)
 	, m_looper(looper)
@@ -114,7 +115,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		RELEASE_EVENT(m_looper, m_socket_event_id);
 
 		//established the connection
-		m_connection = std::make_shared<Connection>(0, m_socket, m_looper, this);
+		m_connection = std::make_shared<Connection>(m_id, m_socket, m_looper, this);
 
 		//bind callback functions
 		if (m_listener.onMessage) {
@@ -125,7 +126,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 
 		if(m_listener.onClose) {
 			m_connection->setOnCloseFunction([this](ConnectionPtr conn) {
-				m_listener.onClose(shared_from_this());
+				m_listener.onClose(shared_from_this(), conn);
 			});
 		}
 

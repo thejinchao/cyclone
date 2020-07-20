@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_NETWORK_TCP_CLIENT_H_
@@ -19,7 +19,7 @@ class TcpClient : public std::enable_shared_from_this<TcpClient>, noncopyable
 public:
 	typedef std::function<uint32_t(TcpClientPtr client, ConnectionPtr conn, bool success)> ConnectedCallback;
 	typedef std::function<void(TcpClientPtr client, ConnectionPtr conn)> MessageCallback;
-	typedef std::function<void(TcpClientPtr client)> CloseCallback;
+	typedef std::function<void(TcpClientPtr client, ConnectionPtr conn)> CloseCallback;
 
 	struct Listener {
 		ConnectedCallback onConnected;
@@ -38,11 +38,12 @@ public:
 	/// send message(thread safe after connected, NOT thread safe when connecting)
 	void send(const char* buf, size_t len);
 	/// get callback param(thread safe)
-	const void* get_callback_param(void) const { return m_param; }
+	const void* get_param(void) const { return m_param; }
 	/// get current connection state(thread safe);
 	Connection::State get_connection_state(void) const;
     
 private:
+	int m_id;
 	socket_t m_socket;
 	Looper::event_id_t m_socket_event_id;
 	Looper::event_id_t m_retry_timer_id;
@@ -64,7 +65,7 @@ private:
 	void _abort_connect(uint32_t retry_sleep_ms);
 
 public:
-	TcpClient(Looper* looper, void* param);
+	TcpClient(Looper* looper, void* param, int id=0);
 	virtual ~TcpClient();
 };
 
