@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_EVENT_WORK_THREAD_H_
@@ -22,6 +22,9 @@ public:
 
 	//// run thread
 	void start(const char* name);
+
+	//// is work thread running?
+	bool is_running(void) const { return m_thread != nullptr; }
 
 	//// set callback function
 	void setOnStartFunction(StartCallback func) { m_onStart = func; }
