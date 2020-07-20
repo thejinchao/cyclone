@@ -90,8 +90,6 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 	assert(message);
 	assert(m_server);
 
-	const TcpServer::Listener& server_listener = m_server->m_listener;
-
 	uint16_t msg_id = message->get_packet_id();
 	if (msg_id == NewConnectionCmd::ID)
 	{
@@ -103,25 +101,17 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		ConnectionPtr conn = std::make_shared<Connection>(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
 		
 		//bind onMessage function
-		if (server_listener.onMessage) {
-			conn->setOnMessageFunction([this](ConnectionPtr connection) {
-				m_server->m_listener.onMessage(m_server, get_index(), connection);
-			});
-		}
+		conn->setOnMessageFunction([this](ConnectionPtr connection) {
+			m_server->_on_socket_message(this->get_index(), connection);
+		});
 
 		//bind onClose function
 		conn->setOnCloseFunction([this](ConnectionPtr connection) {
-			if(m_server->m_listener.onClose)
-				m_server->m_listener.onClose(m_server, get_index(), connection);
-			//shutdown this connection next tick
-			m_server->shutdown_connection(connection);
+			m_server->_on_socket_close(this->get_index(), connection);
 		});
-		
 
 		//notify server listener 
-		if (server_listener.onConnected) {
-			server_listener.onConnected(m_server, get_index(), conn);
-		}
+		m_server->_on_socket_connected(get_index(), conn);
 		
 		m_connections.insert(std::make_pair(conn->get_id(), conn));
 	}
@@ -192,8 +182,8 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 	else
 	{
 		//extra message
-		if (server_listener.onWorkThreadCommand) {
-			server_listener.onWorkThreadCommand(m_server, get_index(), message);
+		if (m_server->m_listener.onWorkThreadCommand) {
+			m_server->m_listener.onWorkThreadCommand(m_server, get_index(), message);
 		}
 	}
 }

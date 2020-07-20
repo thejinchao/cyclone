@@ -59,8 +59,8 @@ public:
 	void send_work_message(int32_t work_thread_index, const Packet* message);
 	void send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts);
 
-	/// get connection (NOT thread safe, MUST call in the work thread)
-	ConnectionPtr get_connection(int32_t work_thread_index, int32_t conn_id);
+	/// get connection (thread safe)
+	ConnectionPtr find_connection(int32_t conn_id);
 
 	/// get work thread counts
 	int32_t get_work_thread_counts(void) const { return m_work_thread_counts; }
@@ -79,6 +79,7 @@ private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
 	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
+	typedef std::unordered_map<int32_t, ConnectionPtr> ConnectionPtrMap;
 
 	void* m_param;
 
@@ -101,6 +102,9 @@ private:
 	std::string	m_name;
 
 	DebugInterface*	m_debuger;
+
+	ConnectionPtrMap m_connection_map;
+	sys_api::mutex_t m_connection_map_locker;
 
 private:
 	//accept thread command
@@ -130,6 +134,14 @@ private:
 	/// on acception callback function
 	void _on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
+private:
+	// called by server work thread only
+
+	void _on_socket_connected(int32_t work_thread_index, ConnectionPtr conn);
+	void _on_socket_message(int32_t work_thread_index, ConnectionPtr conn);
+	void _on_socket_close(int32_t work_thread_index, ConnectionPtr conn);
+
+	friend class ServerWorkThread;
 public:
 	TcpServer(const char* name, DebugInterface* debuger, void* param = nullptr);
 	~TcpServer();
