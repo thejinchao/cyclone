@@ -12,18 +12,27 @@ namespace cyclone
 {
 
 //pre-define
+class ServerMasterThread;
 class ServerWorkThread;
 
 class TcpServer : noncopyable
 {
 public:
+	typedef std::function<void(TcpServer* server, Looper* looper)> MasterThreadStartCallback;
+	typedef std::function<void(TcpServer* server, Packet* cmd)> MasterThreadCommandCallback;
+
 	typedef std::function<void(TcpServer* server, int32_t thread_index, Looper* looper)> WorkThreadStartCallback;
 	typedef std::function<void(TcpServer* server, int32_t thread_index, Packet* cmd)> WorkThreadCommandCallback;
+
 	typedef std::function<void(TcpServer* server, int32_t thread_index, ConnectionPtr conn)> EventCallback;
 
 	struct Listener {
+		MasterThreadStartCallback onMasterThreadStart;
+		MasterThreadCommandCallback onMasterThreadCommand;
+
 		WorkThreadStartCallback onWorkThreadStart;
 		WorkThreadCommandCallback onWorkThreadCommand;
+
 		EventCallback onConnected;
 		EventCallback onMessage;
 		EventCallback onClose;
@@ -35,11 +44,11 @@ public:
 	// NOT thread safe, and this function must be called before start the server
 	bool bind(const Address& bind_addr, bool enable_reuse_port);
 
-	/// start the server(start one accept thread and n workthreads)
+	/// start the server(start one accept thread and n work threads)
 	/// (thread safe, but you wouldn't want call it again...)
 	bool start(int32_t work_thread_counts);
 
-	/// wait server to termeinate(thread safe)
+	/// wait server to terminate(thread safe)
 	void join(void);
 
 	/// stop the server gracefully 
@@ -55,15 +64,16 @@ public:
 	/// stop listen binded port(thread safe, after start the server)
 	void stop_listen(size_t index);
 
+	/// send message to master thread(thread safe)
+	void send_master_message(uint16_t id, uint16_t size, const char* message);
+	void send_master_message(const Packet* message);
+
 	/// send work message to one of work thread(thread safe)
 	void send_work_message(int32_t work_thread_index, const Packet* message);
 	void send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts);
 
-	/// get connection (thread safe)
-	ConnectionPtr find_connection(int32_t conn_id);
-
 	/// get work thread counts
-	int32_t get_work_thread_counts(void) const { return m_work_thread_counts; }
+	int32_t get_work_thread_counts(void) const { return m_workthread_counts; }
 
 	int32_t get_next_connection_id(void) {
 		return m_next_connection_id++;
@@ -75,23 +85,24 @@ public:
 	/// get custom param
 	void* get_param(void) const { return m_param; }
 
+	/// get name
+	const std::string& get_name(void) const { return m_name; }
+
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
-	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
-	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
 
+	/// custom param
 	void* m_param;
 
-	SocketVector	m_acceptor_sockets;
-	WorkThread		m_accept_thread;
+	/// master thread
+	ServerMasterThread* m_master_thread;
 
-	ServerWorkThreadArray	m_work_thread_pool;
-	int32_t			m_work_thread_counts;
-	atomic_int32_t	m_next_work;
+	/// work thread pool
+	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
+	ServerWorkThreadArray m_work_thread_pool;
 
-	int32_t _get_next_work_thread(void) { 
-		return (m_next_work++) % m_work_thread_counts;
-	}
+	int32_t			m_workthread_counts;
+	atomic_int32_t	m_next_workthread_id;
 
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
@@ -101,34 +112,12 @@ private:
 	std::string	m_name;
 
 	DebugInterface*	m_debuger;
+
 private:
-	//accept thread command
-	enum { kShutdownCmdID=1, kDebugCmdID, kStopListenCmdID };
-	struct ShutdownCmd
-	{
-		enum { ID = kShutdownCmdID };
-	};
+	//called by master thread
+	void _on_accept_socket(socket_t fd);
 
-	struct DebugCmd
-	{
-		enum { ID = kDebugCmdID };
-	};
-
-	struct StopListenCmd
-	{
-		enum { ID = kStopListenCmdID };
-		size_t index;
-	};
-
-	/// accept thread function start
-	bool _on_accept_start(void);
-
-	/// accept thread message
-	void _on_accept_message(Packet*);
-
-	/// on acception callback function
-	void _on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event);
-
+	friend class ServerMasterThread;
 private:
 	// called by server work thread only
 	void _on_socket_connected(int32_t work_thread_index, ConnectionPtr conn);
