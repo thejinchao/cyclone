@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 
@@ -96,7 +96,7 @@ public:
 	uint32_t checksum(size_t off, size_t count) const;
 
 	//// move all data to a flat memory block and return point
-	const uint8_t* normalize(void);
+	uint8_t* normalize(void);
 
 public:
 	RingBuf(size_t capacity = kDefaultCapacity);

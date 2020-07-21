@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -362,7 +362,7 @@ uint32_t RingBuf::checksum(size_t off, size_t count) const
 }
 
 //-------------------------------------------------------------------------------------
-const uint8_t* RingBuf::normalize(void)
+uint8_t* RingBuf::normalize(void)
 {
 	if (empty()) reset();
 	if (m_write >= m_read) return m_buf + m_read;
