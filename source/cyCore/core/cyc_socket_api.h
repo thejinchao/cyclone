@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_CORE_SOCKET_API_H_
@@ -92,6 +92,9 @@ int get_lasterror(void);
 
 //// is lasterror  WOULDBLOCK
 bool is_lasterror_WOULDBLOCK(void);
+
+//// tests if the remote address is connectable(timeout : max time for wait, milli second, -1 means block mode)
+bool check_connect(const struct sockaddr_in& addr, int timeout_ms);
 
 }
 }

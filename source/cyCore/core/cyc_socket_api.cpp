@@ -436,5 +436,49 @@ bool is_lasterror_WOULDBLOCK(void)
 
 }
 
+//-------------------------------------------------------------------------------------
+bool check_connect(const struct sockaddr_in& addr, int timeout_ms)
+{
+#ifdef CY_SYS_WINDOWS
+	AUTO_INIT_WIN_SOCKET();
+#endif
+
+	// create socket
+	socket_t s = create_socket();
+	if (s == INVALID_SOCKET) return false;
+
+	// set to non block mode
+	if (!set_nonblock(s, true)) return false;
+
+	// begin connect...
+	if (!connect(s, addr)) {
+		close_socket(s);
+		return false;
+	}
+
+	// set to block mode
+	if (!set_nonblock(s, false)) {
+		close_socket(s);
+		return false;
+	}
+
+	// wait connect result
+	fd_set set_write, set_err;
+	FD_ZERO(&set_write);
+	FD_SET(s, &set_write);
+
+	FD_ZERO(&set_err);
+	FD_SET(s, &set_err);
+
+	// check if the socket is ready
+	timeval time_out = { 0, timeout_ms * 1000};
+	::select(0, NULL, &set_write, &set_err, timeout_ms<0 ? nullptr : &time_out);
+
+	bool connected = FD_ISSET(s, &set_write);
+	close_socket(s);
+
+	return connected;
+}
+
 }
 }
