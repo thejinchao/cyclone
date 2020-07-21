@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -322,28 +322,40 @@ socket_t accept(socket_t s, struct sockaddr_in* addr)
 //-------------------------------------------------------------------------------------
 bool getsockname(socket_t s, struct sockaddr_in& addr)
 {
-	socklen_t addrlen = static_cast<socklen_t>(sizeof addr);
-	memset(&addr, 0, sizeof addr);
+	/*
+		https://docs.microsoft.com/zh-cn/windows/win32/api/mswsock/nf-mswsock-acceptex?redirectedfrom=MSDN
+		The buffer size for the local and remote address must be 16 bytes more than the size of the sockaddr structure for
+		the transport protocol in use because the addresses are written in an internal format.
+		For example, the size of a sockaddr_in (the address structure for TCP/IP) is 16 bytes.
+		Therefore, a buffer size of at least 32 bytes must be specified for the local and remote addresses.
+	*/
+	const socklen_t ADDR_BUF_SIZE_NEEDED = sizeof(sockaddr_in) + 64;
+	char addr_buf[ADDR_BUF_SIZE_NEEDED] = { 0 };
+	socklen_t addr_buf_size = ADDR_BUF_SIZE_NEEDED;
 
-	if (SOCKET_ERROR == ::getsockname(s, (struct sockaddr*)(&addr), &addrlen))
+	if (SOCKET_ERROR == ::getsockname(s, (struct sockaddr*)addr_buf, &addr_buf_size))
 	{
 		CY_LOG(L_FATAL, "socket_api::getsockname, err=%d", get_lasterror());
 		return false;
 	}
+	memcpy(&addr, addr_buf, sizeof(sockaddr_in));
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool getpeername(socket_t s, struct sockaddr_in& addr)
 {
-	socklen_t addrlen = static_cast<socklen_t>(sizeof addr);
-	memset(&addr, 0, sizeof addr);
+	const socklen_t ADDR_BUF_SIZE_NEEDED = sizeof(sockaddr_in) + 64;
+	char addr_buf[ADDR_BUF_SIZE_NEEDED] = { 0 };
+	socklen_t addr_buf_size = ADDR_BUF_SIZE_NEEDED;
 
-	if (SOCKET_ERROR == ::getpeername(s, (struct sockaddr*)(&addr), &addrlen) )
+	if (SOCKET_ERROR == ::getpeername(s, (struct sockaddr*)addr_buf, &addr_buf_size) )
 	{
 		CY_LOG(L_FATAL, "socket_api::getpeername, err=%d", get_lasterror());
 		return false;
 	}
+
+	memcpy(&addr, addr_buf, sizeof(sockaddr_in));
 	return true;
 }
 
