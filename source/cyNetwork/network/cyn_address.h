@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_NETWORK_ADDRESS_H_
@@ -39,6 +39,17 @@ public:
 
 	Address(const Address& other);
 	Address();
+
+public:
+	bool operator==(Address const & other) const
+	{
+		return (m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr) && (m_address.sin_port == other.m_address.sin_port);
+	}
+
+	bool operator<(Address const & other) const
+	{
+		return (m_address.sin_addr.s_addr < other.m_address.sin_addr.s_addr) || (m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr && m_address.sin_port < other.m_address.sin_port);
+	}
 
 private:
 	struct sockaddr_in m_address;
