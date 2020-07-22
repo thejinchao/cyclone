@@ -29,6 +29,8 @@ TcpServer::TcpServer(const char* name, DebugInterface* debuger, void* param)
 	m_listener.onConnected = nullptr;
 	m_listener.onMessage = nullptr;
 	m_listener.onClose = nullptr;
+
+	m_master_thread = new ServerMasterThread(this);
 }
 
 //-------------------------------------------------------------------------------------
@@ -48,11 +50,6 @@ bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 	//is running already?
 	if (m_running > 0) return false;
 
-	if (m_master_thread == nullptr)
-	{
-		m_master_thread = new ServerMasterThread(this);
-	}
-
 	return m_master_thread->bind_socket(bind_addr, enable_reuse_port);
 }
 
@@ -69,11 +66,6 @@ bool TcpServer::start(int32_t work_thread_counts)
 	//is running already?
 	if (m_running.exchange(1) > 0) return false;
 
-	//is master thread ready?
-	if (!m_master_thread || m_master_thread->get_bind_socket_size() == 0) {
-		CY_LOG(L_ERROR, "at least listen one port!");
-		return false;
-	}
 	//start master thread
 	if (!m_master_thread->start())
 	{
