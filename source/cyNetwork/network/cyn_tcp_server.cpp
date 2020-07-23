@@ -19,7 +19,7 @@ TcpServer::TcpServer(const char* name, DebugInterface* debuger, void* param)
 	, m_next_workthread_id(0)
 	, m_running(0)
 	, m_shutdown_ing(0)
-	, m_next_connection_id(0)
+	, m_next_connection_id(kStartConnectionID)  //start from 1
 	, m_name(name ? name : "server")
 	, m_debuger(debuger)
 {

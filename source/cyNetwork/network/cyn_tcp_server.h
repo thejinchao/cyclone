@@ -107,6 +107,7 @@ private:
 	atomic_int32_t m_running;
 	atomic_int32_t m_shutdown_ing;
 
+	enum { kStartConnectionID = 1 };
 	atomic_int32_t m_next_connection_id;
 
 	std::string	m_name;
