@@ -10,13 +10,14 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(int32_t id, socket_t sfd, Looper* looper, void* param)
+Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	: m_id(id)
 	, m_socket(sfd)
 	, m_state(kConnected)
 	, m_looper(looper)
 	, m_event_id(Looper::INVALID_EVENT_ID)
-	, m_param(param)
+	, m_owner(owner)
+	, m_param(nullptr)
 	, m_readBuf(kDefaultReadBufSize)
 	, m_writeBuf(kDefaultWriteBufSize)
 	, m_writeBufLock(nullptr)
@@ -290,6 +291,12 @@ void Connection::set_name(const char* name)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
 	m_name = name;
+}
+
+//-------------------------------------------------------------------------------------
+void Connection::set_param(void* param)
+{
+	m_param = param;
 }
 
 //-------------------------------------------------------------------------------------

@@ -17,7 +17,11 @@ class Connection : public std::enable_shared_from_this<Connection>, noncopyable
 {
 public:
 	typedef std::function<void(ConnectionPtr conn)> EventCallback;
-
+	class Owner {
+	public:
+		enum OWNER_TYPE { kServer=0, kClient };
+		virtual OWNER_TYPE get_connection_owner_type(void) const = 0;
+	};
 public:
 	//connection state(kConnecting should not appear in Connection)
 	//                                                                 shutdown()
@@ -53,10 +57,14 @@ public:
 	void set_name(const char* name);
 	const char* get_name(void) const { return m_name.c_str(); }
 
-	/// get param
+	/// get owner
+	Owner* get_owner(void) { return m_owner; }
+
+	/// set/get param(NOT thread safe)
+	void set_param(void* param);
 	void* get_param(void) { return m_param; }
 
-	///set callbackfunction
+	///set callback function
 	void setOnMessageFunction(EventCallback callback) { m_onMessage = callback; }
 	void setOnCloseFunction(EventCallback callback) { m_onClose = callback; }
 
@@ -74,6 +82,7 @@ private:
 	Address m_peer_addr;
 	Looper* m_looper;
 	Looper::event_id_t m_event_id;
+	Owner* m_owner;
 	void* m_param;
 
 	enum { kDefaultReadBufSize=1024, kDefaultWriteBufSize=1024 };
@@ -115,7 +124,7 @@ private:
 	void _del_debug_value(void);
 
 public:
-	Connection(int32_t id, socket_t sfd, Looper* looper, void* param);
+	Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner);
 	~Connection();
 };
 

@@ -170,7 +170,7 @@ void TcpServer::join(void)
 //-------------------------------------------------------------------------------------
 void TcpServer::shutdown_connection(ConnectionPtr conn)
 {
-	ServerWorkThread* work = (ServerWorkThread*)(conn->get_param());
+	ServerWorkThread* work = (ServerWorkThread*)(conn->get_owner());
 
 	ServerWorkThread::CloseConnectionCmd closeConnectionCmd;
 	closeConnectionCmd.conn_id = conn->get_id();

@@ -5,16 +5,16 @@ Copyright(C) thecodeway.com
 #define _CYCLONE_NETWORK_TCP_CLIENT_H_
 
 #include <cy_core.h>
+#include "cyn_connection.h"
 
 namespace cyclone
 {
 
 //pre-define 
-class Connection;
 class TcpClient;
 typedef std::shared_ptr<TcpClient> TcpClientPtr;
     
-class TcpClient : public std::enable_shared_from_this<TcpClient>, noncopyable
+class TcpClient : public std::enable_shared_from_this<TcpClient>, noncopyable, public Connection::Owner
 {
 public:
 	typedef std::function<uint32_t(TcpClientPtr client, ConnectionPtr conn, bool success)> ConnectedCallback;
@@ -41,7 +41,9 @@ public:
 	const void* get_param(void) const { return m_param; }
 	/// get current connection state(thread safe);
 	Connection::State get_connection_state(void) const;
-    
+	/// Connection Owner type
+	virtual OWNER_TYPE get_connection_owner_type(void) const { return kClient; }
+
 private:
 	int m_id;
 	socket_t m_socket;

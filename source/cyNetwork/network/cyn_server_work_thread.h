@@ -4,10 +4,12 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 #define _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 
+#include "cyn_connection.h"
+
 namespace cyclone
 {
 
-class ServerWorkThread : noncopyable
+class ServerWorkThread : noncopyable, public Connection::Owner
 {
 public:
 	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID, kDebugCmdID };
@@ -48,6 +50,8 @@ public:
 	void join(void);
 	//// get connection(NOT thread safe, MUST call in work thread)
 	ConnectionPtr get_connection(int32_t connection_id);
+	/// Connection Owner type
+	virtual OWNER_TYPE get_connection_owner_type(void) const { return kServer; }
 
 private:
 	const int32_t	m_index;
