@@ -329,7 +329,7 @@ bool getsockname(socket_t s, struct sockaddr_in& addr)
 		For example, the size of a sockaddr_in (the address structure for TCP/IP) is 16 bytes.
 		Therefore, a buffer size of at least 32 bytes must be specified for the local and remote addresses.
 	*/
-	const socklen_t ADDR_BUF_SIZE_NEEDED = sizeof(sockaddr_in) + 64;
+	const socklen_t ADDR_BUF_SIZE_NEEDED = static_cast<socklen_t>(sizeof(sockaddr_in) + 64);
 	char addr_buf[ADDR_BUF_SIZE_NEEDED] = { 0 };
 	socklen_t addr_buf_size = ADDR_BUF_SIZE_NEEDED;
 
@@ -345,7 +345,7 @@ bool getsockname(socket_t s, struct sockaddr_in& addr)
 //-------------------------------------------------------------------------------------
 bool getpeername(socket_t s, struct sockaddr_in& addr)
 {
-	const socklen_t ADDR_BUF_SIZE_NEEDED = sizeof(sockaddr_in) + 64;
+	const socklen_t ADDR_BUF_SIZE_NEEDED = static_cast<socklen_t>(sizeof(sockaddr_in) + 64);
 	char addr_buf[ADDR_BUF_SIZE_NEEDED] = { 0 };
 	socklen_t addr_buf_size = ADDR_BUF_SIZE_NEEDED;
 
@@ -452,18 +452,14 @@ bool check_connect(const struct sockaddr_in& addr, int timeout_ms)
 
 	// begin connect...
 	if (!connect(s, addr)) {
-		close_socket(s);
-		return false;
-	}
-
-	// set to block mode
-	if (!set_nonblock(s, false)) {
-		close_socket(s);
+		//socket error
+		close_socket(s); 
 		return false;
 	}
 
 	// wait connect result
 	fd_set set_write, set_err;
+
 	FD_ZERO(&set_write);
 	FD_SET(s, &set_write);
 
@@ -471,13 +467,37 @@ bool check_connect(const struct sockaddr_in& addr, int timeout_ms)
 	FD_SET(s, &set_err);
 
 	// check if the socket is ready
-	timeval time_out = { 0, timeout_ms * 1000};
-	::select(0, NULL, &set_write, &set_err, timeout_ms<0 ? nullptr : &time_out);
+	timeval time_out = { timeout_ms/1000, (timeout_ms%1000) * 1000};
+	int ret = ::select(
+#ifdef CY_SYS_WINDOWS
+		0, 
+#else
+		s+1,
+#endif
+		nullptr, &set_write, &set_err, timeout_ms<0 ? nullptr : &time_out);
 
-	bool connected = FD_ISSET(s, &set_write);
+	if (ret <= 0) {
+		//time out or socket error
+		close_socket(s);
+		return false;
+	}
+
+	if (!FD_ISSET(s, &set_write)) {
+		//socket not ready
+		close_socket(s);
+		return false;
+	}
+
+	int err = get_socket_error(s);
+	if (err != 0) {
+		//socket error
+		close_socket(s);
+		return false;
+	}
+
+	//OK!
 	close_socket(s);
-
-	return connected;
+	return true;
 }
 
 }
