@@ -83,6 +83,7 @@ bool TcpClient::connect(const Address& addr)
 		return false;
 	}
 
+	CY_LOG(L_DEBUG, "begin connect to %s:%d", addr.get_ip(), addr.get_port());
 	return true;
 }
 
@@ -106,6 +107,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		if (m_listener.onConnected) {
 			retry_sleep_ms = m_listener.onConnected(shared_from_this(), nullptr, false);
 		}
+		CY_LOG(L_DEBUG, "connect to %s:%d failed! ", m_serverAddr.get_ip(), m_serverAddr.get_port());
 		_abort_connect(retry_sleep_ms);
 	}
 	else {
@@ -116,6 +118,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 
 		//established the connection
 		m_connection = std::make_shared<Connection>(m_id, m_socket, m_looper, this);
+		CY_LOG(L_DEBUG, "connect to %s:%d success", m_serverAddr.get_ip(), m_serverAddr.get_port());
 
 		//bind callback functions
 		if (m_listener.onMessage) {
@@ -126,6 +129,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 
 		if(m_listener.onClose) {
 			m_connection->setOnCloseFunction([this](ConnectionPtr conn) {
+				CY_LOG(L_DEBUG, "disconnect from %s:%d", m_serverAddr.get_ip(), m_serverAddr.get_port());
 				m_listener.onClose(shared_from_this(), conn);
 			});
 		}
@@ -159,6 +163,7 @@ void TcpClient::_abort_connect(uint32_t retry_sleep_ms)
 		//retry connection? create retry the timer
 		m_retry_timer_id = m_looper->register_timer_event(retry_sleep_ms, this,
 			std::bind(&TcpClient::_on_retry_connect_timer, this, std::placeholders::_1));
+		CY_LOG(L_DEBUG, "try connect to %s:%d after %s mill seconds", m_serverAddr.get_ip(), m_serverAddr.get_port(), retry_sleep_ms);
 	}
 }
 

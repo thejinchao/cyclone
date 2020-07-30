@@ -99,7 +99,8 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 
 		//create tcp connection 
 		ConnectionPtr conn = std::make_shared<Connection>(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
-		
+		CY_LOG(L_DEBUG, "receive new connection, id=%d, peer_addr=%s:%d", conn->get_id(), conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
+
 		//bind onMessage function
 		conn->setOnMessageFunction([this](ConnectionPtr connection) {
 			m_server->_on_socket_message(this->get_index(), connection);
@@ -127,6 +128,7 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		ConnectionPtr conn = it->second;
 		Connection::State curr_state = conn->get_state();
 
+		CY_LOG(L_DEBUG, "receive close connection cmd, id=%d, state=%d", conn->get_id(), conn->get_state());
 		if (curr_state == Connection::kConnected)
 		{
 			//shutdown,and wait 
@@ -152,6 +154,7 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 	}
 	else if (msg_id == ShutdownCmd::ID)
 	{
+		CY_LOG(L_DEBUG, "receive shutdown cmd");
 		//all connection is disconnect, just quit the loop
 		if (m_connections.empty()) {
 			//push loop request command
