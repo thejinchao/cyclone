@@ -40,7 +40,7 @@ struct DiskLogFile
 		socket_api::global_init();
 #endif
 		//log file path
-		std::strncpy(file_path, DEFAULT_LOG_PATH, _MAX_PATH);
+		strncpy(file_path, DEFAULT_LOG_PATH, _MAX_PATH);
 
 		//get process name
 		char process_name[256] = { 0 };
@@ -102,7 +102,7 @@ bool setLogFileName(const char* pathName, const char* fileName)
 	DiskLogFile& thefile = _getDiskLog();
 	sys_api::auto_mutex guard(thefile.lock);
 
-	std::strncpy(thefile.file_path, pathName, _MAX_PATH);
+	strncpy(thefile.file_path, pathName, _MAX_PATH);
 	std::snprintf(thefile.file_path_name, _MAX_PATH, "%s%s%s", pathName, (withSeperator?"":"/"), fileName);
 	thefile.logpath_created = false;
 	return true;
@@ -145,7 +145,7 @@ void diskLog(LOG_LEVEL level, const char* message, ...)
 		if (0 == CreateDirectory(thefile.file_path, NULL))
 #else
 	if (!thefile.logpath_created && access(thefile.file_path, F_OK)!=0) {
-		if (mkdir(LOG_PATH, 0755) != 0) 
+		if (mkdir(thefile.file_path, 0755) != 0)
 #endif
 		{
 			//create log path failed!
