@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_EVENT_LOOPER_H_
@@ -20,9 +20,9 @@ public:
 
 	//the value of event_t
 	enum {
-		kNone = 0,
-		kRead	= 1,
-		kWrite	= 1<<1,
+		kNone = 0,    // 0000
+		kRead	= 1,  // 0001
+		kWrite	= 2,  // 0010
 	};
 
 	typedef std::function<void(event_id_t id, socket_t fd, event_t event, void* param)> event_callback;
