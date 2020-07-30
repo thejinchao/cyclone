@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_CORE_LOGGER_H_
@@ -26,10 +26,13 @@ enum LOG_LEVEL
 //----------------------
 
 //log to a disk file
-//filename = process_name.date-time24h.hostname.pid.log
+//default filename = process_name.date-time24h.hostname.pid.log
 // like "test.20150302-1736.server1.63581.log"
 // the time part is the time(LOCAL) of first log be written
 void diskLog(LOG_LEVEL level, const char* message, ...);
+
+//set current log filename
+bool setLogFileName(const char* pathName, const char* fileName);
 
 //get current log filename
 const char* getLogFileName(void);
