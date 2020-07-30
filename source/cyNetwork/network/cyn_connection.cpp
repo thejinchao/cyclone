@@ -30,6 +30,8 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	//set other socket option
 	socket_api::set_keep_alive(sfd, true);
 	socket_api::set_linger(sfd, false, 0);
+	//set socket no-delay
+	socket_api::set_nodelay(sfd, true);
 
 	//init write buf lock
 	m_writeBufLock = sys_api::mutex_create();
