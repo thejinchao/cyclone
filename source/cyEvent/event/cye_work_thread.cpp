@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -13,6 +13,7 @@ namespace cyclone
 WorkThread::WorkThread()
 	: m_thread(nullptr)
 	, m_looper(nullptr)
+	, m_is_queue_empty(true)
 	, m_onStart(nullptr)
 	, m_onMessage(nullptr)
 {
@@ -78,21 +79,22 @@ void WorkThread::_work_thread(void* param)
 void WorkThread::_on_message(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	for (;;) {
-		int32_t counts;
-		if (m_pipe.read((char*)&counts, sizeof(counts)) <= 0) break;
-		assert(counts > 0);
 
-		for (int32_t i = 0; i < counts; i++) {
+	//set empty flag first
+	m_is_queue_empty = true;
+
+	for (;;) {
+		int8_t dummy;
+		if (m_pipe.read((char*)&dummy, sizeof(dummy)) <= 0) break;
+
+		for (;;) {
 			Packet* packet = nullptr;
-			if (!m_message_queue.pop(packet)) {
-				assert(false && "WorkThread message queue error");
-				break;
-			}
+			if (!m_message_queue.pop(packet)) break;
 
 			//call listener
-			if (m_onMessage)
+			if (m_onMessage) {
 				m_onMessage(packet);
+			}
 
 			Packet::free_packet(packet);
 		}
@@ -106,9 +108,8 @@ void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
 	packet->build(MESSAGE_HEAD_SIZE, id, size, msg);
 
 	m_message_queue.push(packet);
-		
-	int32_t counts = 1;
-	m_pipe.write((const char*)&counts, sizeof(counts));
+
+	_wakeup();
 }
 
 //-------------------------------------------------------------------------------------
@@ -117,8 +118,7 @@ void WorkThread::send_message(const Packet* message)
 	Packet* packet = Packet::alloc_packet(message);
 	m_message_queue.push(packet);
 	
-	int32_t counts = 1;
-	m_pipe.write((const char*)&counts, sizeof(counts));
+	_wakeup();
 }
 
 //-------------------------------------------------------------------------------------
@@ -128,7 +128,8 @@ void WorkThread::send_message(const Packet** message, int32_t counts)
 		Packet* packet = Packet::alloc_packet(message[i]);
 		m_message_queue.push(packet);
 	}
-	m_pipe.write((const char*)&counts, sizeof(counts));
+
+	_wakeup();
 }
 
 //-------------------------------------------------------------------------------------
@@ -140,6 +141,14 @@ void WorkThread::join(void)
 	}
 }
 
+//-------------------------------------------------------------------------------------
+void WorkThread::_wakeup(void)
+{
+	if (atomic_compare_exchange(m_is_queue_empty, true, false)) {
+		int8_t dummy = 0;
+		m_pipe.write((const char*)&dummy, sizeof(dummy));
+	}
+}
 
 }
 

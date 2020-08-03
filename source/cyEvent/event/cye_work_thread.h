@@ -4,8 +4,6 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_EVENT_WORK_THREAD_H_
 #define _CYCLONE_EVENT_WORK_THREAD_H_
 
-#include "core/cyc_lf_queue.h"
-
 namespace cyclone
 {
 //pre-define
@@ -48,6 +46,7 @@ private:
 	std::string		m_name;
 	thread_t		m_thread;
 	Looper*			m_looper;
+	atomic_bool_t	m_is_queue_empty;
 	Pipe			m_pipe;
 
 	typedef LockFreeQueue<Packet*> MessageQueue;
@@ -69,6 +68,8 @@ private:
 	//// on work thread receive message
 	void _on_message(void);
 
+	/// wakeup the looper
+	void _wakeup(void);
 public:
 	WorkThread();
 	virtual ~WorkThread();
