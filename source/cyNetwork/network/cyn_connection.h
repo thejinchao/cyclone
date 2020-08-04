@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_NETWORK_CONNECTION_H_
@@ -63,6 +63,9 @@ public:
 	/// set/get param(NOT thread safe)
 	void set_param(void* param);
 	void* get_param(void) { return m_param; }
+
+	/// get looper
+	Looper* get_looper(void) const { return m_looper; }
 
 	///set callback function
 	void setOnMessageFunction(EventCallback callback) { m_onMessage = callback; }
