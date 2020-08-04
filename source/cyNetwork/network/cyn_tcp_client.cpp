@@ -163,7 +163,7 @@ void TcpClient::_abort_connect(uint32_t retry_sleep_ms)
 		//retry connection? create retry the timer
 		m_retry_timer_id = m_looper->register_timer_event(retry_sleep_ms, this,
 			std::bind(&TcpClient::_on_retry_connect_timer, this, std::placeholders::_1));
-		CY_LOG(L_DEBUG, "try connect to %s:%d after %s mill seconds", m_serverAddr.get_ip(), m_serverAddr.get_port(), retry_sleep_ms);
+		CY_LOG(L_DEBUG, "try connect to %s:%d after %d mill seconds", m_serverAddr.get_ip(), m_serverAddr.get_port(), retry_sleep_ms);
 	}
 }
 
