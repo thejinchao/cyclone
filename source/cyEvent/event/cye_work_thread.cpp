@@ -80,9 +80,6 @@ void WorkThread::_on_message(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	//set empty flag first
-	m_is_queue_empty = true;
-
 	for (;;) {
 		int8_t dummy;
 		if (m_pipe.read((char*)&dummy, sizeof(dummy)) <= 0) break;
@@ -99,6 +96,9 @@ void WorkThread::_on_message(void)
 			Packet::free_packet(packet);
 		}
 	}
+
+	//set empty flag
+	m_is_queue_empty = true;
 }
 
 //-------------------------------------------------------------------------------------
