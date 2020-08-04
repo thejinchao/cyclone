@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
 #include <SimpleOpt.h>
@@ -71,9 +71,6 @@ private:
 
 		//set next state
 		if (success) {
-			//set tcp nodelay
-			socket_api::set_nodelay(conn->get_socket(), true);
-
 			m_state = S5_CONNECTED;
 			CY_LOG(L_INFO, "tunnel[%d]: connect to \"%s:%d\" OK",
 				m_localConnection->get_id(), m_address.get_ip(), m_address.get_port());
@@ -200,9 +197,6 @@ private:
 		//create new socks5 tunnel
 		threadContext.add_new_tunnel(conn);
 		CY_LOG(L_INFO, "tunnel[%d]: new tunnel", conn->get_id());
-
-		//set tcp nodelay
-		socket_api::set_nodelay(conn->get_socket(), true);
 	}
 
 	//-------------------------------------------------------------------------------------
