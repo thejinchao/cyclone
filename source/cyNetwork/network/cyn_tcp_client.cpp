@@ -25,7 +25,7 @@ TcpClient::TcpClient(Looper* looper, void* param, int id)
 	, m_param(param)
 	, m_connection(nullptr)
 {
-	//looper muste be setted
+	//looper must be set
 	assert(looper);
 
 	m_connection_lock = sys_api::mutex_create();
