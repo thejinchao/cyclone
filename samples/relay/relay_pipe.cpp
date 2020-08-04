@@ -29,10 +29,6 @@ public:
         assert(port1->get_state()==Connection::kConnected);
         assert(port2->get_state()==Connection::kConnected);
         
-        //set tcp nodelay
-        socket_api::set_nodelay(m_port1->get_socket(), true);
-        socket_api::set_nodelay(m_port2->get_socket(), true);
-        
         //check cache
         forward1To2();
         forward2To1();
@@ -80,7 +76,7 @@ public:
 		server.bind(Address(m_port1=listen_port1, false), true);
 		server.bind(Address(m_port2=listen_port2, false), true);
 
-		if (!server.start(sys_api::get_cpu_counts())) return;
+		if (!server.start(1)) return;
 
 		server.join();
 	}
@@ -286,7 +282,7 @@ public:
         
         server.bind(Address(m_bindPort=bindPort, false), true);
         
-        if (!server.start(sys_api::get_cpu_counts())) return;
+        if (!server.start(1)) return;
         
         server.join();
     }
