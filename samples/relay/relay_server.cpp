@@ -74,7 +74,7 @@ public:
 
 		server.bind(Address(local_port, false), true);
 
-		if (!server.start(1)) return;
+		if (!server.start(sys_api::get_cpu_counts())) return;
 
 		server.join();
 	}

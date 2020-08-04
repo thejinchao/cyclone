@@ -80,7 +80,7 @@ public:
 		server.bind(Address(m_port1=listen_port1, false), true);
 		server.bind(Address(m_port2=listen_port2, false), true);
 
-		if (!server.start(1)) return;
+		if (!server.start(sys_api::get_cpu_counts())) return;
 
 		server.join();
 	}
@@ -286,7 +286,7 @@ public:
         
         server.bind(Address(m_bindPort=bindPort, false), true);
         
-        if (!server.start(1)) return;
+        if (!server.start(sys_api::get_cpu_counts())) return;
         
         server.join();
     }
