@@ -123,6 +123,34 @@ size_t RingBuf::copyto(RingBuf* dst, size_t count)
 }
 
 //-------------------------------------------------------------------------------------
+ssize_t RingBuf::search(size_t off, uint8_t data) const
+{
+	size_t bytes_used = size();
+	if (off > bytes_used || bytes_used<sizeof(data)) return -1;
+
+	size_t search_count = bytes_used - off;
+	size_t read_off = (m_read + off) % m_end;
+
+	size_t nread = 0;
+	while (nread != search_count) {
+		size_t n = MIN((size_t)(m_end - read_off), search_count - nread);
+		const uint8_t* p = (uint8_t*)memchr(m_buf + read_off, (int)data, n);
+		if (p != nullptr) {
+			size_t pos = p - m_buf;
+			return pos > m_read ? (pos - m_read) : (pos + m_end - m_read);
+		}
+
+		read_off += n;
+		nread += n;
+
+		// wrap 
+		if (read_off >= m_end) read_off = 0;
+	}
+
+	return -1;
+}
+
+//-------------------------------------------------------------------------------------
 size_t RingBuf::peek(size_t off, void* dst, size_t count) const
 {
 	size_t bytes_used = size();

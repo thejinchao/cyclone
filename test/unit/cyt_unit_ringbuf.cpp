@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
 #include <gtest/gtest.h>
@@ -430,6 +430,75 @@ TEST(RingBuf, Basic)
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity, TEST_WRAP_SIZE * 2);
 		EXPECT_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.normalize(), TEST_WRAP_SIZE * 3));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
+	}
+
+	//search
+	{
+		const size_t BUF1_SIZE = 32;
+		char temp_buffer1[BUF1_SIZE] = { 0 };
+
+		const size_t A_POS = 10;
+		temp_buffer1[A_POS] = 'A';
+
+		RingBuf rb1;
+		EXPECT_LT(rb1.search(0, 'A'), 0);
+
+		rb1.memcpy_into(temp_buffer1, BUF1_SIZE);
+		EXPECT_EQ(rb1.search(0, 'A'), A_POS);
+
+		for (size_t i = 0; i <= A_POS; i++) {
+			EXPECT_EQ(rb1.search(i, 'A'), A_POS);
+		}
+
+		for (size_t i = A_POS + 1; i <= rb1.capacity(); i++) {
+			EXPECT_LT(rb1.search(i, 'A'), 0);
+		}
+
+		const size_t DISCARD_SIZE = 3;
+		rb1.discard(DISCARD_SIZE);
+
+		for (size_t i = 0; i <= A_POS- DISCARD_SIZE; i++) {
+			EXPECT_EQ(rb1.search(i, 'A'), A_POS- DISCARD_SIZE);
+		}
+
+		for (size_t i = A_POS- DISCARD_SIZE + 1; i <= rb1.capacity(); i++) {
+			EXPECT_LT(rb1.search(i, 'A'), 0);
+		}
+	}
+
+	//make wrap condition and search
+	{
+		const size_t TEST_WRAP_SIZE = 32;
+		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
+
+		//zero memory
+		memset(buffer2, 0, buffer_size);
+
+		RingBuf rb1;
+		rb1.memcpy_into(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
+		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+
+		const size_t A_POS = 40;
+		const size_t B_POS = 80;
+		
+		buffer2[A_POS - TEST_WRAP_SIZE] = 'A';
+		buffer2[B_POS - TEST_WRAP_SIZE] = 'B';
+
+		rb1.memcpy_into(buffer2, TEST_WRAP_SIZE * 2);
+		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
+
+		for (size_t i = 0; i < rb1.capacity(); i++) {
+			if(i<=A_POS)
+				EXPECT_EQ(rb1.search(i, 'A'), A_POS);
+			else
+				EXPECT_LT(rb1.search(i, 'A'), 0);
+
+			if (i <= B_POS)
+				EXPECT_EQ(rb1.search(i, 'B'), B_POS);
+			else
+				EXPECT_LT(rb1.search(i, 'B'), 0);
+		}
+
 	}
 }
 

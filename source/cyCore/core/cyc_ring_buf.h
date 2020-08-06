@@ -73,7 +73,10 @@ public:
 	//// copy data to another ringbuf dst
 	size_t copyto(RingBuf* dst, size_t count);
 
-	//// copy n bytes from the ring bufffer into a contiguous memory, but 
+	//// search data(1 byte) and return the first position, return -1 means not find
+	ssize_t search(size_t off, uint8_t data) const;
+
+	//// copy n bytes from the ring buffer into a contiguous memory, but 
 	//// do not change current buf
 	size_t peek(size_t off, void* dst, size_t count) const;
 
@@ -90,7 +93,7 @@ public:
 	//// once, and may return a short count.
 	ssize_t write_socket(socket_t fd);
 
-	//// caculate the checksum(adler32) of data from off to off+len
+	//// calculate the checksum(adler32) of data from off to off+len
 	//// if off greater than size() or off+count greater than size() 
 	//// or len equ 0 return initial adler value (1)
 	uint32_t checksum(size_t off, size_t count) const;
