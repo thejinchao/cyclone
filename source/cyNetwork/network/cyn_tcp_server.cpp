@@ -66,17 +66,16 @@ bool TcpServer::start(int32_t work_thread_counts)
 	//is running already?
 	if (m_running.exchange(1) > 0) return false;
 
-	//start master thread
-	if (!m_master_thread->start())
-	{
-		return false;
-	}
-
 	//start work thread pool
 	m_workthread_counts = work_thread_counts;
 	for (int32_t i = 0; i < m_workthread_counts; i++) {
 		//run the thread
 		m_work_thread_pool.push_back(new ServerWorkThread(i, this, m_name.c_str(), m_debuger));
+	}
+
+	//start master thread
+	if (!m_master_thread->start()) {
+		return false;
 	}
 
 	//write debug variable
