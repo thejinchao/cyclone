@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
 #include <SimpleOpt.h>
@@ -108,7 +108,8 @@ int main(int argc, char* argv[])
 	server.m_listener.onClose = onPeerClose;
 	server.m_listener.onMessage = onPeerMessage;
 
-	server.bind(Address(server_port, false), true);
+	if (!server.bind(Address(server_port, false), true))
+		return 1;
 
 	if (!server.start(sys_api::get_cpu_counts()))
 		return 1;
