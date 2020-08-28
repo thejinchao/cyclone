@@ -447,7 +447,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	setLogThreshold(verbose_mode ? L_TRACE : L_DEBUG);
+	set_log_threshold(verbose_mode ? L_TRACE : L_DEBUG);
 
 	CY_LOG(L_DEBUG, "listen port %d", local_port);
 	CY_LOG(L_DEBUG, "up address %s:%d", up_ip.c_str(), up_port);

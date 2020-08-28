@@ -84,14 +84,14 @@ struct DiskLogFile
 };
 
 //-------------------------------------------------------------------------------------
-static DiskLogFile& _getDiskLog(void)
+static DiskLogFile& _get_disk_log(void)
 {
 	static DiskLogFile thefile;
 	return thefile;
 }
 
 //-------------------------------------------------------------------------------------
-bool setLogFileName(const char* pathName, const char* fileName)
+bool set_log_filename(const char* pathName, const char* fileName)
 {
 	if (pathName == nullptr || pathName[0] == 0) return false;
 	if (fileName == nullptr || fileName[0] == 0) return false;
@@ -99,7 +99,7 @@ bool setLogFileName(const char* pathName, const char* fileName)
 	char pathEnd = pathName[strlen(pathName) - 1];
 	bool withSeperator = (pathEnd == '/' || pathEnd == '\\');
 
-	DiskLogFile& thefile = _getDiskLog();
+	DiskLogFile& thefile = _get_disk_log();
 	sys_api::auto_mutex guard(thefile.lock);
 
 	strncpy(thefile.file_path, pathName, _MAX_PATH);
@@ -109,31 +109,31 @@ bool setLogFileName(const char* pathName, const char* fileName)
 }
 
 //-------------------------------------------------------------------------------------
-const char* getLogFileName(void)
+const char* get_log_filename(void)
 {
-	DiskLogFile& thefile = _getDiskLog();
+	DiskLogFile& thefile = _get_disk_log();
 	return thefile.file_path_name;
 }
 
 //-------------------------------------------------------------------------------------
-void setLogThreshold(LOG_LEVEL level)
+void set_log_threshold(LOG_LEVEL level)
 {
 	assert(level >= 0 && level <= L_MAXIMUM_LEVEL);
 	if (level < 0 || level > L_MAXIMUM_LEVEL)return;
 
-	DiskLogFile& thefile = _getDiskLog();
+	DiskLogFile& thefile = _get_disk_log();
 	sys_api::auto_mutex guard(thefile.lock);
 
 	thefile.level_threshold = level;
 }
 
 //-------------------------------------------------------------------------------------
-void diskLog(LOG_LEVEL level, const char* message, ...)
+void disk_log(LOG_LEVEL level, const char* message, ...)
 {
 	assert(level >= 0 && level < L_MAXIMUM_LEVEL);
 	if (level < 0 || level >= L_MAXIMUM_LEVEL)return;
 
-	DiskLogFile& thefile = _getDiskLog();
+	DiskLogFile& thefile = _get_disk_log();
 	sys_api::auto_mutex guard(thefile.lock);
 
 	//check the level

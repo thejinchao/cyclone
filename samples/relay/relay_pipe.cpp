@@ -473,7 +473,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	setLogThreshold(verbose_mode ? L_TRACE : L_DEBUG);
+	set_log_threshold(verbose_mode ? L_TRACE : L_DEBUG);
 
 	CY_LOG(L_INFO, "First Address[%s]: %s%s%d", (first_in?"IN":"OUT"), first_ip.c_str(), (first_in?"":":"), first_port);
 	CY_LOG(L_INFO, "Second Address[%s]: %s%s%d", (second_in?"IN":"OUT"), second_ip.c_str(), (second_in ? "" : ":"), second_port);
