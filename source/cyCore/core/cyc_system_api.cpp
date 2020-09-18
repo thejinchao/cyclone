@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -174,47 +174,98 @@ void thread_yield(void)
 }
 
 //-------------------------------------------------------------------------------------
-mutex_t mutex_create(void)
+struct mutex_data_s
 {
 #ifdef CY_SYS_WINDOWS
-	LPCRITICAL_SECTION cs = (LPCRITICAL_SECTION)CY_MALLOC(sizeof(CRITICAL_SECTION));
-	::InitializeCriticalSection(cs);
-	return cs;
+	HANDLE h;
 #else
-	pthread_mutex_t* pm = (pthread_mutex_t*)CY_MALLOC(sizeof(pthread_mutex_t));
-	::pthread_mutex_init(pm, 0);
-	return pm;
+	pthread_mutex_t h;
 #endif
+};
+
+//-------------------------------------------------------------------------------------
+mutex_t mutex_create(void)
+{
+	mutex_data_s* mutex = new mutex_data_s;
+
+#ifdef CY_SYS_WINDOWS
+	mutex->h = ::CreateMutexA(NULL, FALSE, nullptr);
+	if (mutex->h == NULL) {
+		delete mutex;
+		return nullptr;
+	}
+#else
+	pthread_mutex_init(&(mutex->h), 0);
+#endif
+	return mutex;
 }
 
 //-------------------------------------------------------------------------------------
 void mutex_destroy(mutex_t m)
 {
+	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+
 #ifdef CY_SYS_WINDOWS
-	::DeleteCriticalSection(m);
+	::CloseHandle(mutex->h);
+	mutex->h = NULL;
 #else
-	::pthread_mutex_destroy(m);
-	CY_FREE(m);
+	pthread_mutex_destroy(&(mutex->h));
 #endif
+	delete mutex;
 }
 
 //-------------------------------------------------------------------------------------
 void mutex_lock(mutex_t m)
 {
+	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+
 #ifdef CY_SYS_WINDOWS
-	::EnterCriticalSection(m);
+	::WaitForSingleObject(mutex->h, INFINITE);
 #else
-	::pthread_mutex_lock(m);
+	pthread_mutex_lock(&(mutex->h));
+#endif
+}
+
+//-------------------------------------------------------------------------------------
+bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
+{
+	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+
+#ifdef CY_SYS_WINDOWS
+	return WAIT_OBJECT_0 == ::WaitForSingleObject(mutex->h, wait_time_ms);
+#else
+	if (wait_time_ms <= 0)
+	{
+		return EOK == pthread_mutex_trylock(&(mutex->h));
+	}
+	else
+	{
+		struct timespec timestamp;
+		clock_gettime(CLOCK_REALTIME, &timestamp);
+		timestamp.tv_sec += wait_time_ms / 1000;
+		timestamp.tv_nsec += (wait_time_ms % 1000) * 1000 * 1000;
+
+		const int32_t kNanoSecondsPerSecond = 1000l * 1000l * 1000l;
+		if (timestamp.tv_nsec >= kNanoSecondsPerSecond)
+		{
+			timestamp.tv_nsec -= kNanoSecondsPerSecond;
+			++timestamp.tv_sec;
+		}
+
+		return EOK == pthread_mutex_timedlock(&(mutex->h), &timestamp);
+	}
 #endif
 }
 
 //-------------------------------------------------------------------------------------
 void mutex_unlock(mutex_t m)
 {
+	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+
 #ifdef CY_SYS_WINDOWS
-	::LeaveCriticalSection(m);
+	::ReleaseMutex(mutex->h);
 #else
-	::pthread_mutex_unlock(m);
+	pthread_mutex_unlock(&(mutex->h));
 #endif
 }
 

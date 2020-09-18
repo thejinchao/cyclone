@@ -61,11 +61,7 @@ void thread_yield(void);
 //----------------------
 // mutex functions
 //----------------------
-#ifdef CY_SYS_WINDOWS
-typedef LPCRITICAL_SECTION	mutex_t;
-#else
-typedef pthread_mutex_t* mutex_t;
-#endif
+typedef void* mutex_t;
 
 /// create a mutex
 mutex_t mutex_create(void);
@@ -73,8 +69,11 @@ mutex_t mutex_create(void);
 /// destroy a mutex
 void mutex_destroy(mutex_t m);
 
-/// lock mutex(wait other owner unlock)
+/// lock mutex(wait other owner unlock inifity time)
 void mutex_lock(mutex_t m);
+
+/// lock mutex, wait other owner unlock some time (milliseconds), return false mean timeout
+bool mutex_try_lock(mutex_t m, int32_t wait_time);
 
 /// unlock mutex
 void mutex_unlock(mutex_t m);
