@@ -1,6 +1,8 @@
 #include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
+#include <cy_crypt.h>
+
 #include <SimpleOpt.h>
 
 #include <iostream>
@@ -9,6 +11,7 @@ using namespace cyclone;
 using namespace std::placeholders;
 
 #define MAX_ECHO_LENGTH (255)
+#define PRESS_TEST_LENGTH (7*1024*1024)
 
 enum { OPT_HOST, OPT_PORT, OPT_HELP };
 
@@ -44,7 +47,7 @@ private:
 		Looper* looper = Looper::create_looper();
 
         m_client = std::make_shared<TcpClient>(looper, nullptr);
-		m_client->m_listener.onConnected = std::bind(&EchoClient::onConnected, this, _1, _3);
+		m_client->m_listener.onConnected = std::bind(&EchoClient::onConnected, this, _1, _2, _3);
 		m_client->m_listener.onMessage = std::bind(&EchoClient::onMessage, this, _2);
 		m_client->m_listener.onClose = std::bind(&EchoClient::onClose, this);
 
@@ -56,7 +59,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	uint32_t onConnected(TcpClientPtr client, bool success)
+	uint32_t onConnected(TcpClientPtr client, ConnectionPtr conn, bool success)
 	{
 		CY_LOG(L_DEBUG, "connect to %s:%d %s.",
 			client->get_server_address().get_ip(),
@@ -80,8 +83,37 @@ private:
 	{
 		RingBuf& buf = conn->get_input_buf();
 
-		char temp[MAX_ECHO_LENGTH +1] = { 0 };
-		buf.memcpy_out(temp, MAX_ECHO_LENGTH);
+		uint32_t len;
+		if (buf.size() < sizeof(uint32_t)) return;
+
+		buf.peek(0, (void*)&len, sizeof(len));
+
+		if (len > PRESS_TEST_LENGTH) {
+			CY_LOG(L_INFO, "got too long message %d", len);
+			exit(0);
+
+			return;
+		}
+
+		if (buf.size() < len + sizeof(uint32_t)) {
+			return;
+		}
+		buf.discard(sizeof(uint32_t));
+
+		if (len > MAX_ECHO_LENGTH)
+		{
+			uint8_t* pTempBuf = new uint8_t[len];
+			buf.memcpy_out(pTempBuf, len);
+
+			uint32_t adler_calc = adler32(INITIAL_ADLER, pTempBuf, len - sizeof(uint32_t));
+			uint32_t adler_recv = *((uint32_t*)(pTempBuf + len - sizeof(uint32_t)));
+			bool match = (adler_calc == adler_recv);
+			CY_LOG(L_INFO, "Receive pressure message adler=%08x, %s", adler_calc, match ? "OK" : "Failed");
+			return;
+		}
+
+		char temp[MAX_ECHO_LENGTH + 1] = { 0 };
+		buf.memcpy_out(temp, len);
 
 		CY_LOG(L_INFO, "%s", temp);
 	}
@@ -157,7 +189,10 @@ int main(int argc, char* argv[])
 	while (std::cin.getline(line, MAX_ECHO_LENGTH + 1))
 	{
 		if (line[0] == 0) continue;
-		echoClient.get_client()->send(line, strlen(line));
+
+		uint32_t len = (uint32_t)strlen(line);
+		echoClient.get_client()->send((const char*)&len, sizeof(len));
+		echoClient.get_client()->send(line, len);
 	}
 
 	return 0;

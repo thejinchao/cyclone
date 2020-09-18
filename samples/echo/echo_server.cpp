@@ -1,6 +1,8 @@
 ﻿#include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
+#include <cy_crypt.h>
+
 #include <SimpleOpt.h>
 
 #include <ctype.h>
@@ -8,6 +10,7 @@
 using namespace cyclone;
 
 #define MAX_ECHO_LENGTH (255)
+#define PRESS_TEST_LENGTH (7*1024*1024)
 
 enum { OPT_PORT, OPT_HELP };
 
@@ -36,8 +39,23 @@ void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 {
 	RingBuf& buf = conn->get_input_buf();
 
+	uint32_t len;
+	if (buf.size() < sizeof(uint32_t)) return;
+
+	buf.peek(0, (void*)&len, sizeof(len));
+	if (len > MAX_ECHO_LENGTH) {
+		server->shutdown_connection(conn);
+		return;
+	}
+
+	if (buf.size() < len + sizeof(uint32_t)) {
+		return;
+	}
+
+	buf.discard(sizeof(uint32_t));
+
 	char temp[MAX_ECHO_LENGTH + 1] = { 0 };
-	buf.memcpy_out(temp, MAX_ECHO_LENGTH);
+	buf.memcpy_out(temp, len);
 
 	CY_LOG(L_INFO, "[T=%d]receive:%s", thread_index, temp);
 
@@ -53,10 +71,33 @@ void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 		return;
 	}
 
-	size_t len = strlen(temp);
+	if (strcmp(temp, "pressure") == 0) {
+
+		thread_t thread_id = sys_api::thread_create([conn](void*) {
+			uint8_t* pTempBuf = new uint8_t[PRESS_TEST_LENGTH];
+			for (size_t i = 0; i < PRESS_TEST_LENGTH; i++) {
+				pTempBuf[i] = (uint8_t)(rand() % 0xFF);
+			}
+
+			*((uint32_t*)(pTempBuf + PRESS_TEST_LENGTH - sizeof(uint32_t))) = adler32(INITIAL_ADLER, pTempBuf, PRESS_TEST_LENGTH - sizeof(uint32_t));
+
+			uint32_t bufSize = PRESS_TEST_LENGTH;
+			conn->send((const char*)&bufSize, sizeof(bufSize));
+			conn->send((const char*)pTempBuf, PRESS_TEST_LENGTH);
+
+			delete[] pTempBuf;
+		}, nullptr, "pressure-thread");
+
+		sys_api::thread_join(thread_id);
+
+		return;
+	}
+
+	len = (uint32_t)strlen(temp);
 	for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
 
-	conn->send(temp, strlen(temp));
+	conn->send((const char*)&len, sizeof(len));
+	conn->send(temp, len);
 }
 
 //-------------------------------------------------------------------------------------
