@@ -102,12 +102,12 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		CY_LOG(L_DEBUG, "receive new connection, id=%d, peer_addr=%s:%d", conn->get_id(), conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
 
 		//bind onMessage function
-		conn->setOnMessageFunction([this](ConnectionPtr connection) {
+		conn->set_on_receive([this](ConnectionPtr connection) {
 			m_server->_on_socket_message(this->get_index(), connection);
 		});
 
 		//bind onClose function
-		conn->setOnCloseFunction([this](ConnectionPtr connection) {
+		conn->set_on_close([this](ConnectionPtr connection) {
 			m_server->_on_socket_close(this->get_index(), connection);
 		});
 

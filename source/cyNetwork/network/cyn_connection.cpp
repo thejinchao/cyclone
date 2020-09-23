@@ -18,9 +18,9 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	, m_event_id(Looper::INVALID_EVENT_ID)
 	, m_owner(owner)
 	, m_param(nullptr)
-	, m_readBuf(kDefaultReadBufSize)
-	, m_writeBuf(kDefaultWriteBufSize)
-	, m_writeBufLock(nullptr)
+	, m_read_buf(kDefaultReadBufSize)
+	, m_write_buf(kDefaultWriteBufSize)
+	, m_write_buf_lock(nullptr)
 	, m_max_sendbuf_len(0)
 	, m_debuger(nullptr)
 {
@@ -34,7 +34,7 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	socket_api::set_nodelay(sfd, true);
 
 	//init write buf lock
-	m_writeBufLock = sys_api::mutex_create();
+	m_write_buf_lock = sys_api::mutex_create();
 
 	m_local_addr = Address(false, m_socket); //create local address
 	m_peer_addr = Address(true, m_socket); //create peer address
@@ -61,7 +61,7 @@ Connection::~Connection()
 	assert(get_state()==kDisconnected);
 	assert(m_socket == INVALID_SOCKET);
 	assert(m_event_id == Looper::INVALID_EVENT_ID);
-	assert(m_writeBufLock == nullptr);
+	assert(m_write_buf_lock == nullptr);
 }
 
 //-------------------------------------------------------------------------------------
@@ -89,10 +89,10 @@ void Connection::send(const char* buf, size_t len)
 		}
 
 		//write to output buf
-		sys_api::auto_mutex lock(m_writeBufLock);
+		sys_api::auto_mutex lock(m_write_buf_lock);
 
 		//write to write buffer
-		m_writeBuf.memcpy_into(buf, len);
+		m_write_buf.memcpy_into(buf, len);
 
 		//enable write event, wait socket ready
 		m_looper->enable_write(m_event_id);
@@ -103,8 +103,8 @@ void Connection::send(const char* buf, size_t len)
 //-------------------------------------------------------------------------------------
 bool Connection::_is_writeBuf_empty(void) const
 {
-	sys_api::auto_mutex lock(m_writeBufLock);
-	return  m_writeBuf.empty();
+	sys_api::auto_mutex lock(m_write_buf_lock);
+	return  m_write_buf.empty();
 }
 
 //-------------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ void Connection::_send(const char* buf, size_t len)
 		return;
 	}
 
-	//nothing in write buf, send it diretly
+	//nothing in write buf, send it directly
 	if (!(m_looper->is_write(m_event_id)) && _is_writeBuf_empty())
 	{
 		nwrote = socket_api::write(m_socket, buf, len);
@@ -152,22 +152,22 @@ void Connection::_send(const char* buf, size_t len)
 		}
 	}
 
-	if (!faultError && remaining > 0)
-	{
-		sys_api::auto_mutex lock(m_writeBufLock);
-
-		//write to write buffer
-		m_writeBuf.memcpy_into(buf + nwrote, remaining);
-
-		//enable write event, wait socket ready
-		m_looper->enable_write(m_event_id);
-	}
-
 	//shutdown if socket work with fault
 	if (faultError) {
 		m_looper->disable_all(m_event_id);
 		shutdown();
+
+		return;
 	}
+
+	if (remaining > 0) {
+		sys_api::auto_mutex lock(m_write_buf_lock);
+		//write to write buffer
+		m_write_buf.memcpy_into(buf + nwrote, remaining);
+	}
+
+	//enable write event, wait socket ready
+	m_looper->enable_write(m_event_id);
 }
 
 //-------------------------------------------------------------------------------------
@@ -192,13 +192,13 @@ void Connection::_on_socket_read(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	ssize_t len = m_readBuf.read_socket(m_socket);
+	ssize_t len = m_read_buf.read_socket(m_socket);
 
 	if (len > 0)
 	{
 		//notify logic layer...
-		if (m_onMessage) {
-			m_onMessage(shared_from_this());
+		if (m_on_receive) {
+			m_on_receive(shared_from_this());
 		}
 	}
 	else if (len == 0)
@@ -219,31 +219,40 @@ void Connection::_on_socket_write(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
 	
-	if (m_looper->is_write(m_event_id))
+	if (!(m_looper->is_write(m_event_id))) return;
+
 	{
-		sys_api::auto_mutex lock(m_writeBufLock);
-		assert(!m_writeBuf.empty());
+		sys_api::auto_mutex lock(m_write_buf_lock);
 
-		if (m_writeBuf.size() > m_max_sendbuf_len) {
-			m_max_sendbuf_len = m_writeBuf.size();
-		}
+		if (!m_write_buf.empty()) {
+			if (m_write_buf.size() > m_max_sendbuf_len) {
+				m_max_sendbuf_len = m_write_buf.size();
+			}
 
-		ssize_t len = m_writeBuf.write_socket(m_socket);
-		if (len > 0) {
-			if (m_writeBuf.empty()) {
-				m_looper->disable_write(m_event_id);
-
-				//disconnecting? this is the last message send to client, we can shut it down again
-				if (m_state == kDisconnecting) {
-					shutdown();
-				}
+			ssize_t len = m_write_buf.write_socket(m_socket);
+			if (len <= 0) {
+				//log error
+				CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
 			}
 		}
-		else
-		{
-			//log error
-			CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
+
+		//still remain some data, wait next socket write time
+		if (!m_write_buf.empty()) {
+			return;
 		}
+
+		//no longer need care write-able event
+		m_looper->disable_write(m_event_id);
+	}
+
+	//write complete
+	if (m_on_send_complete) {
+		m_on_send_complete(this->shared_from_this());
+	}
+
+	//disconnecting? this is the last message send to client, we can shut it down again
+	if (m_state == kDisconnecting) {
+		shutdown();
 	}
 }
 
@@ -264,21 +273,21 @@ void Connection::_on_socket_close(void)
 	m_event_id = Looper::INVALID_EVENT_ID;
 	
 	//logic callback
-	if (m_onClose) {
-		m_onClose(thisPtr);
+	if (m_on_close) {
+		m_on_close(thisPtr);
 	}
 
 	//reset read/write buf
-	m_writeBuf.reset();
-	m_readBuf.reset();
+	m_write_buf.reset();
+	m_read_buf.reset();
 
 	//close socket
 	socket_api::close_socket(m_socket);
 	m_socket = INVALID_SOCKET;
 
 	//destroy write buf lock
-	sys_api::mutex_destroy(m_writeBufLock);
-	m_writeBufLock = nullptr;
+	sys_api::mutex_destroy(m_write_buf_lock);
+	m_write_buf_lock = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -310,10 +319,10 @@ void Connection::debug(DebugInterface* debuger)
 	char key_temp[MAX_PATH] = { 0 };
 
 	std::snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
-	debuger->updateDebugValue(key_temp, (int32_t)m_readBuf.capacity());
+	debuger->updateDebugValue(key_temp, (int32_t)m_read_buf.capacity());
 
 	std::snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
-	debuger->updateDebugValue(key_temp, (int32_t)m_writeBuf.capacity());
+	debuger->updateDebugValue(key_temp, (int32_t)m_write_buf.capacity());
 
 	std::snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
 	debuger->updateDebugValue(key_temp, (int32_t)m_max_sendbuf_len);

@@ -122,13 +122,13 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 
 		//bind callback functions
 		if (m_listener.onMessage) {
-			m_connection->setOnMessageFunction([this](ConnectionPtr conn) {
+			m_connection->set_on_receive([this](ConnectionPtr conn) {
 				m_listener.onMessage(shared_from_this(), conn);
 			});
 		}
 
 		if(m_listener.onClose) {
-			m_connection->setOnCloseFunction([this](ConnectionPtr conn) {
+			m_connection->set_on_close([this](ConnectionPtr conn) {
 				CY_LOG(L_DEBUG, "disconnect from %s:%d", m_serverAddr.get_ip(), m_serverAddr.get_port());
 				m_listener.onClose(shared_from_this(), conn);
 			});

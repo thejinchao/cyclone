@@ -45,7 +45,7 @@ public:
 	const Address& get_local_addr(void) const { return m_local_addr; }
 
 	/// get input stream buf (NOT thread safe, call it in work thread)
-	RingBuf& get_input_buf(void) { return m_readBuf; }
+	RingBuf& get_input_buf(void) { return m_read_buf; }
 
 	/// send message(thread safe)
 	void send(const char* buf, size_t len);
@@ -68,8 +68,9 @@ public:
 	Looper* get_looper(void) const { return m_looper; }
 
 	///set callback function
-	void setOnMessageFunction(EventCallback callback) { m_onMessage = callback; }
-	void setOnCloseFunction(EventCallback callback) { m_onClose = callback; }
+	void set_on_receive(EventCallback callback) { m_on_receive = callback; }
+	void set_on_send_complete(EventCallback callback) { m_on_send_complete = callback; }
+	void set_on_close(EventCallback callback) { m_on_close = callback; }
 
 	/// debug
 	void debug(DebugInterface* debuger);
@@ -90,13 +91,14 @@ private:
 
 	enum { kDefaultReadBufSize=1024, kDefaultWriteBufSize=1024 };
 	
-	RingBuf m_readBuf;
+	RingBuf m_read_buf;
 
-	RingBuf m_writeBuf;
-	sys_api::mutex_t m_writeBufLock;	//for multithread lock
+	RingBuf m_write_buf;
+	sys_api::mutex_t m_write_buf_lock;	//for multi thread lock
 
-	EventCallback m_onMessage;
-	EventCallback m_onClose;
+	EventCallback m_on_receive;
+	EventCallback m_on_send_complete;
+	EventCallback m_on_close;
 
 	std::string m_name;
 
