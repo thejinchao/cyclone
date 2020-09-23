@@ -50,7 +50,7 @@ void thread_create_detached(thread_function func, void* param, const char* name)
 void thread_sleep(int32_t msec);
 
 //// wait the thread to terminate
-void thread_join(thread_t t);
+bool thread_join(thread_t t, int32_t wait_time_ms = -1);
 
 //// get current thread name
 const char* thread_get_current_name(void);

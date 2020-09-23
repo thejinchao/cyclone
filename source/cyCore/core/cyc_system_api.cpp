@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -74,6 +74,7 @@ struct thread_data_s
 	std::string name;
 	bool detached;
 	signal_t resume_signal;
+	signal_t exit_signal;
 };
 
 //-------------------------------------------------------------------------------------
@@ -103,11 +104,17 @@ void _thread_entry(thread_data_s* data)
 	//set random seed
 	srand((uint32_t)::time(0));
 
-	if (data->entry_func)
+	//run thread function
+	if (data->entry_func) {
 		data->entry_func(data->param);
+	}
+
+	//set exit signal
+	signal_notify(data->exit_signal);
 
 	s_thread_data = nullptr;
 	if (data->detached) {
+		signal_destroy(data->exit_signal);
 		delete data;
 	}
 }
@@ -121,6 +128,7 @@ thread_t _thread_create(thread_function func, void* param, const char* name, boo
 	data->detached = detached;
 	data->name = name?name:"";
 	data->resume_signal = signal_create();
+	data->exit_signal = signal_create();
 	data->thandle = std::thread(_thread_entry, data);
 	data->tid = data->thandle.get_id();
 
@@ -129,7 +137,7 @@ thread_t _thread_create(thread_function func, void* param, const char* name, boo
 	
 	//resume thread
 	signal_notify(data->resume_signal);
-	return data;
+	return detached ? nullptr : data;
 }
 
 //-------------------------------------------------------------------------------------
@@ -151,14 +159,25 @@ void thread_sleep(int32_t msec)
 }
 
 //-------------------------------------------------------------------------------------
-void thread_join(thread_t thread)
+bool thread_join(thread_t thread, int32_t wait_time_ms)
 {
 	thread_data_s* data = (thread_data_s*)thread;
-	data->thandle.join();
+	assert(!(data->detached));
 
-	if (!(data->detached)) {
-		delete data;
+	if (wait_time_ms < 0) {
+		data->thandle.join();
 	}
+	else {
+		bool exited = signal_timewait(data->exit_signal, wait_time_ms);
+		if (!exited) return false;
+
+		data->thandle.join();
+	}
+
+	//already exited
+	signal_destroy(data->exit_signal);
+	delete data;
+	return true;
 }
 
 //-------------------------------------------------------------------------------------
@@ -236,7 +255,7 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 #else
 	if (wait_time_ms <= 0)
 	{
-		return EOK == pthread_mutex_trylock(&(mutex->h));
+		return 0 == pthread_mutex_trylock(&(mutex->h));
 	}
 	else
 	{
@@ -252,7 +271,7 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 			++timestamp.tv_sec;
 		}
 
-		return EOK == pthread_mutex_timedlock(&(mutex->h), &timestamp);
+		return 0 == pthread_mutex_timedlock(&(mutex->h), &timestamp);
 	}
 #endif
 }
