@@ -197,8 +197,8 @@ void Connection::_on_socket_read(void)
 	if (len > 0)
 	{
 		//notify logic layer...
-		if (m_on_receive) {
-			m_on_receive(shared_from_this());
+		if (m_on_message) {
+			m_on_message(shared_from_this());
 		}
 	}
 	else if (len == 0)

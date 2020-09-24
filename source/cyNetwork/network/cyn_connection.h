@@ -68,7 +68,7 @@ public:
 	Looper* get_looper(void) const { return m_looper; }
 
 	///set callback function
-	void set_on_receive(EventCallback callback) { m_on_receive = callback; }
+	void set_on_message(EventCallback callback) { m_on_message = callback; }
 	void set_on_send_complete(EventCallback callback) { m_on_send_complete = callback; }
 	void set_on_close(EventCallback callback) { m_on_close = callback; }
 
@@ -96,7 +96,7 @@ private:
 	RingBuf m_write_buf;
 	sys_api::mutex_t m_write_buf_lock;	//for multi thread lock
 
-	EventCallback m_on_receive;
+	EventCallback m_on_message;
 	EventCallback m_on_send_complete;
 	EventCallback m_on_close;
 

@@ -122,7 +122,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 
 		//bind callback functions
 		if (m_listener.onMessage) {
-			m_connection->set_on_receive([this](ConnectionPtr conn) {
+			m_connection->set_on_message([this](ConnectionPtr conn) {
 				m_listener.onMessage(shared_from_this(), conn);
 			});
 		}
