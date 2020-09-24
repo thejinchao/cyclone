@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
 #include <SimpleOpt.h>
@@ -44,9 +44,9 @@ private:
 		Looper* looper = Looper::create_looper();
 
         m_client = std::make_shared<TcpClient>(looper, nullptr);
-		m_client->m_listener.onConnected = std::bind(&EchoClient::onConnected, this, _1, _3);
-		m_client->m_listener.onMessage = std::bind(&EchoClient::onMessage, this, _2);
-		m_client->m_listener.onClose = std::bind(&EchoClient::onClose, this);
+		m_client->m_listener.on_connected = std::bind(&EchoClient::onConnected, this, _1, _3);
+		m_client->m_listener.on_message = std::bind(&EchoClient::onMessage, this, _2);
+		m_client->m_listener.on_close = std::bind(&EchoClient::onClose, this);
 
 		m_client->connect(Address(m_server_ip.c_str(), m_server_port));
 		looper->loop();

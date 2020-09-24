@@ -120,10 +120,10 @@ public:
 		m_upAddress = upAddress;
 
 		TcpServer server("rs", nullptr);
-		server.m_listener.onWorkThreadStart = std::bind(&RelayServer::onWorkthreadStart, this, _2, _3);
-		server.m_listener.onConnected = std::bind(&RelayServer::onDownConnected, this, _1, _2, _3);
-		server.m_listener.onMessage = std::bind(&RelayServer::onDownMessage, this, _1, _2, _3);
-		server.m_listener.onClose = std::bind(&RelayServer::onDownClose, this, _1, _2, _3);
+		server.m_listener.on_work_thread_start = std::bind(&RelayServer::onWorkthreadStart, this, _2, _3);
+		server.m_listener.on_connected = std::bind(&RelayServer::onDownConnected, this, _1, _2, _3);
+		server.m_listener.on_message = std::bind(&RelayServer::onDownMessage, this, _1, _2, _3);
+		server.m_listener.on_close = std::bind(&RelayServer::onDownClose, this, _1, _2, _3);
 		server.bind(Address(local_port, false), true);
 
 		m_downServer = &server;
@@ -243,9 +243,9 @@ private:
 				//connect to up server
 				CY_LOG(L_TRACE, "Connect to up server %s:%d", m_upAddress.get_ip(), m_upAddress.get_port());
 				session->m_upClient = std::make_shared<TcpClient>(pipe->m_looper, pipe, newSessionMsg.id);
-				session->m_upClient->m_listener.onConnected = std::bind(&RelayServer::onServerConnected, this, _1, _2, _3);
-				session->m_upClient->m_listener.onMessage = std::bind(&RelayServer::onServerMessage, this, _1, _2);
-				session->m_upClient->m_listener.onClose = std::bind(&RelayServer::onServerClose, this, _1, _2);
+				session->m_upClient->m_listener.on_connected = std::bind(&RelayServer::onServerConnected, this, _1, _2, _3);
+				session->m_upClient->m_listener.on_message = std::bind(&RelayServer::onServerMessage, this, _1, _2);
+				session->m_upClient->m_listener.on_close = std::bind(&RelayServer::onServerClose, this, _1, _2);
 
 				if (!(session->m_upClient->connect(m_upAddress))) {
 					_kickDownSession(pipe, newSessionMsg.id, session);

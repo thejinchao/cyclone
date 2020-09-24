@@ -27,15 +27,15 @@ public:
 	typedef std::function<void(TcpServer* server, int32_t thread_index, ConnectionPtr conn)> EventCallback;
 
 	struct Listener {
-		MasterThreadStartCallback onMasterThreadStart;
-		MasterThreadCommandCallback onMasterThreadCommand;
+		MasterThreadStartCallback on_master_thread_start;
+		MasterThreadCommandCallback on_master_thread_command;
 
-		WorkThreadStartCallback onWorkThreadStart;
-		WorkThreadCommandCallback onWorkThreadCommand;
+		WorkThreadStartCallback on_work_thread_start;
+		WorkThreadCommandCallback on_work_thread_command;
 
-		EventCallback onConnected;
-		EventCallback onMessage;
-		EventCallback onClose;
+		EventCallback on_connected;
+		EventCallback on_message;
+		EventCallback on_close;
 	};
 
 	Listener m_listener;

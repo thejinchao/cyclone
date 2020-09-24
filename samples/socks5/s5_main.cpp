@@ -43,9 +43,9 @@ public:
 	void connect(const Address& address){
 		m_address = address;
         m_remoteConnection = std::make_shared<TcpClient>(m_looper, this);
-		m_remoteConnection->m_listener.onConnected = std::bind(&S5Tunnel::onServerConnected, this, _2, _3);
-		m_remoteConnection->m_listener.onMessage = std::bind(&S5Tunnel::onServerMessage, this, _2);
-		m_remoteConnection->m_listener.onClose = std::bind(&S5Tunnel::onServerClose, this);
+		m_remoteConnection->m_listener.on_connected = std::bind(&S5Tunnel::onServerConnected, this, _2, _3);
+		m_remoteConnection->m_listener.on_message = std::bind(&S5Tunnel::onServerMessage, this, _2);
+		m_remoteConnection->m_listener.on_close = std::bind(&S5Tunnel::onServerClose, this);
 
 		m_remoteConnection->connect(address);
 	}
@@ -164,10 +164,10 @@ public:
 		m_threadContext.resize((size_t)work_thread_counts);
 
 		TcpServer server("s5", 0);
-		server.m_listener.onWorkThreadStart = std::bind(&S5Server::onWorkthreadStart, this, _1, _2, _3);
-		server.m_listener.onConnected = std::bind(&S5Server::onPeerConnected, this, _1, _2, _3);
-		server.m_listener.onMessage = std::bind(&S5Server::onPeerMessage, this, _1, _2, _3);
-		server.m_listener.onClose = std::bind(&S5Server::onPeerClose, this, _1, _2, _3);
+		server.m_listener.on_work_thread_start = std::bind(&S5Server::onWorkthreadStart, this, _1, _2, _3);
+		server.m_listener.on_connected = std::bind(&S5Server::onPeerConnected, this, _1, _2, _3);
+		server.m_listener.on_message = std::bind(&S5Server::onPeerMessage, this, _1, _2, _3);
+		server.m_listener.on_close = std::bind(&S5Server::onPeerClose, this, _1, _2, _3);
 
 		if (!server.bind(Address(server_port, false), false))
 			return;

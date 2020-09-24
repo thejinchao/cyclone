@@ -22,9 +22,9 @@ public:
 	typedef std::function<void(TcpClientPtr client, ConnectionPtr conn)> CloseCallback;
 
 	struct Listener {
-		ConnectedCallback onConnected;
-		MessageCallback onMessage;
-		CloseCallback onClose;
+		ConnectedCallback on_connected;
+		MessageCallback on_message;
+		CloseCallback on_close;
 	};
 	Listener m_listener;
 

@@ -69,9 +69,9 @@ public:
 	void startAndJoin(uint16_t listen_port1, uint16_t listen_port2)
 	{
 		TcpServer server("rp", nullptr);
-		server.m_listener.onConnected = std::bind(&RelayPipe_DoubleIn::onConnected, this, _1, _3);
-		server.m_listener.onMessage = std::bind(&RelayPipe_DoubleIn::onMessage, this, _3);
-		server.m_listener.onClose = std::bind(&RelayPipe_DoubleIn::onClose, this, _1);
+		server.m_listener.on_connected = std::bind(&RelayPipe_DoubleIn::onConnected, this, _1, _3);
+		server.m_listener.on_message = std::bind(&RelayPipe_DoubleIn::onMessage, this, _3);
+		server.m_listener.on_close = std::bind(&RelayPipe_DoubleIn::onClose, this, _1);
 
 		server.bind(Address(m_port1=listen_port1, false), true);
 		server.bind(Address(m_port2=listen_port2, false), true);
@@ -167,14 +167,14 @@ private:
 		m_looper = Looper::create_looper();
 
         TcpClientPtr client1 = std::make_shared<TcpClient>(m_looper, nullptr);
-		client1->m_listener.onConnected = std::bind(&RelayPipe_DoubleOut::onConnected, this, _1, _2, _3, 1);
-		client1->m_listener.onMessage = std::bind(&RelayPipe_DoubleOut::onMessage, this, _1, _2);
-		client1->m_listener.onClose = std::bind(&RelayPipe_DoubleOut::onClose, this, _1);
+		client1->m_listener.on_connected = std::bind(&RelayPipe_DoubleOut::onConnected, this, _1, _2, _3, 1);
+		client1->m_listener.on_message = std::bind(&RelayPipe_DoubleOut::onMessage, this, _1, _2);
+		client1->m_listener.on_close = std::bind(&RelayPipe_DoubleOut::onClose, this, _1);
 
 		TcpClientPtr client2 = std::make_shared<TcpClient>(m_looper, nullptr);
-		client2->m_listener.onConnected = std::bind(&RelayPipe_DoubleOut::onConnected, this, _1, _2, _3, 2);
-		client2->m_listener.onMessage = std::bind(&RelayPipe_DoubleOut::onMessage, this, _1, _2);
-		client2->m_listener.onClose = std::bind(&RelayPipe_DoubleOut::onClose, this, _1);
+		client2->m_listener.on_connected = std::bind(&RelayPipe_DoubleOut::onConnected, this, _1, _2, _3, 2);
+		client2->m_listener.on_message = std::bind(&RelayPipe_DoubleOut::onMessage, this, _1, _2);
+		client2->m_listener.on_close = std::bind(&RelayPipe_DoubleOut::onClose, this, _1);
 
         CY_LOG(L_INFO, "Connect to port1 %s:%d", m_address1.get_ip(), m_address1.get_port());
         CY_LOG(L_INFO, "Connect to port2 %s:%d", m_address2.get_ip(), m_address2.get_port());
@@ -275,10 +275,10 @@ public:
         m_addrToConnect = addrToConnect;
         
         TcpServer server("rp", nullptr);
-        server.m_listener.onWorkThreadStart = std::bind(&RelayPipe_InOut::onWorkthreadStart, this, _1, _3);
-        server.m_listener.onConnected = std::bind(&RelayPipe_InOut::onConnectedIn, this, _1, _3);
-        server.m_listener.onMessage = std::bind(&RelayPipe_InOut::onMessageIn, this, _3);
-        server.m_listener.onClose = std::bind(&RelayPipe_InOut::onCloseIn, this);
+        server.m_listener.on_work_thread_start = std::bind(&RelayPipe_InOut::onWorkthreadStart, this, _1, _3);
+        server.m_listener.on_connected = std::bind(&RelayPipe_InOut::onConnectedIn, this, _1, _3);
+        server.m_listener.on_message = std::bind(&RelayPipe_InOut::onMessageIn, this, _3);
+        server.m_listener.on_close = std::bind(&RelayPipe_InOut::onCloseIn, this);
         
         server.bind(Address(m_bindPort=bindPort, false), true);
         
@@ -297,9 +297,9 @@ private:
         CY_LOG(L_INFO, "Begin connect to %s:%d", m_addrToConnect.get_ip(), m_addrToConnect.get_port());
         
         m_client = std::make_shared<TcpClient>(m_looper, this);
-        m_client->m_listener.onConnected = std::bind(&RelayPipe_InOut::onConnectedOut, this, _2, _3);
-        m_client->m_listener.onMessage = std::bind(&RelayPipe_InOut::onMessageOut, this, _1, _2);
-        m_client->m_listener.onClose = std::bind(&RelayPipe_InOut::onCloseOut, this);
+        m_client->m_listener.on_connected = std::bind(&RelayPipe_InOut::onConnectedOut, this, _2, _3);
+        m_client->m_listener.on_message = std::bind(&RelayPipe_InOut::onMessageOut, this, _1, _2);
+        m_client->m_listener.on_close = std::bind(&RelayPipe_InOut::onCloseOut, this);
         
         m_client->connect(m_addrToConnect);
     }

@@ -76,10 +76,10 @@ ConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
 bool ServerWorkThread::_on_workthread_start(void)
 {
 	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name.c_str());
-	TcpServer::WorkThreadStartCallback& onWorkThreadStart = m_server->m_listener.onWorkThreadStart;
 
-	if(onWorkThreadStart)
-		onWorkThreadStart(m_server, get_index(), m_work_thread->get_looper());
+	if (m_server->m_listener.on_work_thread_start) {
+		m_server->m_listener.on_work_thread_start(m_server, get_index(), m_work_thread->get_looper());
+	}
 	return true;
 }
 
@@ -185,8 +185,8 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 	else
 	{
 		//extra message
-		if (m_server->m_listener.onWorkThreadCommand) {
-			m_server->m_listener.onWorkThreadCommand(m_server, get_index(), message);
+		if (m_server->m_listener.on_work_thread_command) {
+			m_server->m_listener.on_work_thread_command(m_server, get_index(), message);
 		}
 	}
 }

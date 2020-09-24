@@ -23,12 +23,15 @@ TcpServer::TcpServer(const char* name, DebugInterface* debuger, void* param)
 	, m_name(name ? name : "server")
 	, m_debuger(debuger)
 {
-	m_listener.onMasterThreadStart = nullptr;
-	m_listener.onWorkThreadStart = nullptr;
-	m_listener.onWorkThreadCommand = nullptr;
-	m_listener.onConnected = nullptr;
-	m_listener.onMessage = nullptr;
-	m_listener.onClose = nullptr;
+	m_listener.on_master_thread_start = nullptr;
+	m_listener.on_master_thread_command = nullptr;
+
+	m_listener.on_work_thread_start = nullptr;
+	m_listener.on_work_thread_command = nullptr;
+
+	m_listener.on_connected = nullptr;
+	m_listener.on_message = nullptr;
+	m_listener.on_close = nullptr;
 
 	m_master_thread = new ServerMasterThread(this);
 }
@@ -228,24 +231,24 @@ void TcpServer::debug(void)
 //-------------------------------------------------------------------------------------
 void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr conn)
 {
-	if (m_listener.onConnected) {
-		m_listener.onConnected(this, work_thread_index, conn);
+	if (m_listener.on_connected) {
+		m_listener.on_connected(this, work_thread_index, conn);
 	}
 }
 
 //-------------------------------------------------------------------------------------
 void TcpServer::_on_socket_message(int32_t work_thread_index, ConnectionPtr conn)
 {
-	if (m_listener.onMessage) {
-		m_listener.onMessage(this, work_thread_index, conn);
+	if (m_listener.on_message) {
+		m_listener.on_message(this, work_thread_index, conn);
 	}
 }
 
 //-------------------------------------------------------------------------------------
 void TcpServer::_on_socket_close(int32_t work_thread_index, ConnectionPtr conn)
 {
-	if (m_listener.onClose) {
-		m_listener.onClose(this, work_thread_index, conn);
+	if (m_listener.on_close) {
+		m_listener.on_close(this, work_thread_index, conn);
 	}
 
 	//shutdown this connection next tick

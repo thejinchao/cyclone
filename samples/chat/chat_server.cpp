@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
 #include <SimpleOpt.h>
@@ -28,9 +28,9 @@ public:
 		m_clients_lock = sys_api::mutex_create();
 
 		TcpServer server("chat_server", nullptr);
-		server.m_listener.onConnected = std::bind(&ChatServer::onClientConnected, this, _3);
-		server.m_listener.onMessage = std::bind(&ChatServer::onClientMessage, this, _3);
-		server.m_listener.onClose = std::bind(&ChatServer::onClientClose, this, _3);
+		server.m_listener.on_connected = std::bind(&ChatServer::onClientConnected, this, _3);
+		server.m_listener.on_message = std::bind(&ChatServer::onClientMessage, this, _3);
+		server.m_listener.on_close = std::bind(&ChatServer::onClientClose, this, _3);
 
 		if (!server.bind(Address(server_port, false), false)) return;
 

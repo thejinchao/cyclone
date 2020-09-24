@@ -82,7 +82,7 @@ public:
 
 		TcpClientPtr client = std::make_shared<TcpClient>(looper, nullptr);
 
-		client->m_listener.onConnected = [](TcpClientPtr _client, ConnectionPtr _conn, bool _success) -> uint32_t {
+		client->m_listener.on_connected = [](TcpClientPtr _client, ConnectionPtr _conn, bool _success) -> uint32_t {
 			if (!_success) {
 				uint32_t retry_time = 1000 * 5;
 				CY_LOG(L_INFO, "connect failed!, retry after %d milliseconds...", retry_time);
@@ -98,7 +98,7 @@ public:
 			return 0;
 		};
 
-		client->m_listener.onMessage = [this](TcpClientPtr, ConnectionPtr _conn) {
+		client->m_listener.on_message = [this](TcpClientPtr, ConnectionPtr _conn) {
 			RingBuf& ringBuf = _conn->get_input_buf();
 			if (ringBuf.size() < sizeof(FT_Head)) return;
 
@@ -124,7 +124,7 @@ public:
 			_conn->shutdown();
 		};
 
-		client->m_listener.onClose = [looper](TcpClientPtr, ConnectionPtr) {
+		client->m_listener.on_close = [looper](TcpClientPtr, ConnectionPtr) {
 			looper->push_stop_request();
 			return;
 		};
@@ -294,9 +294,9 @@ public:
 		ctx->looper = Looper::create_looper();
 		ctx->client = std::make_shared<TcpClient>(ctx->looper, ctx);
 		ctx->status = TS_Connecting;
-		ctx->client->m_listener.onConnected = std::bind(&FileTransferClient::_onConnected, this, _1, _3);
-		ctx->client->m_listener.onMessage = std::bind(&FileTransferClient::_onMessage, this, _1, _2);
-		ctx->client->m_listener.onClose = std::bind(&FileTransferClient::_onClose, this, _1);
+		ctx->client->m_listener.on_connected = std::bind(&FileTransferClient::_onConnected, this, _1, _3);
+		ctx->client->m_listener.on_message = std::bind(&FileTransferClient::_onMessage, this, _1, _2);
+		ctx->client->m_listener.on_close = std::bind(&FileTransferClient::_onClose, this, _1);
 		
 		CY_LOG(L_INFO, "Begin download thread[%d], offset=%zd, fragment_size=%d", ctx->index, ctx->fileOffset, ctx->fragmentSize);
 

@@ -138,9 +138,9 @@ bool ServerMasterThread::_on_thread_start(void)
 
 	CY_LOG(L_TRACE, "accept thread run, listen %d port(s)", counts);
 
-	if (m_server->m_listener.onMasterThreadStart)
+	if (m_server->m_listener.on_master_thread_start)
 	{
-		m_server->m_listener.onMasterThreadStart(m_server, m_master_thread.get_looper());
+		m_server->m_listener.on_master_thread_start(m_server, m_master_thread.get_looper());
 	}
 	return true;
 }
@@ -202,8 +202,8 @@ void ServerMasterThread::_on_thread_message(Packet* message)
 	}
 	else if (msg_id >= kCustomCmdID_Begin) {
 		//extra message
-		if (m_server->m_listener.onMasterThreadCommand) {
-			m_server->m_listener.onMasterThreadCommand(m_server, message);
+		if (m_server->m_listener.on_master_thread_command) {
+			m_server->m_listener.on_master_thread_command(m_server, message);
 		}
 	}
 }

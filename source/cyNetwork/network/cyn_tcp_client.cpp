@@ -30,9 +30,9 @@ TcpClient::TcpClient(Looper* looper, void* param, int id)
 
 	m_connection_lock = sys_api::mutex_create();
 
-	m_listener.onConnected = nullptr;
-	m_listener.onMessage = nullptr;
-	m_listener.onClose = nullptr;
+	m_listener.on_connected = nullptr;
+	m_listener.on_message = nullptr;
+	m_listener.on_close = nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -104,8 +104,8 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 	if (timeout || socket_api::get_socket_error(m_socket) != 0) {
 		//logic callback
 		uint32_t retry_sleep_ms = 0;
-		if (m_listener.onConnected) {
-			retry_sleep_ms = m_listener.onConnected(shared_from_this(), nullptr, false);
+		if (m_listener.on_connected) {
+			retry_sleep_ms = m_listener.on_connected(shared_from_this(), nullptr, false);
 		}
 		CY_LOG(L_DEBUG, "connect to %s:%d failed! ", m_serverAddr.get_ip(), m_serverAddr.get_port());
 		_abort_connect(retry_sleep_ms);
@@ -121,16 +121,16 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		CY_LOG(L_DEBUG, "connect to %s:%d success", m_serverAddr.get_ip(), m_serverAddr.get_port());
 
 		//bind callback functions
-		if (m_listener.onMessage) {
+		if (m_listener.on_message) {
 			m_connection->set_on_message([this](ConnectionPtr conn) {
-				m_listener.onMessage(shared_from_this(), conn);
+				m_listener.on_message(shared_from_this(), conn);
 			});
 		}
 
-		if(m_listener.onClose) {
+		if(m_listener.on_close) {
 			m_connection->set_on_close([this](ConnectionPtr conn) {
 				CY_LOG(L_DEBUG, "disconnect from %s:%d", m_serverAddr.get_ip(), m_serverAddr.get_port());
-				m_listener.onClose(shared_from_this(), conn);
+				m_listener.on_close(shared_from_this(), conn);
 			});
 		}
 
@@ -140,8 +140,8 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 			m_sendCache.reset();
 		}
 		//logic callback
-		if (m_listener.onConnected) {
-			m_listener.onConnected(shared_from_this(), m_connection, true);
+		if (m_listener.on_connected) {
+			m_listener.on_connected(shared_from_this(), m_connection, true);
 		}
 	}
 }
@@ -189,7 +189,7 @@ void TcpClient::disconnect(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
+void TcpClient::_on_retry_connect_timer(Looper::event_id_t /*id*/)
 {
 	assert(id == m_retry_timer_id);
 	assert(m_connection == nullptr);
@@ -200,8 +200,8 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 	//connect again
 	if (!connect(m_serverAddr)) {
 		//failed at once!, logic callback
-		if (m_listener.onConnected) {
-			uint32_t retry_sleep_ms = m_listener.onConnected(shared_from_this(), nullptr, false);
+		if (m_listener.on_connected) {
+			uint32_t retry_sleep_ms = m_listener.on_connected(shared_from_this(), nullptr, false);
 
 			//retry connection?
 			if (retry_sleep_ms>0) {

@@ -254,10 +254,10 @@ public:
 
 	void startAndJoin(int16_t listenPort) 
 	{
-		m_server.m_listener.onWorkThreadStart = std::bind(&FileTransferServer::_onWorkThreadStart, this, _2);
-		m_server.m_listener.onConnected = std::bind(&FileTransferServer::_onClientConnected, this, _2, _3);
-		m_server.m_listener.onMessage = std::bind(&FileTransferServer::_onClientMessage, this, _2, _3);
-		m_server.m_listener.onClose = std::bind(&FileTransferServer::_onClientClose, this, _2, _3);
+		m_server.m_listener.on_work_thread_start = std::bind(&FileTransferServer::_onWorkThreadStart, this, _2);
+		m_server.m_listener.on_connected = std::bind(&FileTransferServer::_onClientConnected, this, _2, _3);
+		m_server.m_listener.on_message = std::bind(&FileTransferServer::_onClientMessage, this, _2, _3);
+		m_server.m_listener.on_close = std::bind(&FileTransferServer::_onClientClose, this, _2, _3);
 		
 		// listen port and start server
 		if (!m_server.bind(Address(listenPort, false), true))

@@ -102,10 +102,10 @@ public:
 		TcpServer server("relay_local", nullptr);
 		m_downServer = &server;
 
-		server.m_listener.onWorkThreadStart = std::bind(&RelayLocal::onWorkthreadStart, this, _1, _2, _3);
-		server.m_listener.onConnected = std::bind(&RelayLocal::onLocalConnected, this, _1, _2, _3);
-		server.m_listener.onMessage = std::bind(&RelayLocal::onLocalMessage, this, _1, _2, _3);
-		server.m_listener.onClose = std::bind(&RelayLocal::onLocalClose, this, _2, _3);
+		server.m_listener.on_work_thread_start = std::bind(&RelayLocal::onWorkthreadStart, this, _1, _2, _3);
+		server.m_listener.on_connected = std::bind(&RelayLocal::onLocalConnected, this, _1, _2, _3);
+		server.m_listener.on_message = std::bind(&RelayLocal::onLocalMessage, this, _1, _2, _3);
+		server.m_listener.on_close = std::bind(&RelayLocal::onLocalClose, this, _2, _3);
 		server.bind(Address(local_port, false), true);
 
 		m_relayPipes.resize(work_thread_counts);
@@ -121,9 +121,9 @@ private:
 		m_relayPipes[index] = newPipe;
 
 		newPipe->m_upClient = std::make_shared<TcpClient>(looper, this, index);
-		newPipe->m_upClient->m_listener.onConnected = std::bind(&RelayLocal::onUpConnected, this, _2, _3);
-		newPipe->m_upClient->m_listener.onMessage = std::bind(&RelayLocal::onUpMessage, this, _1, _2);
-		newPipe->m_upClient->m_listener.onClose = std::bind(&RelayLocal::onUpClose, this, _1, _2);
+		newPipe->m_upClient->m_listener.on_connected = std::bind(&RelayLocal::onUpConnected, this, _2, _3);
+		newPipe->m_upClient->m_listener.on_message = std::bind(&RelayLocal::onUpMessage, this, _1, _2);
+		newPipe->m_upClient->m_listener.on_close = std::bind(&RelayLocal::onUpClose, this, _1, _2);
 		newPipe->m_upClient->connect(m_upAddress);
 	}
 	//-------------------------------------------------------------------------------------

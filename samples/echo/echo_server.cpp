@@ -104,9 +104,9 @@ int main(int argc, char* argv[])
 
 	TcpServer server("echo", 0);
 
-	server.m_listener.onConnected = onPeerConnected;
-	server.m_listener.onClose = onPeerClose;
-	server.m_listener.onMessage = onPeerMessage;
+	server.m_listener.on_connected = onPeerConnected;
+	server.m_listener.on_close = onPeerClose;
+	server.m_listener.on_message = onPeerMessage;
 
 	if (!server.bind(Address(server_port, false), true))
 		return 1;
