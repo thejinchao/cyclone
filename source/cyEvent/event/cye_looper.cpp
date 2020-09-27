@@ -60,10 +60,13 @@ Looper::event_id_t Looper::register_event(socket_t sockfd,
 	channel.on_write = _on_write;
 
 	//update to poll
-	if ((event & kRead) != 0)
+	if ((event & kRead) != 0) {
 		_update_channel_add_event(channel, kRead);
-    if ((event & kWrite) != 0)
-        _update_channel_add_event(channel, kWrite);
+	}
+
+	if ((event & kWrite) != 0) {
+		_update_channel_add_event(channel, kWrite);
+	}
     
 	return id;
 }
@@ -370,10 +373,20 @@ Looper::event_id_t Looper::_get_free_slot(void)
 		for (size_t i = old_size; i < new_size; i++)
 		{
 			channel_s channel;
-			memset(&channel, 0, sizeof(channel));
 
 			channel.id = (event_id_t)i;
+			channel.fd = 0;
+			channel.event = 0;
+			channel.param = nullptr;
+			channel.active = false;
+			channel.timer = false;
+
+			channel.on_read = nullptr;
+			channel.on_write = nullptr;
+
 			channel.next = m_free_head;
+			channel.prev = 0;
+
 			m_free_head = channel.id;
 			m_channelBuffer.push_back(channel);
 		}
