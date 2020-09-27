@@ -116,7 +116,7 @@ public:
 	}
 	~S5Tunnel() {
 		if (m_remoteConnection) {
-            assert(m_remoteConnection.unique());
+            assert(m_remoteConnection.use_count()==1);
 			m_remoteConnection = nullptr;
 		}
 	}

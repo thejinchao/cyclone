@@ -184,8 +184,8 @@ private:
 
 		m_looper->loop();
 
-        assert(client1.unique());
-        assert(client2.unique());
+        assert(client1.use_count()==1);
+        assert(client2.use_count()==1);
         
 		client1 = nullptr;
 		client2 = nullptr;
