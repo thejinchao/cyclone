@@ -25,7 +25,6 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	, m_on_send_complete(nullptr)
 	, m_on_close(nullptr)
 	, m_max_sendbuf_len(0)
-	, m_debuger(nullptr)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
@@ -59,8 +58,6 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 //-------------------------------------------------------------------------------------
 Connection::~Connection()
 {
-	_del_debug_value();
-
 	assert(get_state()==kDisconnected);
 	assert(m_socket == INVALID_SOCKET);
 	assert(m_event_id == Looper::INVALID_EVENT_ID);
@@ -311,41 +308,6 @@ void Connection::set_name(const char* name)
 void Connection::set_param(void* param)
 {
 	m_param = param;
-}
-
-//-------------------------------------------------------------------------------------
-void Connection::debug(DebugInterface* debuger)
-{
-	if (!debuger || !(debuger->isEnable())) return;
-
-	m_debuger = debuger;
-	char key_temp[MAX_PATH] = { 0 };
-
-	std::snprintf(key_temp, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
-	debuger->updateDebugValue(key_temp, (int32_t)m_read_buf.capacity());
-
-	std::snprintf(key_temp, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
-	debuger->updateDebugValue(key_temp, (int32_t)m_write_buf.capacity());
-
-	std::snprintf(key_temp, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
-	debuger->updateDebugValue(key_temp, (int32_t)m_max_sendbuf_len);
-}
-
-//-------------------------------------------------------------------------------------
-void Connection::_del_debug_value(void)
-{
-	if (!m_debuger || !(m_debuger->isEnable())) return;
-
-	char key_name[MAX_PATH] = { 0 };
-
-	std::snprintf(key_name, MAX_PATH, "Connection:%s:readbuf_capcity", m_name.c_str());
-	m_debuger->delDebugValue(key_name);
-
-	std::snprintf(key_name, MAX_PATH, "Connection:%s:writebuf_capcity", m_name.c_str());
-	m_debuger->delDebugValue(key_name);
-
-	std::snprintf(key_name, MAX_PATH, "Connection:%s:max_sendbuf_len", m_name.c_str());
-	m_debuger->delDebugValue(key_name);
 }
 
 }

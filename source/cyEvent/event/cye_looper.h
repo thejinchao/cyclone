@@ -74,8 +74,6 @@ public:
 	thread_id_t get_thread_id(void) const { return m_current_thread; }
 	uint64_t get_loop_counts(void) const { return m_loop_counts; }
 
-	void debug(DebugInterface* debuger, const char* name);
-
 protected:
 	Looper();
 	virtual ~Looper();

@@ -112,8 +112,6 @@ private:
 
 	std::string	m_name;
 
-	DebugInterface*	m_debuger;
-
 private:
 	//called by master thread
 	void _on_accept_socket(socket_t fd);
@@ -127,7 +125,7 @@ private:
 
 	friend class ServerWorkThread;
 public:
-	TcpServer(const char* name, DebugInterface* debuger, void* param = nullptr);
+	TcpServer(const char* name, void* param = nullptr);
 	~TcpServer();
 };
 

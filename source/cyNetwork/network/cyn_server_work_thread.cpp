@@ -9,10 +9,9 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name, DebugInterface* debuger)
+ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name)
 	: m_index(index)
 	, m_server(server)
-	, m_debuger(debuger)
 {
 
 	//run the work thread
@@ -179,8 +178,6 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		assert(message->get_packet_size() == sizeof(DebugCmd));
 		DebugCmd debugCmd;
 		memcpy(&debugCmd, message->get_packet_content(), sizeof(DebugCmd));
-
-		_debug(debugCmd);
 	}
 	else
 	{
@@ -195,33 +192,6 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 void ServerWorkThread::join(void)
 {
 	m_work_thread->join();
-}
-
-//-------------------------------------------------------------------------------------
-void ServerWorkThread::_debug(DebugCmd&)
-{
-	assert(is_in_workthread());
-	assert(m_server);
-
-	if (!m_debuger || !(m_debuger->isEnable())) return;
-
-	char key_temp[MAX_PATH] = { 0 };
-
-	//Debug ConnectionMap
-	std::snprintf(key_temp, MAX_PATH, "ServerWorkThread:%s:connection_map_counts", m_name.c_str());
-	m_debuger->updateDebugValue(key_temp, (int32_t)m_connections.size());
-
-	//Debug Looper
-	Looper* looper = m_work_thread->get_looper();
-	looper->debug(m_debuger, m_name.c_str());
-
-	//Debug all connections
-	int index = 0;
-	ConnectionMap::iterator it, end = m_connections.end();
-	for (it = m_connections.begin(); it != end; ++it, ++index) {
-		it->second->debug(m_debuger);
-	}
-
 }
 
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
@@ -63,16 +63,14 @@ private:
 	ConnectionMap	m_connections;
 
 	std::string		m_name;
-	DebugInterface*	m_debuger;
 
 private:
-	//// called by workthread
+	//// called by work thread
 	bool _on_workthread_start(void);
 	void _on_workthread_message(Packet*);
 
-	void _debug(DebugCmd& cmd);
 public:
-	ServerWorkThread(int32_t index, TcpServer* server, const char* name, DebugInterface* debuger);
+	ServerWorkThread(int32_t index, TcpServer* server, const char* name);
 	virtual ~ServerWorkThread();
 };
 

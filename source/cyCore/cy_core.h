@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #ifndef _CYCLONE_CORE_H_
@@ -12,6 +12,5 @@ Copyright(C) thecodeway.com
 #include <core/cyc_ring_buf.h>
 #include <core/cyc_atomic.h>
 #include <core/cyc_lf_queue.h>
-#include <core/cyc_debug_interface.h>
 
 #endif
