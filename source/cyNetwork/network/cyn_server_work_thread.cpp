@@ -173,12 +173,6 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		}
 		//just wait...
 	}
-	else if (msg_id == DebugCmd::ID)
-	{
-		assert(message->get_packet_size() == sizeof(DebugCmd));
-		DebugCmd debugCmd;
-		memcpy(&debugCmd, message->get_packet_content(), sizeof(DebugCmd));
-	}
 	else
 	{
 		//extra message

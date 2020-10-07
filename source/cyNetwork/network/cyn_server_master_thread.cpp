@@ -175,9 +175,6 @@ void ServerMasterThread::_on_thread_message(Packet* message)
 		//stop looper
 		looper->push_stop_request();
 	}
-	else if (msg_id == DebugCmd::ID) {
-		//TODO: debug accept thread
-	}
 	else if (msg_id == StopListenCmd::ID) {
 		assert(message->get_packet_size() == sizeof(StopListenCmd));
 		StopListenCmd stopListenCmd;

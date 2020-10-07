@@ -79,9 +79,6 @@ public:
 		return m_next_connection_id++;
 	}
 
-	/// print debug variable to debuger cache system
-	void debug(void);
-
 	/// get custom param
 	void* get_param(void) const { return m_param; }
 

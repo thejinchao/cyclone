@@ -12,7 +12,7 @@ namespace cyclone
 class ServerWorkThread : noncopyable, public Connection::Owner
 {
 public:
-	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID, kDebugCmdID };
+	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID };
 	struct NewConnectionCmd
 	{
 		enum { ID = kNewConnectionCmdID };
@@ -29,11 +29,6 @@ public:
 	struct ShutdownCmd
 	{
 		enum { ID = kShutdownCmdID };
-	};
-
-	struct DebugCmd
-	{
-		enum { ID = kDebugCmdID };
 	};
 
 public:

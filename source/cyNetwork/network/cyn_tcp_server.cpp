@@ -208,20 +208,6 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::debug(void)
-{
-	//send to work thread
-	ServerWorkThread::DebugCmd cmd;
-	for (auto work : m_work_thread_pool) {
-		work->send_message(ServerWorkThread::DebugCmd::ID, sizeof(cmd), (const char*)&cmd);
-	}
-
-	//send to master thread
-	ServerMasterThread::DebugCmd acceptDebugCmd;
-	m_master_thread->send_message(ServerMasterThread::DebugCmd::ID, sizeof(acceptDebugCmd), (const char*)&acceptDebugCmd);
-}
-
-//-------------------------------------------------------------------------------------
 void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr conn)
 {
 	if (m_listener.on_connected) {

@@ -30,17 +30,12 @@ public:
 public:
 	//accept thread command
 	enum { 
-		kShutdownCmdID = 1, kDebugCmdID, kStopListenCmdID, 
+		kShutdownCmdID = 1, kStopListenCmdID, 
 		kCustomCmdID_Begin=10,
 	};
 	struct ShutdownCmd
 	{
 		enum { ID = kShutdownCmdID };
-	};
-
-	struct DebugCmd
-	{
-		enum { ID = kDebugCmdID };
 	};
 
 	struct StopListenCmd
