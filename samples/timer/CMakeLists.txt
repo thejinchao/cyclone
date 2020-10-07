@@ -1,4 +1,4 @@
-#
+﻿#
 #Copyright(C) thecodeway.com
 #
 
@@ -7,6 +7,7 @@ include_directories(
 	${CY_SOURCE_CORE_PATH}
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
+	${CY_SOURCE_UTILITY_PATH}
 )
 
 add_executable(timer timer.cpp)

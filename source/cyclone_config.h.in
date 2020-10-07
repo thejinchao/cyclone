@@ -23,6 +23,7 @@ Copyright(C) thecodeway.com
 #cmakedefine CY_HAVE_TIMERFD 1
 
 #cmakedefine CY_ENABLE_LOG 1
+#cmakedefine CY_ENABLE_DEBUG 1
 
 #define CY_POLL_EPOLL   1
 #define CY_POLL_KQUEUE  2
@@ -94,6 +95,8 @@ Copyright(C) thecodeway.com
 #endif
 
 #ifdef CY_SYS_WINDOWS
+	#undef min
+	#undef max
 	typedef SOCKET	socket_t;
 	typedef int32_t pid_t;
 
@@ -121,6 +124,9 @@ Copyright(C) thecodeway.com
 #else
 #define INLINE __inline
 #endif
+
+//wait c++17 support
+#define CONSTEXPR 
 
 class noncopyable
 {  

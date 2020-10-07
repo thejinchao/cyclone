@@ -6,6 +6,7 @@ Copyright(C) thecodeway.com
 
 #include <cyclone_config.h>
 #include <network/cyn_address.h>
+#include <utility/cyu_statistics.h>
 
 namespace cyclone
 {
@@ -99,8 +100,6 @@ private:
 
 	std::string m_name;
 
-	size_t m_max_sendbuf_len;
-
 private:
 	//// on socket read event
 	void _on_socket_read(void);
@@ -119,6 +118,17 @@ private:
 
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
+
+
+#if CY_ENABLE_DEBUG
+public:
+	size_t get_readebuf_max_size(void) const { return m_readbuf_minmax_size.max(); }
+	size_t get_writebuf_max_size(void) const { return m_writebuf_minmax_size.max(); }
+
+private:
+	MinMaxValue <size_t> m_readbuf_minmax_size;
+	MinMaxValue <size_t> m_writebuf_minmax_size;
+#endif
 
 public:
 	Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner);

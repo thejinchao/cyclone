@@ -1,4 +1,4 @@
-#
+﻿#
 #Copyright(C) thecodeway.com
 #
 
@@ -28,6 +28,8 @@ set(CY_SOURCE_CORE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyCore)
 set(CY_SOURCE_EVENT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyEvent)
 set(CY_SOURCE_NETWORK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyNetwork)
 set(CY_SOURCE_CRYPT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyCrypt)
+set(CY_SOURCE_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyUtility)
+
 set(CY_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utility)
 
 ########
@@ -69,13 +71,6 @@ check_function_exists(timerfd_create CY_HAVE_TIMERFD)
 ########
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	if(CY_MSVC_MT)
-		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MTd /W4 /ZI")
-		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MT /W4 /Zi")
-	else()
-		set(CMAKE_CXX_FLAGS_DEBUG	"${CMAKE_CXX_FLAGS_DEBUG} /MDd /W4 /ZI")
-		set(CMAKE_CXX_FLAGS_RELEASE	"${CMAKE_CXX_FLAGS_RELEASE} /MD /W4 /Zi")
-	endif()
 else()
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
 endif()
@@ -142,6 +137,11 @@ if(CY_SYS_ANDROID)
 else()
     set(PTHREAD_LIBRARIES "pthread")
 endif()
+
+########
+#is debug function enable
+########
+OPTION(CY_ENABLE_DEBUG "Enable Debug Function" FALSE)
 
 ########
 #is log enable

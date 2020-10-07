@@ -1,4 +1,4 @@
-#
+﻿#
 #Copyright(C) thecodeway.com
 #
 
@@ -8,6 +8,7 @@ include_directories(
 	${CY_SOURCE_CRYPT_PATH}
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
+	${CY_SOURCE_UTILITY_PATH}
 	${GTEST_INCLUDE_DIRS}
 )
 
@@ -28,6 +29,7 @@ set(cyt_unit_sources
     cyt_unit_event_socket.cpp
     cyt_uint_system.cpp
     cyt_unit_packet.cpp
+	cyt_unit_statistics.cpp
 )
 
 add_executable(cyt_unit 

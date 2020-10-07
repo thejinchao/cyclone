@@ -113,6 +113,19 @@ set(CY_CRYPT_SOURCE_FILES
 )
 source_group("cyCrypt" FILES ${CY_CRYPT_SOURCE_FILES})
 
+########
+#cyUtility
+########
+set(CY_UTILITY_INCLUDE_FILES
+	cyUtility/cy_utility.h
+	cyUtility/utility/cyu_statistics.h
+)
+source_group("cyUtility" FILES ${CY_UTILITY_INCLUDE_FILES})
+
+set(CY_UTILITY_SOURCE_FILES
+	cyUtility/utility/cyu_statistics.cpp
+)
+source_group("cyUtility" FILES ${CY_UTILITY_SOURCE_FILES})
 
 include_directories(
 	${CY_AUTO_INCLUDE_PATH}
@@ -120,8 +133,8 @@ include_directories(
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
 	${CY_SOURCE_CRYPT_PATH}
+	${CY_SOURCE_UTILITY_PATH}
 )
-
 
 add_library(cyclone 
 	${CY_CORE_SOURCE_FILES} 
@@ -133,6 +146,8 @@ add_library(cyclone
 	${CY_NETWORK_SOURCE_FILES}
 	${CY_CRYPT_INCLUDE_FILES}
 	${CY_CRYPT_SOURCE_FILES}
+	${CY_UTILITY_INCLUDE_FILES}
+	${CY_UTILITY_SOURCE_FILES}
 )
 
 if (MSVC)

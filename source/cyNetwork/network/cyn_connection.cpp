@@ -24,7 +24,10 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	, m_on_message(nullptr)
 	, m_on_send_complete(nullptr)
 	, m_on_close(nullptr)
-	, m_max_sendbuf_len(0)
+#if CY_ENABLE_DEBUG
+	, m_readbuf_minmax_size(kDefaultReadBufSize)
+	, m_writebuf_minmax_size(kDefaultWriteBufSize)
+#endif
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
@@ -193,7 +196,9 @@ void Connection::_on_socket_read(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
 	ssize_t len = m_read_buf.read_socket(m_socket);
-
+#if CY_ENABLE_DEBUG
+	m_readbuf_minmax_size.update(m_read_buf.size());
+#endif
 	if (len > 0)
 	{
 		//notify logic layer...
@@ -223,12 +228,10 @@ void Connection::_on_socket_write(void)
 
 	{
 		sys_api::auto_mutex lock(m_write_buf_lock);
-
+#if CY_ENABLE_DEBUG
+		m_writebuf_minmax_size.update(m_write_buf.size());
+#endif
 		if (!m_write_buf.empty()) {
-			if (m_write_buf.size() > m_max_sendbuf_len) {
-				m_max_sendbuf_len = m_write_buf.size();
-			}
-
 			ssize_t len = m_write_buf.write_socket(m_socket);
 			if (len <= 0) {
 				//log error
