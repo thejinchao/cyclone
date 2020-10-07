@@ -1,7 +1,7 @@
 ﻿#include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
-#include <SimpleOpt.h>
+#include <utility/cyu_simple_opt.h>
 
 #include "chat_message.h"
 

@@ -118,6 +118,7 @@ source_group("cyCrypt" FILES ${CY_CRYPT_SOURCE_FILES})
 ########
 set(CY_UTILITY_INCLUDE_FILES
 	cyUtility/utility/cyu_statistics.h
+	cyUtility/utility/cyu_simple_opt.h
 )
 source_group("cyUtility" FILES ${CY_UTILITY_INCLUDE_FILES})
 
@@ -160,7 +161,7 @@ endif()
 install(FILES ${CY_AUTO_CONFIG_FILE}
 	DESTINATION include)
 	
-install(DIRECTORY cyCore/ cyEvent/ cyNetwork/ cyCrypt/
+install(DIRECTORY cyCore/ cyEvent/ cyNetwork/ cyCrypt/ cyUtility/
 	DESTINATION include
 	FILES_MATCHING 
 	PATTERN "*.h"

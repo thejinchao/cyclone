@@ -2,8 +2,7 @@
 #include <cy_event.h>
 #include <cy_network.h>
 #include <cy_crypt.h>
-
-#include <SimpleOpt.h>
+#include <utility/cyu_simple_opt.h>
 
 #include <fstream>
 
