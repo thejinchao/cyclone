@@ -20,7 +20,7 @@ set(cyt_unit_sources
     cyt_unit_main.cpp
     cyt_unit_lfqueue.cpp
     cyt_unit_crypt.cpp
-    cyt_unit_ringbuf.cpp
+    cyt_unit_ring_buf.cpp
     cyt_unit_pipe.cpp
     cyt_unit_signal.cpp
     cyt_event_fortest.h
@@ -30,6 +30,7 @@ set(cyt_unit_sources
     cyt_uint_system.cpp
     cyt_unit_packet.cpp
 	cyt_unit_statistics.cpp
+	cyt_unit_ring_queue.cpp
 )
 
 add_executable(cyt_unit 

@@ -1,0 +1,674 @@
+﻿#include <cy_core.h>
+#include <cy_crypt.h>
+#include <cy_event.h>
+#include <utility/cyu_ring_queue.h>
+
+#include <gtest/gtest.h>
+
+using namespace cyclone;
+
+//-------------------------------------------------------------------------------------
+#define CHECK_RINQUEUE_EMPTY(rq, c) \
+	EXPECT_EQ(0ul, rq.size()); \
+	EXPECT_EQ((size_t)(c), rq.capacity()); \
+	EXPECT_EQ((size_t)(c), rq.get_free_size()); \
+	EXPECT_TRUE(rq.empty()); 
+
+//-------------------------------------------------------------------------------------
+#define CHECK_RINGQUEUE_SIZE(rq, s, c) \
+	EXPECT_EQ((size_t)(s), rq.size()); \
+	EXPECT_EQ((size_t)(c), rq.capacity()); \
+	EXPECT_EQ((size_t)((c) - (s)), rq.get_free_size()); \
+	if ((s) == 0) \
+		EXPECT_TRUE(rq.empty()); \
+	else \
+		EXPECT_FALSE(rq.empty()); \
+
+//-------------------------------------------------------------------------------------
+TEST(RingQueue, FixedCapcity)
+{
+	const size_t TestSize = 31;
+
+	// Initial conditions
+	{
+		RingQueue<int32_t, 30> rq30;
+		CHECK_RINQUEUE_EMPTY(rq30, 30);
+
+		RingQueue<int32_t, 31> rq31;
+		CHECK_RINQUEUE_EMPTY(rq31, 31);
+
+		RingQueue<int32_t, 32> rq32;
+		CHECK_RINQUEUE_EMPTY(rq32, 32);
+
+		RingQueue<int32_t, 33> rq33;
+		CHECK_RINQUEUE_EMPTY(rq33, 33);
+	}
+
+	// push one element AND reset
+	{
+		RingQueue<int32_t, TestSize> rq;
+		rq.push(1);
+		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
+
+		EXPECT_EQ(rq.front(), 1);
+
+		rq.reset();
+		CHECK_RINQUEUE_EMPTY(rq, TestSize);
+	}
+
+	// push element twice
+	{
+		RingQueue<int32_t, TestSize> rq;
+		rq.push(1);
+		rq.push(2);
+
+		EXPECT_EQ(rq.front(), 1);
+		CHECK_RINGQUEUE_SIZE(rq, 2, TestSize);
+	}
+
+	//push element to full capacity AND reset
+	{
+		RingQueue<int32_t, TestSize> rq;
+		for (int32_t i = 0; i < (int32_t)TestSize; i++) {
+			rq.push(i);
+		}
+		CHECK_RINGQUEUE_SIZE(rq, TestSize, TestSize);
+		EXPECT_EQ(rq.front(), 0);
+
+		rq.reset();
+		CHECK_RINQUEUE_EMPTY(rq, TestSize);
+	}
+
+	//push element to full and overflow
+	{
+		RingQueue<int32_t, TestSize> rq;
+		for (int32_t i = 0; i < (int32_t)TestSize; i++) {
+			rq.push(i);
+		}
+		CHECK_RINGQUEUE_SIZE(rq, TestSize, TestSize);
+		EXPECT_EQ(rq.front(), 0);
+
+		std::vector<int32_t> v1(TestSize);
+		for (size_t i = 0; i < TestSize; i++) v1[i] = rand();
+
+		for (int32_t i = 0; i < (int32_t)TestSize; i++) {
+			EXPECT_EQ(rq.front(), i);
+			rq.push(v1[i]);
+			CHECK_RINGQUEUE_SIZE(rq, TestSize, TestSize);
+		}
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), TestSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, v1[i]);
+		}
+
+		rq.reset();
+		CHECK_RINQUEUE_EMPTY(rq, TestSize);
+	}
+
+	//get from empty ring queue
+	{
+		RingQueue<int32_t, TestSize> rq;
+
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_TRUE(result.empty());
+
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_TRUE(result.empty());
+	}
+
+	//push one element and get
+	{
+		RingQueue<int32_t, TestSize> rq;
+
+		int32_t v1 = rand();
+		rq.push(v1);
+		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
+
+		int32_t v2 = rq.front();
+		EXPECT_EQ(v1, v2);
+		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
+
+		std::vector<std::pair<size_t, int32_t>> v3;
+		rq.walk([&v3](size_t index, const int32_t& v) ->bool {
+			v3.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(v3.size(), 1);
+		EXPECT_EQ(v3[0].first, 0);
+		EXPECT_EQ(v3[0].second, v1);
+
+		v3.clear();
+		rq.walk_reserve([&v3](size_t index, const int32_t& v) ->bool {
+			v3.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(v3.size(), 1);
+		EXPECT_EQ(v3[0].first, 0);
+		EXPECT_EQ(v3[0].second, v1);
+	}
+
+	//push some element and get
+	{
+		RingQueue<int32_t, TestSize> rq;
+
+		const size_t FillSize = 13;
+		std::vector<int32_t> v1(FillSize);
+		for (size_t i = 0; i < FillSize; i++) v1[i] = rand();
+
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(v1[i]);
+		}
+		CHECK_RINGQUEUE_SIZE(rq, FillSize, TestSize);
+		EXPECT_EQ(rq.front(), v1[0]);
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, v1[i]);
+		}
+
+		//get reserve
+		result.clear();
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, result.size()-1-i);
+			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+		}
+	}
+
+	//make wrap condition and get
+	{
+		RingQueue<int32_t, TestSize> rq;
+
+		const size_t FillSize = 13;
+		std::vector<int32_t> v1(FillSize*2);
+		for (size_t i = 0; i < FillSize*2; i++) v1[i] = rand();
+
+		//push 0
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(0);
+		}
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			EXPECT_EQ(rq.front(), 0);
+
+			rq.push(v1[i]);
+			rq.pop();
+		}
+		for (size_t i = 0; i < FillSize; i++) {
+			EXPECT_EQ(rq.front(), v1[0]);
+
+			rq.push(v1[i+FillSize]);
+		}
+
+		CHECK_RINGQUEUE_SIZE(rq, FillSize * 2, TestSize);
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize*2);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, v1[i]);
+		}
+
+		//get reserve
+		result.clear();
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 2);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, result.size()-1-i);
+			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+		}
+	}
+
+	//make wrap condition and pop to not
+	{
+		RingQueue<int32_t, TestSize> rq;
+
+		const size_t FillSize = 13;
+		std::vector<int32_t> v1(FillSize * 2);
+		for (size_t i = 0; i < FillSize * 2; i++) v1[i] = rand();
+
+		//push 0
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(0);
+		}
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(v1[i]);
+			rq.pop();
+		}
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(v1[i + FillSize]);
+		}
+
+		//pop
+		const size_t PopSize = TestSize - FillSize + 2;
+		for (size_t i = 0; i < PopSize; i++) {
+			EXPECT_EQ(rq.front(), v1[i]);
+			rq.pop();
+		}
+
+		CHECK_RINGQUEUE_SIZE(rq, FillSize * 2-PopSize, TestSize);
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 2-PopSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, v1[i+PopSize]);
+		}
+
+		//get reserve
+		result.clear();
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 2-PopSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, result.size() - 1 - i);
+			EXPECT_EQ(result[i].second, v1[FillSize*2 - 1 - i]);
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------
+TEST(RingQueue, AutoResize)
+{
+	typedef RingQueue<int32_t> IntRingQueue;
+
+	// Initial conditions
+	{
+		IntRingQueue rq;
+		CHECK_RINQUEUE_EMPTY(rq, IntRingQueue::kDefaultCapacity);
+	}
+
+	// push one element AND reset
+	{
+		IntRingQueue rq;
+		rq.push(1);
+		CHECK_RINGQUEUE_SIZE(rq, 1, IntRingQueue::kDefaultCapacity);
+
+		EXPECT_EQ(rq.front(), 1);
+
+		rq.reset();
+		CHECK_RINQUEUE_EMPTY(rq, IntRingQueue::kDefaultCapacity);
+	}
+
+	// push element twice
+	{
+		IntRingQueue rq;
+		rq.push(1);
+		rq.push(2);
+
+		EXPECT_EQ(rq.front(), 1);
+		CHECK_RINGQUEUE_SIZE(rq, 2, IntRingQueue::kDefaultCapacity);
+	}
+
+	//push element to full capacity AND reset
+	{
+		IntRingQueue rq;
+		for (int32_t i = 0; i < (int32_t)IntRingQueue::kDefaultCapacity; i++) {
+			rq.push(i);
+		}
+		CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity, IntRingQueue::kDefaultCapacity);
+		EXPECT_EQ(rq.front(), 0);
+
+		rq.reset();
+		CHECK_RINQUEUE_EMPTY(rq, IntRingQueue::kDefaultCapacity);
+	}
+
+	//push element to full and overflow
+	{
+		IntRingQueue rq;
+		for (int32_t i = 0; i < (int32_t)IntRingQueue::kDefaultCapacity; i++) {
+			rq.push(i);
+		}
+		CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity, IntRingQueue::kDefaultCapacity);
+		EXPECT_EQ(rq.front(), 0);
+
+		std::vector<int32_t> v1;
+		size_t next_capcity = (rq.capacity() + 1) * 2 - 1;
+		for (int32_t i = 0; i < (int32_t)(next_capcity-IntRingQueue::kDefaultCapacity); i++) {
+			EXPECT_EQ(rq.front(), 0);
+
+			int32_t v = rand();
+			v1.push_back(v);
+			rq.push(v);
+			CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity+i+1, next_capcity);
+		}
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), next_capcity);
+
+		for (size_t i = 0; i < result.size(); i++)
+		{
+			EXPECT_EQ(result[i].first, i);
+
+			if(i< IntRingQueue::kDefaultCapacity)
+				EXPECT_EQ(result[i].second, (int32_t)i);
+			else
+				EXPECT_EQ(result[i].second, v1[i- IntRingQueue::kDefaultCapacity]);
+		}
+
+		size_t next_capcity2 = (rq.capacity() + 1) * 2 - 1;
+		rq.push(0);
+		CHECK_RINGQUEUE_SIZE(rq, next_capcity + 1, next_capcity2);
+	}
+
+	//get from empty ring queue
+	{
+		IntRingQueue rq;
+
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_TRUE(result.empty());
+
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_TRUE(result.empty());
+	}
+
+	//push one element and get
+	{
+		IntRingQueue rq;
+
+		int32_t v1 = rand();
+		rq.push(v1);
+		CHECK_RINGQUEUE_SIZE(rq, 1, IntRingQueue::kDefaultCapacity);
+
+		int32_t v2 = rq.front();
+		EXPECT_EQ(v1, v2);
+		CHECK_RINGQUEUE_SIZE(rq, 1, IntRingQueue::kDefaultCapacity);
+
+		std::vector<std::pair<size_t, int32_t>> v3;
+		rq.walk([&v3](size_t index, const int32_t& v) ->bool {
+			v3.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(v3.size(), 1);
+		EXPECT_EQ(v3[0].first, 0);
+		EXPECT_EQ(v3[0].second, v1);
+
+		v3.clear();
+		rq.walk_reserve([&v3](size_t index, const int32_t& v) ->bool {
+			v3.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(v3.size(), 1);
+		EXPECT_EQ(v3[0].first, 0);
+		EXPECT_EQ(v3[0].second, v1);
+	}
+
+	//push some element and get
+	{
+		IntRingQueue rq;
+
+		const size_t FillSize = 13;
+		std::vector<int32_t> v1(FillSize);
+		for (size_t i = 0; i < FillSize; i++) v1[i] = rand();
+
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(v1[i]);
+		}
+		CHECK_RINGQUEUE_SIZE(rq, FillSize, IntRingQueue::kDefaultCapacity);
+		EXPECT_EQ(rq.front(), v1[0]);
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, v1[i]);
+		}
+
+		//get reserve
+		result.clear();
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, result.size() - 1 - i);
+			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+		}
+	}
+
+	//make wrap condition and get
+	{
+		IntRingQueue rq;
+
+		const size_t FillSize = 13;
+		std::vector<int32_t> v1(FillSize * 2);
+		for (size_t i = 0; i < FillSize * 2; i++) v1[i] = rand();
+
+		//push 0
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(0);
+		}
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			EXPECT_EQ(rq.front(), 0);
+
+			rq.push(v1[i]);
+			rq.pop();
+
+			CHECK_RINGQUEUE_SIZE(rq, FillSize, IntRingQueue::kDefaultCapacity);
+		}
+		for (size_t i = 0; i < FillSize; i++) {
+			EXPECT_EQ(rq.front(), v1[0]);
+
+			rq.push(v1[i + FillSize]);
+		}
+
+		CHECK_RINGQUEUE_SIZE(rq, FillSize * 2, IntRingQueue::kDefaultCapacity);
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 2);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, v1[i]);
+		}
+
+		//get reserve
+		result.clear();
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 2);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, result.size() - 1 - i);
+			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+		}
+	}
+
+	//make wrap condition and resize
+	{
+		IntRingQueue rq;
+
+		const size_t FillSize = 13;
+		std::vector<int32_t> v1(FillSize * 2);
+		for (size_t i = 0; i < FillSize * 2; i++) v1[i] = rand();
+
+		//push 0
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(0);
+		}
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			EXPECT_EQ(rq.front(), 0);
+
+			rq.push(v1[i]);
+			rq.pop();
+		}
+		for (size_t i = 0; i < FillSize; i++) {
+			EXPECT_EQ(rq.front(), v1[0]);
+
+			rq.push(v1[i + FillSize]);
+		}
+
+		CHECK_RINGQUEUE_SIZE(rq, FillSize * 2, IntRingQueue::kDefaultCapacity);
+
+		//make resize
+		std::vector<int32_t> v2(FillSize);
+		for (size_t i = 0; i < FillSize; i++) v2[i] = rand();
+
+		size_t next_capacity = (IntRingQueue::kDefaultCapacity + 1) * 2 - 1;
+
+		//push
+		for (size_t i = 0; i < FillSize; i++) {
+			rq.push(v2[i]);
+
+			size_t expect_size = FillSize * 2 + i+1;
+			size_t expect_capacity = (expect_size<= IntRingQueue::kDefaultCapacity) ? (size_t)IntRingQueue::kDefaultCapacity : next_capacity;
+
+			CHECK_RINGQUEUE_SIZE(rq, expect_size, expect_capacity);
+		}
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 3);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+
+			if(i<FillSize*2)
+				EXPECT_EQ(result[i].second, v1[i]);
+			else
+				EXPECT_EQ(result[i].second, v2[i-FillSize*2]);
+		}
+
+		//get reserve
+		result.clear();
+		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), FillSize * 3);
+
+		for (size_t ri = 0; ri < result.size(); ri++)
+		{
+			size_t i = (int32_t)(result.size() - 1 - ri);
+
+			EXPECT_EQ(result[ri].first, i);
+			if (i < FillSize * 2)
+				EXPECT_EQ(result[ri].second, v1[i]);
+			else
+				EXPECT_EQ(result[ri].second, v2[i - FillSize * 2]);
+		}
+	}
+
+	//make the worst wrap condition and resize
+	{
+		IntRingQueue rq;
+
+		rq.push(0);
+		for (size_t i = 0; i < IntRingQueue::kDefaultCapacity; i++)
+		{
+			EXPECT_EQ(rq.front(), 0);
+
+			rq.push(0);
+			rq.pop();
+		}
+
+		for (size_t i = 1; i < IntRingQueue::kDefaultCapacity; i++)
+		{
+			rq.push((int32_t)i);
+		}
+
+		CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity, IntRingQueue::kDefaultCapacity);
+
+		rq.push((int32_t)IntRingQueue::kDefaultCapacity);
+
+		size_t next_capacity = (IntRingQueue::kDefaultCapacity + 1) * 2 - 1;
+		CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity+1, next_capacity);
+
+		//get
+		std::vector<std::pair<size_t, int32_t>> result;
+		rq.walk([&result](size_t index, const int32_t& v) ->bool {
+			result.push_back(std::make_pair(index, v));
+			return true;
+		});
+		EXPECT_EQ(result.size(), IntRingQueue::kDefaultCapacity + 1);
+
+		for (size_t i = 0; i < result.size(); i++) {
+			EXPECT_EQ(result[i].first, i);
+			EXPECT_EQ(result[i].second, (int32_t)i);
+		}
+	}
+}
