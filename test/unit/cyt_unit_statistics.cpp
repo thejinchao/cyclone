@@ -1,7 +1,8 @@
 ﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
-#include <cy_utility.h>
+#include <utility/cyu_statistics.h>
+
 #include <gtest/gtest.h>
 
 using namespace cyclone;

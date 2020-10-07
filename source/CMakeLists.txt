@@ -117,7 +117,6 @@ source_group("cyCrypt" FILES ${CY_CRYPT_SOURCE_FILES})
 #cyUtility
 ########
 set(CY_UTILITY_INCLUDE_FILES
-	cyUtility/cy_utility.h
 	cyUtility/utility/cyu_statistics.h
 )
 source_group("cyUtility" FILES ${CY_UTILITY_INCLUDE_FILES})
