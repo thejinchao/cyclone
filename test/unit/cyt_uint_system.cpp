@@ -244,7 +244,7 @@ TEST(System, Mutex)
 //-------------------------------------------------------------------------------------
 TEST(System, Atomic)
 {
-	atomic_int32_t a = 1;
+	atomic_int32_t a(1);
 
 	EXPECT_TRUE(atomic_compare_exchange(a, 1, 2)); //1==1
 	EXPECT_EQ(a.load(), 2);
