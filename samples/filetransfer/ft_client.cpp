@@ -242,7 +242,7 @@ public:
 				ctx->status = TS_Error;
 			}
 			else {
-				float speed = (ctx->fragmentSize*1000.f*1000.f) / (float)(ctx->endTime - ctx->beginTime);
+				float speed = (float)(ctx->fragmentSize*1000*1000) / (float)(ctx->endTime - ctx->beginTime);
 				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%d, crc=0x%08x, speed=%.1f KB/s", 
 					ctx->index, ctx->fileOffset, ctx->fragmentSize, ctx->fragmentCRC, speed/1024.f);
 				ctx->status = TS_Success;
