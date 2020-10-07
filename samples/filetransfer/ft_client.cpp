@@ -2,7 +2,6 @@
 #include <cy_event.h>
 #include <cy_network.h>
 #include <cy_crypt.h>
-
 #include <SimpleOpt.h>
 
 #include <fstream>
@@ -243,7 +242,7 @@ public:
 				ctx->status = TS_Error;
 			}
 			else {
-				float speed = (float)((ctx->fragmentSize*1000*1000) / (ctx->endTime - ctx->beginTime));
+				float speed = (ctx->fragmentSize*1000.f*1000.f) / (float)(ctx->endTime - ctx->beginTime);
 				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%d, crc=0x%08x, speed=%.1f KB/s", 
 					ctx->index, ctx->fileOffset, ctx->fragmentSize, ctx->fragmentCRC, speed/1024.f);
 				ctx->status = TS_Success;
@@ -262,7 +261,7 @@ public:
 			switch (ctx->status)
 			{
 			case ThreadStatus::TS_RequireFragment:
-				if (_onReceiveFragmentBegin(ctx, conn)) break;
+				if (_onReceiveFragmentBegin(ctx, conn)) return;
 				break;
 
 			case ThreadStatus::TS_Receiving:
@@ -270,7 +269,7 @@ public:
 				break;
 
 			case ThreadStatus::TS_Complete:
-				if (_onReceiveFragmentEnd(ctx, conn)) break;
+				if (_onReceiveFragmentEnd(ctx, conn)) return;
 				break;
 
 			default:
@@ -330,13 +329,17 @@ public:
 
 		size_t fileOffset = 0;
 		for (int32_t i = 0; i < fragmentCounts; i++) {
+
+			char threadName[32] = { 0 };
+			std::snprintf(threadName, 32, "download%d", i);
+
 			DownloadThreadContext* ctx = new DownloadThreadContext;
 			ctx->index = i;
 			ctx->fileOffset = fileOffset;
 			ctx->fragmentSize = (i==fragmentCounts-1) ? (int32_t)(m_fileSize - ctx->fileOffset) : fragmentSize;
 			ctx->receivedSize = 0;
 			ctx->fragmentCRC = INITIAL_ADLER;
-			ctx->downloadThread = sys_api::thread_create(std::bind(&FileTransferClient::_downloadThread, this, _1), ctx, "client");
+			ctx->downloadThread = sys_api::thread_create(std::bind(&FileTransferClient::_downloadThread, this, _1), ctx, threadName);
 
 			m_downloadContext.push_back(ctx);
 			fileOffset += ctx->fragmentSize;
@@ -357,13 +360,14 @@ public:
 			}
 
 			CY_LOG(L_INFO, "Download size: [%.2f%%] %zd", (float)(totalDownloadSize*100 / m_fileSize), totalDownloadSize);
-			sys_api::thread_sleep(1000);
+			sys_api::thread_sleep(500);
 		}
 
 		//check download thread status
 		for (int32_t i = 0; i < fragmentCounts; i++) {
 			DownloadThreadContext* ctx = m_downloadContext[i];
 			if (ctx->status != TS_Success) {
+				CY_LOG(L_INFO, "Download thread %d status error", i);
 				return false;
 			}
 		}
