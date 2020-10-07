@@ -129,7 +129,13 @@ private:
 			ctx.status = TS_Completed;
 			conn->set_on_send_complete(nullptr);
 
-			CY_LOG(L_INFO, "Send fragment completed, crc=0x%08x", ctx.fragmentCRC);
+			CY_LOG(L_INFO, "Send fragment completed, crc=0x%08x, sendBufMaxSize=%zd", ctx.fragmentCRC, 
+#if CY_ENABLE_DEBUG
+				conn->get_writebuf_max_size()
+#else
+				0
+#endif
+			);
 
 			//send last message
 			FT_ReplyFileFragment_End fileEnd;

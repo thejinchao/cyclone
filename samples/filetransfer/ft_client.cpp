@@ -41,6 +41,8 @@ public:
 	std::string m_strFileName;
 	int32_t m_threadTounts;
 	bool m_bGotFileInfo;
+	int64_t m_beginDownloadTime;
+	int64_t m_endDownloadTime;
 
 	enum ThreadStatus
 	{
@@ -242,9 +244,15 @@ public:
 				ctx->status = TS_Error;
 			}
 			else {
-				float speed = (float)(ctx->fragmentSize*1000*1000) / (float)(ctx->endTime - ctx->beginTime);
-				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%d, crc=0x%08x, speed=%.1f KB/s", 
-					ctx->index, ctx->fileOffset, ctx->fragmentSize, ctx->fragmentCRC, speed/1024.f);
+				float speed = (float)(ctx->fragmentSize)*1000.f*1000.f / (float)(ctx->endTime - ctx->beginTime);
+				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%d, crc=0x%08x, speed=%.1f KB/s, readBufMaxSize=%zd", 
+					ctx->index, ctx->fileOffset, ctx->fragmentSize, ctx->fragmentCRC, speed/1024.f,
+#if CY_ENABLE_DEBUG
+					conn->get_readebuf_max_size()
+#else
+					0
+#endif
+					);
 				ctx->status = TS_Success;
 			}
 		}
@@ -327,6 +335,8 @@ public:
 		}
 		fragmentSize = (int32_t)(m_fileSize / fragmentCounts) & (~0xF);
 
+		m_beginDownloadTime = sys_api::utc_time_now();
+
 		size_t fileOffset = 0;
 		for (int32_t i = 0; i < fragmentCounts; i++) {
 
@@ -371,6 +381,8 @@ public:
 				return false;
 			}
 		}
+
+		m_endDownloadTime = sys_api::utc_time_now();
 
 		return true;
 	}
@@ -446,20 +458,20 @@ int main(int argc, char* argv[])
 	}
 
 	//receive file
-	int64_t beginTime = sys_api::utc_time_now();
 	if (!client.beginDownloadFile()) {
 		CY_LOG(L_ERROR, "Download file failed");
 		return 1;
 	}
+
+	float downloadTime = (float)(client.m_endDownloadTime - client.m_beginDownloadTime)/(1000.f*1000.f);
+	CY_LOG(L_INFO, "Download complete, time=%.1f(sec), speed=%.1f Kb/s", downloadTime, (float)(client.m_fileSize)/(downloadTime * 1024.f));
 
 	//combine file
 	if (!client.combineFile()) {
 		CY_LOG(L_ERROR, "Combine file failed");
 		return 1;
 	}
-	int64_t endTime = sys_api::utc_time_now();
-
-	CY_LOG(L_INFO, "Download complete, speed %.1f Kb/s", (float)(client.m_fileSize*1000*1000 / ((endTime - beginTime)*1024)));
+	CY_LOG(L_INFO, "Combine file complete");
 
 	return 0;
 }
