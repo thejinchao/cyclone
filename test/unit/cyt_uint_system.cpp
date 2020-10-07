@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <gtest/gtest.h>
 
 using namespace cyclone;
@@ -240,4 +240,35 @@ TEST(System, Mutex)
 	delete[] work_thread;
 	delete[] work_thread_id;
 }
+
+//-------------------------------------------------------------------------------------
+TEST(System, Atomic)
+{
+	atomic_int32_t a = 1;
+
+	EXPECT_TRUE(atomic_compare_exchange(a, 1, 2)); //1==1
+	EXPECT_EQ(a.load(), 2);
+
+	EXPECT_FALSE(atomic_compare_exchange(a, 1, 2)); //1!=2
+	EXPECT_EQ(a.load(), 2);
+
+	EXPECT_TRUE(atomic_smaller_exchange(a, 1, 3)); //1<2
+	EXPECT_EQ(a.load(), 3);
+
+	EXPECT_FALSE(atomic_smaller_exchange(a, 4, 10)); // 3 !< 4
+	EXPECT_EQ(a.load(), 3);
+
+	EXPECT_FALSE(atomic_smaller_exchange(a, 3, 10)); // 3 !< 3
+	EXPECT_EQ(a.load(), 3);
+
+	EXPECT_TRUE(atomic_greater_exchange(a, 4, 4)); // 4>3
+	EXPECT_EQ(a.load(), 4);
+
+	EXPECT_FALSE(atomic_greater_exchange(a, 3, 10)); // 3 !> 4
+	EXPECT_EQ(a.load(), 4);
+
+	EXPECT_FALSE(atomic_greater_exchange(a, 4, 10)); // 4 !> 4
+	EXPECT_EQ(a.load(), 4);
+}
+
 }
