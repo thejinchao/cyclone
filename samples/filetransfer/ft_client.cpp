@@ -3,6 +3,7 @@
 #include <cy_network.h>
 #include <cy_crypt.h>
 #include <utility/cyu_simple_opt.h>
+#include <utility/cyu_string_util.h>
 
 #include <fstream>
 
@@ -43,6 +44,7 @@ public:
 	bool m_bGotFileInfo;
 	int64_t m_beginDownloadTime;
 	int64_t m_endDownloadTime;
+	PeriodValue<size_t, true> m_downloadSpeed;
 
 	enum ThreadStatus
 	{
@@ -73,6 +75,11 @@ public:
 	std::vector< DownloadThreadContext* > m_downloadContext;
 
 public:
+	FileTransferClient() :
+		m_downloadSpeed(0xFFFF, 1000)
+	{
+
+	}
 	bool queryFileInfo(const std::string& server_ip, uint16_t server_port)
 	{
 		m_server_ip = server_ip;
@@ -119,7 +126,7 @@ public:
 			this->m_threadTounts = fileInfo->threadCounts;
 			this->m_bGotFileInfo = true;
 
-			CY_LOG(L_INFO, "Got file info, size=%zd, name:%s", this->m_fileSize, this->m_strFileName.c_str());
+			CY_LOG(L_INFO, "Got file info, size=%s, name:%s", string_util::size_to_string((float)this->m_fileSize).c_str(), this->m_strFileName.c_str());
 
 			ringBuf.discard(fileInfo->size);
 			_conn->shutdown();
@@ -213,6 +220,7 @@ public:
 		ringBuff.discard(writeSize);
 
 		ctx->receivedSize += writeSize;
+		m_downloadSpeed.push(writeSize);
 
 		if (ctx->receivedSize.load() >= ctx->fragmentSize) {
 			ctx->status = TS_Complete;
@@ -244,13 +252,13 @@ public:
 				ctx->status = TS_Error;
 			}
 			else {
-				float speed = (float)(ctx->fragmentSize)*1000.f*1000.f / (float)(ctx->endTime - ctx->beginTime);
-				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%d, crc=0x%08x, speed=%.1f KB/s, readBufMaxSize=%zd", 
-					ctx->index, ctx->fileOffset, ctx->fragmentSize, ctx->fragmentCRC, speed/1024.f,
+				size_t speed = ctx->fragmentSize*1000ull*1000ull / (ctx->endTime - ctx->beginTime);
+				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%s, crc=0x%08x, speed=%s/s, readBufMaxSize=%s", 
+					ctx->index, ctx->fileOffset, string_util::size_to_string((float)ctx->fragmentSize).c_str(), ctx->fragmentCRC, string_util::size_to_string(speed).c_str(),
 #if CY_ENABLE_DEBUG
-					conn->get_readebuf_max_size()
+					string_util::size_to_string(conn->get_readebuf_max_size()).c_str()
 #else
-					0
+					"NA"
 #endif
 					);
 				ctx->status = TS_Success;
@@ -368,9 +376,14 @@ public:
 					ctx->downloadThread = nullptr;
 				}
 			}
+			auto downloadSpeed = m_downloadSpeed.sum_and_counts();
 
-			CY_LOG(L_INFO, "Download size: [%.2f%%] %zd", (float)(totalDownloadSize*100 / m_fileSize), totalDownloadSize);
-			sys_api::thread_sleep(500);
+			CY_LOG(L_INFO, "Download speed: %s/s, Size:%s Percent:[%.2f%%]", 
+				string_util::size_to_string(downloadSpeed.first / (m_downloadSpeed.get_time_period()/1000)).c_str(),
+				string_util::size_to_string(totalDownloadSize).c_str(),
+				(float)(totalDownloadSize*100 / m_fileSize));
+
+			sys_api::thread_sleep(1000);
 		}
 
 		//check download thread status
@@ -463,8 +476,8 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	float downloadTime = (float)(client.m_endDownloadTime - client.m_beginDownloadTime)/(1000.f*1000.f);
-	CY_LOG(L_INFO, "Download complete, time=%.1f(sec), speed=%.1f Kb/s", downloadTime, (float)(client.m_fileSize)/(downloadTime * 1024.f));
+	size_t downloadTime = (client.m_endDownloadTime - client.m_beginDownloadTime)/(1000ull*1000ull);
+	CY_LOG(L_INFO, "Download complete, time=%d(sec), speed=%s/s", downloadTime, string_util::size_to_string(client.m_fileSize/downloadTime).c_str());
 
 	//combine file
 	if (!client.combineFile()) {

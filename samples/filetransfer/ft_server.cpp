@@ -3,6 +3,8 @@
 #include <cy_network.h>
 #include <cy_crypt.h>
 #include <utility/cyu_simple_opt.h>
+#include <utility/cyu_statistics.h>
+#include <utility/cyu_string_util.h>
 
 #include <fstream>
 
@@ -54,16 +56,54 @@ private:
 		uint32_t fragmentCRC;
 		enum { BUFFER_SIZE = 64*1024 };
 		char* buffer;
+		ConnectionPtr conn;
+		std::atomic<float> sendSpeed;
+
+		ThreadContext() {
+			status = TS_Idle;
+			offsetBegin = offsetNow = offsetEnd = 0;
+			fragmentCRC = INITIAL_ADLER;
+			buffer = nullptr;
+			sendSpeed = 0.f;
+		}
 	};
 
 	std::string m_strPathName;
 	std::string m_strFileName;
 	size_t m_fileSize;
 	TcpServer m_server;
+	atomic_int32_t m_workingCounts;
 	std::vector<ThreadContext*> m_threadContext;
 
 private:
-	void _onWorkThreadStart(int32_t index)
+	void _onMasterThreadStart(Looper* looper)
+	{
+#if CY_ENABLE_DEBUG
+		looper->register_timer_event(1000, nullptr, std::bind(&FileTransferServer::_onMasterThreadTimer, this));
+#endif
+	}
+
+	void _onMasterThreadTimer()
+	{
+#if CY_ENABLE_DEBUG
+		if (m_workingCounts.load()==0) return;
+
+		std::string speedStatus;
+		for(int32_t i=0; i<(int32_t)m_threadContext.size(); i++) {
+			ThreadContext* ctx = (ThreadContext*)m_threadContext[i];
+
+			float speed = ctx->sendSpeed.load();
+
+			char temp[256] = { 0 };
+			std::snprintf(temp, 256, "[%d]%s/s ", i, string_util::size_to_string(speed).c_str());
+			speedStatus += temp;
+		}
+
+		CY_LOG(L_INFO, "SendSpeed: %s", speedStatus.c_str());
+#endif
+	}
+
+	void _onWorkThreadStart(int32_t index, Looper* looper)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 
@@ -72,18 +112,39 @@ private:
 		ctx.buffer = (char*)CY_MALLOC(ThreadContext::BUFFER_SIZE);
 		ctx.offsetBegin = ctx.offsetEnd = ctx.offsetNow = 0;
 		ctx.fragmentCRC = INITIAL_ADLER;
+		ctx.sendSpeed = 0.f;
+
+#if CY_ENABLE_DEBUG
+		looper->register_timer_event(1000, nullptr, std::bind(&FileTransferServer::_onWorkThreadTimer, this, index));
+#endif
+	}
+
+	void _onWorkThreadTimer(int32_t index)
+	{
+#if CY_ENABLE_DEBUG
+		assert(index >= 0 && index < (int32_t)m_threadContext.size());
+		ThreadContext& ctx = *(m_threadContext[index]);
+
+		if (ctx.status == TS_Sending && ctx.conn) {
+			ctx.sendSpeed = ctx.conn->get_write_speed();
+		}
+#endif
 	}
 
 	void _onClientConnected(int32_t index, ConnectionPtr conn)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
+		ThreadContext& ctx = *(m_threadContext[index]);
 
-		if (m_threadContext[index]->status != TS_Idle) {
+		if (ctx.status != TS_Idle) {
 			conn->shutdown();
 			return;
 		}
 		
-		m_threadContext[index]->status = TS_Connected;
+		ctx.status = TS_Connected;
+		ctx.conn = conn;
+
+		this->m_workingCounts += 1;
 	}
 
 	void _onMessage_QueryFileInfo(int32_t , const FT_Head&head, ConnectionPtr conn)
@@ -128,11 +189,11 @@ private:
 			ctx.status = TS_Completed;
 			conn->set_on_send_complete(nullptr);
 
-			CY_LOG(L_INFO, "Send fragment completed, crc=0x%08x, sendBufMaxSize=%zd", ctx.fragmentCRC, 
+			CY_LOG(L_INFO, "Send fragment completed, crc=0x%08x, sendBufMaxSize=%s", ctx.fragmentCRC, 
 #if CY_ENABLE_DEBUG
-				conn->get_writebuf_max_size()
+				string_util::size_to_string(conn->get_writebuf_max_size()).c_str()
 #else
-				0
+				"na"
 #endif
 			);
 
@@ -170,6 +231,7 @@ private:
 		ctx.offsetNow = ctx.offsetBegin = require->fileOffset;
 		ctx.offsetEnd = ctx.offsetBegin + require->fragmentSize;
 		ctx.fragmentCRC = INITIAL_ADLER;
+		ctx.sendSpeed = 0.f;
 
 		//send fragment begin 
 		FT_ReplyFileFragment_Begin fileBegin;
@@ -219,6 +281,10 @@ private:
 			ctx.fileHandle.close();
 		}
 		ctx.status = TS_Idle;
+		ctx.conn.reset();
+		ctx.sendSpeed = 0.f;
+
+		this->m_workingCounts -= 1;
 	}
 
 public:
@@ -259,7 +325,8 @@ public:
 
 	void startAndJoin(int16_t listenPort) 
 	{
-		m_server.m_listener.on_work_thread_start = std::bind(&FileTransferServer::_onWorkThreadStart, this, _2);
+		m_server.m_listener.on_master_thread_start = std::bind(&FileTransferServer::_onMasterThreadStart, this, _2);
+		m_server.m_listener.on_work_thread_start = std::bind(&FileTransferServer::_onWorkThreadStart, this, _2, _3);
 		m_server.m_listener.on_connected = std::bind(&FileTransferServer::_onClientConnected, this, _2, _3);
 		m_server.m_listener.on_message = std::bind(&FileTransferServer::_onClientMessage, this, _2, _3);
 		m_server.m_listener.on_close = std::bind(&FileTransferServer::_onClientClose, this, _2, _3);
@@ -283,6 +350,7 @@ public:
 public:
 	FileTransferServer() 
 		: m_server("FileTransfer", nullptr)
+		, m_workingCounts(0)
 	{
 	}
 
