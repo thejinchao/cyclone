@@ -28,25 +28,26 @@ using namespace cyclone;
 TEST(RingQueue, FixedCapcity)
 {
 	const size_t TestSize = 31;
+	typedef RingQueue<int32_t> IntRingQueue;
 
 	// Initial conditions
 	{
-		RingQueue<int32_t, 30> rq30;
+		IntRingQueue rq30(30);
 		CHECK_RINQUEUE_EMPTY(rq30, 30);
 
-		RingQueue<int32_t, 31> rq31;
+		IntRingQueue rq31(31);
 		CHECK_RINQUEUE_EMPTY(rq31, 31);
 
-		RingQueue<int32_t, 32> rq32;
+		IntRingQueue rq32(32);
 		CHECK_RINQUEUE_EMPTY(rq32, 32);
 
-		RingQueue<int32_t, 33> rq33;
+		IntRingQueue rq33(33);
 		CHECK_RINQUEUE_EMPTY(rq33, 33);
 	}
 
 	// push one element AND reset
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 		rq.push(1);
 		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
 
@@ -58,7 +59,7 @@ TEST(RingQueue, FixedCapcity)
 
 	// push element twice
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 		rq.push(1);
 		rq.push(2);
 
@@ -68,7 +69,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//push element to full capacity AND reset
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 		for (int32_t i = 0; i < (int32_t)TestSize; i++) {
 			rq.push(i);
 		}
@@ -81,7 +82,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//push element to full and overflow
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 		for (int32_t i = 0; i < (int32_t)TestSize; i++) {
 			rq.push(i);
 		}
@@ -116,7 +117,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//get from empty ring queue
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 
 		std::vector<std::pair<size_t, int32_t>> result;
 		rq.walk([&result](size_t index, const int32_t& v) ->bool {
@@ -134,7 +135,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//push one element and get
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 
 		int32_t v1 = rand();
 		rq.push(v1);
@@ -165,7 +166,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//push some element and get
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 
 		const size_t FillSize = 13;
 		std::vector<int32_t> v1(FillSize);
@@ -207,7 +208,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//make wrap condition and get
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 
 		const size_t FillSize = 13;
 		std::vector<int32_t> v1(FillSize*2);
@@ -261,7 +262,7 @@ TEST(RingQueue, FixedCapcity)
 
 	//make wrap condition and pop to not
 	{
-		RingQueue<int32_t, TestSize> rq;
+		IntRingQueue rq(TestSize);
 
 		const size_t FillSize = 13;
 		std::vector<int32_t> v1(FillSize * 2);

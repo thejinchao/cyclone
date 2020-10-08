@@ -10,7 +10,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-template<typename T, size_t FixedCapacity=0>
+template<typename T>
 class RingQueue
 {
 public:
@@ -45,10 +45,22 @@ public:
 		m_write = _next(m_write);
 	}
 
-	T front(void) {
+	const T& front(void) const {
 		assert(!empty());
 
 		return m_vector[m_read];
+	}
+
+	const T& back(void) const {
+		assert(!empty());
+
+		return m_vector[_prev(m_write)];
+	}
+
+	const T& get(size_t index) const {
+		assert(index>=0 && index<size());
+
+		return m_vector[_next(m_read, index)];
 	}
 
 	void pop(size_t counts = 1) {
@@ -56,7 +68,7 @@ public:
 			reset();
 			return;
 		}
-		m_read = (m_read + counts) % m_end;
+		m_read = _next(m_read, counts);
 	}
 
 	void walk(WalkFunc walk_func) 
@@ -83,11 +95,11 @@ public:
 	}
 
 private:
-	size_t _next(size_t pos, size_t step=1) {
+	size_t _next(size_t pos, size_t step=1) const {
 		return (pos + step) % m_end;
 	}
 	
-	size_t _prev(size_t pos, size_t step=1) {
+	size_t _prev(size_t pos, size_t step=1) const {
 		return (pos >= step) ? (pos - step) : (pos + m_end - step);
 	}
 
@@ -96,7 +108,7 @@ private:
 		size_t free_size = get_free_size();
 		if (free_size >= more_size) return;
 
-		if CONSTEXPR(FixedCapacity > 0) {
+		if (m_fixed) {
 			pop(more_size - free_size);
 		}
 		else {
@@ -116,14 +128,14 @@ private:
 		}
 	}
 public:
-	RingQueue() 
+	RingQueue(size_t fixed_capacity = 0) : m_fixed(fixed_capacity>0)
 	{
 		size_t cap = kDefaultCapacity + 1;
 		m_end = cap;
 
-		if CONSTEXPR (FixedCapacity > 0) {
-			cap = ((size_t)(FixedCapacity/8) + 1) * 8; //align 8
-			m_end = FixedCapacity + 1;
+		if (m_fixed) {
+			cap = ((size_t)(fixed_capacity /8) + 1) * 8; //align 8
+			m_end = fixed_capacity + 1;
 		}
 
 		m_vector.resize(cap);
@@ -132,6 +144,7 @@ public:
 private:
 	typedef std::vector<T> ValueVector;
 
+	bool m_fixed;
 	ValueVector m_vector;
 	size_t m_read;
 	size_t m_write;
