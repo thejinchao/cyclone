@@ -72,7 +72,7 @@ public:
 		sys_api::mutex_t _lock;
 	};
 public:
-	void push(const T& value, int64_t cur_time=0)
+	bool push(const T& value, int64_t cur_time=0)
 	{
 		AutoLock lock(m_lock);
 
@@ -80,6 +80,7 @@ public:
 			cur_time = sys_api::utc_time_now() / 1000ll;
 		}
 		m_valueQueue.push(std::make_pair(cur_time, value));
+		return (m_valueQueue.get_free_size() == 0);
 	}
 
 	std::pair<T, int32_t> sum_and_counts(int64_t cur_time = 0)
