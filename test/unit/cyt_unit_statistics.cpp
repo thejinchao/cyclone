@@ -109,3 +109,35 @@ TEST(Statistics, MinMaxValue)
 	}
 }
 
+//-------------------------------------------------------------------------------------
+TEST(Statistics, PeriodValue)
+{
+	typedef PeriodValue<int32_t, true> IntPeriodValue;
+
+	{
+		IntPeriodValue v;
+
+		EXPECT_EQ(v.sum_and_counts(), std::make_pair(0, 0));
+	}
+
+	{
+		IntPeriodValue v(256, 1000);
+
+		// 0-100, 1-200, 2-300, 3-400, ... ,31-3200
+		for (int32_t i = 0; i < 32; i++) {
+			v.push(i, (int64_t)(i+1)*100ll);
+		}
+
+		//all
+		EXPECT_EQ(v.sum_and_counts(1000), std::make_pair(496, 32)); // 496 = (0+31)*32/2
+
+		//22-2300, 23-2400, ..., 31-3200
+		EXPECT_EQ(v.sum_and_counts(3300), std::make_pair(265, 10)); //265 = (22 + 31) * 10 / 2
+
+		//31-3200
+		EXPECT_EQ(v.sum_and_counts(4200), std::make_pair(31, 1));
+
+		//all expired
+		EXPECT_EQ(v.sum_and_counts(4201), std::make_pair(0, 0));
+	}
+}
