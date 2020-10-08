@@ -120,11 +120,13 @@ set(CY_UTILITY_INCLUDE_FILES
 	cyUtility/utility/cyu_statistics.h
 	cyUtility/utility/cyu_simple_opt.h
 	cyUtility/utility/cyu_ring_queue.h
+	cyUtility/utility/cyu_string_util.h
 )
 source_group("cyUtility" FILES ${CY_UTILITY_INCLUDE_FILES})
 
 set(CY_UTILITY_SOURCE_FILES
 	cyUtility/utility/cyu_statistics.cpp
+	cyUtility/utility/cyu_string_util.cpp
 )
 source_group("cyUtility" FILES ${CY_UTILITY_SOURCE_FILES})
 
