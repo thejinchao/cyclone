@@ -27,6 +27,8 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 #if CY_ENABLE_DEBUG
 	, m_readbuf_minmax_size(kDefaultReadBufSize)
 	, m_writebuf_minmax_size(kDefaultWriteBufSize)
+	, m_read_speed(256, SPEED_PERIOD_TIME*1000)
+	, m_write_speed(256, SPEED_PERIOD_TIME*1000)
 #endif
 {
 	//set socket to non-block and close-onexec
@@ -132,6 +134,9 @@ void Connection::_send(const char* buf, size_t len)
 		nwrote = socket_api::write(m_socket, buf, len);
 		if (nwrote >= 0)
 		{
+#if CY_ENABLE_DEBUG
+			m_write_speed.push(nwrote);
+#endif
 			remaining = len - (size_t)nwrote;
 		}
 		else
@@ -201,6 +206,9 @@ void Connection::_on_socket_read(void)
 #endif
 	if (len > 0)
 	{
+#if CY_ENABLE_DEBUG
+		m_read_speed.push(len);
+#endif
 		//notify logic layer...
 		if (m_on_message) {
 			m_on_message(shared_from_this());
@@ -237,6 +245,9 @@ void Connection::_on_socket_write(void)
 				//log error
 				CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
 			}
+#if CY_ENABLE_DEBUG
+			m_write_speed.push(len);
+#endif
 		}
 
 		//still remain some data, wait next socket write time
@@ -312,5 +323,19 @@ void Connection::set_param(void* param)
 {
 	m_param = param;
 }
+
+#if CY_ENABLE_DEBUG
+//-------------------------------------------------------------------------------------
+float Connection::get_read_speed(void)
+{
+	return (float)m_read_speed.sum_and_counts().first / ((float)m_read_speed.get_time_period() / 1000.f);
+}
+
+//-------------------------------------------------------------------------------------
+float Connection::get_write_speed(void)
+{
+	return (float)m_write_speed.sum_and_counts().first / ((float)m_read_speed.get_time_period() / 1000.f);
+}
+#endif
 
 }

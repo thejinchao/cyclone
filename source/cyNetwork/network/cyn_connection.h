@@ -125,9 +125,16 @@ public:
 	size_t get_readebuf_max_size(void) const { return m_readbuf_minmax_size.max(); }
 	size_t get_writebuf_max_size(void) const { return m_writebuf_minmax_size.max(); }
 
+	// trans speed last 5 seconds (bytes/s)
+	enum { SPEED_PERIOD_TIME = 5 };
+
+	float get_read_speed(void);
+	float get_write_speed(void);
 private:
 	MinMaxValue <size_t> m_readbuf_minmax_size;
 	MinMaxValue <size_t> m_writebuf_minmax_size;
+	PeriodValue <size_t, true> m_read_speed;
+	PeriodValue <size_t, true> m_write_speed;
 #endif
 
 public:
