@@ -310,7 +310,7 @@ public:
 		}
 		
 		//get file size
-		m_fileSize = fileHandle.tellg();
+		m_fileSize = (size_t)fileHandle.tellg();
 		fileHandle.close();
 
 		CY_LOG(L_DEBUG, "file to be transmitted: %s(%zd)", m_strPathName.c_str(), m_fileSize);

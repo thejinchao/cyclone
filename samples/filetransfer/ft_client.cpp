@@ -476,7 +476,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	size_t downloadTime = (client.m_endDownloadTime - client.m_beginDownloadTime)/(1000ull*1000ull);
+	size_t downloadTime = (size_t)(client.m_endDownloadTime - client.m_beginDownloadTime)/(1000ll*1000ll);
 	CY_LOG(L_INFO, "Download complete, time=%d(sec), speed=%s/s", downloadTime, string_util::size_to_string(client.m_fileSize/downloadTime).c_str());
 
 	//combine file
