@@ -77,8 +77,6 @@ set(CY_NETWORK_INCLUDE_FILES
 	cyNetwork/network/cyn_address.h
 	cyNetwork/network/cyn_tcp_server.h
 	cyNetwork/network/cyn_connection.h
-	cyNetwork/network/cyn_server_master_thread.h
-	cyNetwork/network/cyn_server_work_thread.h
 	cyNetwork/network/cyn_tcp_client.h
 )
 source_group("cyNetwork" FILES ${CY_NETWORK_INCLUDE_FILES})
@@ -87,11 +85,17 @@ set(CY_NETWORK_SOURCE_FILES
 	cyNetwork/network/cyn_address.cpp
 	cyNetwork/network/cyn_tcp_server.cpp
 	cyNetwork/network/cyn_connection.cpp
-	cyNetwork/network/cyn_server_master_thread.cpp
-	cyNetwork/network/cyn_server_work_thread.cpp
 	cyNetwork/network/cyn_tcp_client.cpp
 )
 source_group("cyNetwork" FILES ${CY_NETWORK_SOURCE_FILES})
+
+set(CY_NETWORK_INTERNAL_FILES
+	cyNetwork/network/internal/cyn_server_master_thread.h
+	cyNetwork/network/internal/cyn_server_work_thread.h
+	cyNetwork/network/internal/cyn_server_master_thread.cpp
+	cyNetwork/network/internal/cyn_server_work_thread.cpp
+)
+source_group("cyNetwork\\internal" FILES ${CY_NETWORK_INTERNAL_FILES})
 
 ########
 #cyCrypt
@@ -147,6 +151,7 @@ add_library(cyclone
 	${CY_EVENT_INTERNAL_FILES}
 	${CY_NETWORK_INCLUDE_FILES}
 	${CY_NETWORK_SOURCE_FILES}
+	${CY_NETWORK_INTERNAL_FILES}
 	${CY_CRYPT_INCLUDE_FILES}
 	${CY_CRYPT_SOURCE_FILES}
 	${CY_UTILITY_INCLUDE_FILES}

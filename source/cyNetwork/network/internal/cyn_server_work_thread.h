@@ -4,7 +4,7 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 #define _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 
-#include "cyn_connection.h"
+#include "../cyn_connection.h"
 
 namespace cyclone
 {
