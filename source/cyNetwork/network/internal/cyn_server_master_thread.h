@@ -13,21 +13,6 @@ namespace cyclone
 class ServerMasterThread : noncopyable
 {
 public:
-	// add a binded socket(called by TcpServer only!)
-	bool bind_socket(const Address& bind_addr, bool enable_reuse_port);
-	// start master thread
-	bool start(void);
-	/// get bind address(called by TcpServer only!)
-	Address get_bind_address(size_t index);
-	/// get bind socket size
-	size_t get_bind_socket_size(void) const {
-		return m_acceptor_sockets.size();
-	}
-
-	//// join work thread(thread safe)
-	void join(void);
-
-public:
 	//accept thread command
 	enum { 
 		kShutdownCmdID = 1, kStopListenCmdID, 
@@ -44,11 +29,25 @@ public:
 		size_t index;
 	};
 
-public:
+public: //call by TcpServer Only
 	//// send message to this work thread (thread safe)
 	void send_message(uint16_t id, uint16_t size, const char* message);
 	void send_message(const Packet* message);
 	void send_message(const Packet** message, int32_t counts);
+
+	// add a binded socket(called by TcpServer only!)
+	bool bind_socket(const Address& bind_addr, bool enable_reuse_port);
+	// start master thread
+	bool start(void);
+	/// get bind address(called by TcpServer only!)
+	Address get_bind_address(size_t index);
+	/// get bind socket size
+	size_t get_bind_socket_size(void) const {
+		return m_acceptor_sockets.size();
+	}
+
+	//// join work thread(thread safe)
+	void join(void);
 
 private:
 	TcpServer*	m_server;
