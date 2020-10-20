@@ -30,8 +30,6 @@ set(CY_SOURCE_NETWORK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyNetwork)
 set(CY_SOURCE_CRYPT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyCrypt)
 set(CY_SOURCE_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyUtility)
 
-set(CY_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utility)
-
 ########
 #check include file
 ########
