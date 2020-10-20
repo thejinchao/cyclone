@@ -26,6 +26,8 @@ public:
 
 	typedef std::function<void(TcpServer* server, int32_t thread_index, ConnectionPtr conn)> EventCallback;
 
+	enum { kCustomMasterThreadCmdID_Begin=10 };
+
 	struct Listener {
 		MasterThreadStartCallback on_master_thread_start;
 		MasterThreadCommandCallback on_master_thread_command;
@@ -37,6 +39,8 @@ public:
 		EventCallback on_message;
 		EventCallback on_close;
 	};
+
+
 
 	Listener m_listener;
 public:

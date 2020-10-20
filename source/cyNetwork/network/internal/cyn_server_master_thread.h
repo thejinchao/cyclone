@@ -16,8 +16,10 @@ public:
 	//accept thread command
 	enum { 
 		kShutdownCmdID = 1, kStopListenCmdID, 
-		kCustomCmdID_Begin=10,
+
+		kCustomCmdID_Begin = TcpServer::kCustomMasterThreadCmdID_Begin,
 	};
+
 	struct ShutdownCmd
 	{
 		enum { ID = kShutdownCmdID };
