@@ -129,7 +129,6 @@ set(CY_UTILITY_INCLUDE_FILES
 source_group("cyUtility" FILES ${CY_UTILITY_INCLUDE_FILES})
 
 set(CY_UTILITY_SOURCE_FILES
-	cyUtility/utility/cyu_statistics.cpp
 	cyUtility/utility/cyu_string_util.cpp
 )
 source_group("cyUtility" FILES ${CY_UTILITY_SOURCE_FILES})
