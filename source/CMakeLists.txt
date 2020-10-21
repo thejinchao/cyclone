@@ -78,6 +78,7 @@ set(CY_NETWORK_INCLUDE_FILES
 	cyNetwork/network/cyn_tcp_server.h
 	cyNetwork/network/cyn_connection.h
 	cyNetwork/network/cyn_tcp_client.h
+	cyNetwork/network/cyn_udp_server.h
 )
 source_group("cyNetwork" FILES ${CY_NETWORK_INCLUDE_FILES})
 
@@ -86,6 +87,7 @@ set(CY_NETWORK_SOURCE_FILES
 	cyNetwork/network/cyn_tcp_server.cpp
 	cyNetwork/network/cyn_connection.cpp
 	cyNetwork/network/cyn_tcp_client.cpp
+	cyNetwork/network/cyn_udp_server.cpp
 )
 source_group("cyNetwork" FILES ${CY_NETWORK_SOURCE_FILES})
 
@@ -94,6 +96,8 @@ set(CY_NETWORK_INTERNAL_FILES
 	cyNetwork/network/internal/cyn_server_work_thread.h
 	cyNetwork/network/internal/cyn_server_master_thread.cpp
 	cyNetwork/network/internal/cyn_server_work_thread.cpp
+	cyNetwork/network/internal/cyn_udp_server_work_thread.h
+	cyNetwork/network/internal/cyn_udp_server_work_thread.cpp
 )
 source_group("cyNetwork\\internal" FILES ${CY_NETWORK_INTERNAL_FILES})
 

@@ -88,6 +88,9 @@ public:
 	//// set extra_read to false if you don't want expand this ringbuf
 	ssize_t read_socket(socket_t fd, bool extra_read=true);
 
+	//// call recvfrom on the socket once, return size that received.
+	ssize_t recvfrom_socket(socket_t fd, struct sockaddr_in& peer_addr);
+
 	//// call write on the socket descriptor(fd), using the ring buffer rb as the 
 	//// source buffer for writing, In Linux platform, it will only call writev
 	//// once, and may return a short count.
