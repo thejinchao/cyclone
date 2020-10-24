@@ -63,7 +63,7 @@ private:
 		for (;;)
 		{
 			Packet packet;
-			if (!packet.build(PACKET_HEAD_SIZE, buf)) return;
+			if (!packet.build_from_ringbuf(PACKET_HEAD_SIZE, buf)) return;
 
 			{
 				sys_api::auto_mutex lock(m_clients_lock);

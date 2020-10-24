@@ -172,7 +172,7 @@ private:
 
 			//get handshake message
 			Packet handshakePacket;
-			if (!handshakePacket.build(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
+			if (!handshakePacket.build_from_ringbuf(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
 
 			//check size
 			if (handshakePacket.get_packet_size() != sizeof(RelayHandshakeMsg)) {
@@ -209,7 +209,7 @@ private:
 
 			//reply my public key
 			handshake.dh_key = pipe->m_publicKey;
-			handshakePacket.build((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
+			handshakePacket.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
 			conn->send(handshakePacket.get_memory_buf(), handshakePacket.get_memory_size());
 
 			//update state
@@ -231,7 +231,7 @@ private:
 			{
 				//get packet 
 				Packet packet;
-				if (!packet.build(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
+				if (!packet.build_from_ringbuf(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
 
 				RelayNewSessionMsg newSessionMsg;
 				memcpy(&newSessionMsg, packet.get_packet_content(), sizeof(newSessionMsg));
@@ -258,7 +258,7 @@ private:
 			{
 				//get packet 
 				Packet packet;
-				if (!packet.build(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
+				if (!packet.build_from_ringbuf(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
 
 				RelayCloseSessionMsg closeSessionMsg;
 				memcpy(&closeSessionMsg, packet.get_packet_content(), sizeof(closeSessionMsg));
@@ -280,7 +280,7 @@ private:
 			{
 				//get packet 
 				Packet packet;
-				if (!packet.build(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
+				if (!packet.build_from_ringbuf(RELAY_PACKET_HEADSIZE, conn->get_input_buf())) return;
 
 				RelayForwardMsg forwardMsg;
 				memcpy(&forwardMsg, packet.get_packet_content(), sizeof(forwardMsg));
@@ -382,7 +382,7 @@ private:
 			msg.id = session->m_id;
 
 			Packet packet;
-			packet.build(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
+			packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
 
 			//send to down client
 			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
@@ -420,7 +420,7 @@ private:
 			CY_LOG(L_TRACE, "[%d]receive from UP(%zd/%zd), send to DOWN after encrypt", msg.id, (size_t)msg.size, buf_round_size);
 
 			Packet packet;
-			packet.build(RELAY_PACKET_HEADSIZE, RelayForwardMsg::ID, (uint16_t)(sizeof(RelayForwardMsg) + buf_round_size), nullptr);
+			packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayForwardMsg::ID, (uint16_t)(sizeof(RelayForwardMsg) + buf_round_size), nullptr);
 			memcpy(packet.get_packet_content(), &msg, sizeof(RelayForwardMsg));
 			ringBuf.memcpy_out(packet.get_packet_content() + sizeof(RelayForwardMsg), msgSize);
 
@@ -468,7 +468,7 @@ private:
 		msg.id = session_id;
 
 		Packet packet;
-		packet.build(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
+		packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
 
 		//send to down client
 		pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());

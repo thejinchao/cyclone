@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 
@@ -33,9 +33,22 @@ class Packet : noncopyable
 public:
 	void clean(void);
 
-	void build(size_t head_size, uint16_t packet_id, uint16_t packet_size, const char* packet_content);
-	bool build(size_t head_size, Pipe& pipe);
-	bool build(size_t head_size, RingBuf& ring_buf);
+	//build from memory
+	// | packet_size |   packet_id   |  user_define_head |      packet_content1      |   packet_content2     |
+	// |    uint16   |     uint16    |        ...        |        packet_size1       |     packet_size2      |
+	// |  <---------------      head_size      --------->|<--------------      packet_size    -------------->|
+	//
+	void build_from_memory(size_t head_size, uint16_t packet_id,
+		uint16_t packet_size_part1, const char* packet_content_part1, 
+		uint16_t packet_size_part2=0, const char* packet_content_part2=nullptr);
+
+	//build from Pipe and RingBuf
+	// | packet_size |   packet_id   |  user_define_head |      packet_content   |
+	// |    uint16   |     uint16    |        ...        |           ...         |
+	// |  <---------------      head_size      --------->|<-----  packet_size -->|
+	//
+	bool build_from_pipe(size_t head_size, Pipe& pipe);
+	bool build_from_ringbuf(size_t head_size, RingBuf& ring_buf);
 
 public:
 	char* get_memory_buf(void) { return m_memory_buf; }
