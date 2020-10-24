@@ -82,7 +82,7 @@ public:
 		RingBuf& buf = conn->get_input_buf();
 
 		Packet packet;
-		packet.build(PACKET_HEAD_SIZE, buf);
+		packet.build_from_ringbuf(PACKET_HEAD_SIZE, buf);
 
 		char temp[1024] = { 0 };
 		memcpy(temp, packet.get_packet_content(), packet.get_packet_size());
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 		if (line[0] == 0) continue;
 
 		Packet packet;
-		packet.build(PACKET_HEAD_SIZE, 0, (uint16_t)strlen(line), line);
+		packet.build_from_memory(PACKET_HEAD_SIZE, 0, (uint16_t)strlen(line), line);
 
 		chatClient.get_client()->send(packet.get_memory_buf(), packet.get_memory_size());
 	}

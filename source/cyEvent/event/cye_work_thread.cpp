@@ -102,10 +102,10 @@ void WorkThread::_on_message(void)
 }
 
 //-------------------------------------------------------------------------------------
-void WorkThread::send_message(uint16_t id, uint16_t size, const char* msg)
+void WorkThread::send_message(uint16_t id, uint16_t size_part1, const char* msg_part1, uint16_t size_part2, const char* msg_part2)
 {
 	Packet* packet = Packet::alloc_packet();
-	packet->build(MESSAGE_HEAD_SIZE, id, size, msg);
+	packet->build_from_memory(MESSAGE_HEAD_SIZE, id, size_part1, msg_part1, size_part2, msg_part2);
 
 	m_message_queue.push(packet);
 

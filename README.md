@@ -14,12 +14,8 @@ Cyclone depends on following libraries
 - [jemalloc](http://jemalloc.net/) , Optional
 - To run unit test:
   - [Google Test](https://github.com/google/googletest)
-- To enable debug
-  - [hiredis](https://github.com/redis/hiredis)
-- To run samples
-  - [SimpleOpt](https://github.com/brofield/simpleopt), Have been included in the code base
  
- Cyclone has been tested with Clang (under Mac OS X), GCC 4.8+ (under Linux), Android Build Tools 25.0 and Microsoft Visual Studio 2015(under Windows 10).
+ Cyclone has been tested with Clang (under Mac OS X), GCC 4.8+ (under Linux), Android Build Tools 25.0 and Microsoft Visual Studio 2017(under Windows 10).
  
  # Build & Test
  ## On Linux or Mac OS X:
@@ -56,3 +52,4 @@ adb shell /data/local/cyt_unit
 - **chat** a simple chat room program
 - **socks5** a [Socks5](http://www.ietf.org/rfc/rfc1928.txt) proxy server(only support tcp protocol)
 - **relay** a interesting socket tunnel utility, support n:1, 1:n, key-exchange and aes encrypt.
+- **filetransfer** Transfer a file to another machine as soon as possible

@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -107,9 +107,17 @@ void Packet::_resize(size_t head_size, size_t packet_size)
 }
 
 //-------------------------------------------------------------------------------------
-void Packet::build(size_t head_size, uint16_t packet_id, uint16_t packet_size, const char* packet_content)
+void Packet::build_from_memory(size_t head_size, uint16_t packet_id,
+	uint16_t packet_size_part1, const char* packet_content_part1,
+	uint16_t packet_size_part2, const char* packet_content_part2)
 {
 	clean();
+
+	int32_t packet_size = (int32_t)packet_size_part1 + (int32_t)packet_size_part2;
+
+	//check size
+	assert(packet_size <= std::numeric_limits<uint16_t>::max());
+	if (packet_size > std::numeric_limits<uint16_t>::max()) return;
 
 	//prepare memory
 	_resize(head_size, packet_size);
@@ -117,14 +125,20 @@ void Packet::build(size_t head_size, uint16_t packet_id, uint16_t packet_size, c
 	*m_packet_size = socket_api::ntoh_16(packet_size);
 	*m_packet_id = socket_api::ntoh_16(packet_id);
 
-	if (m_content && packet_content)
-		memcpy(m_content, packet_content, packet_size);
-	else
-		memset(m_content, 0, packet_size);
+	// no content?
+	if (m_content==nullptr) return;
+
+	if (packet_size_part1 > 0 && packet_content_part1) {
+		memcpy(m_content, packet_content_part1, packet_size_part1);
+	}
+
+	if (packet_size_part2 > 0 && packet_content_part2) {
+		memcpy(m_content+packet_size_part1, packet_content_part2, packet_size_part2);
+	}
 }
 
 //-------------------------------------------------------------------------------------
-bool Packet::build(size_t head_size, Pipe& pipe)
+bool Packet::build_from_pipe(size_t head_size, Pipe& pipe)
 {
 	clean();
 
@@ -149,7 +163,7 @@ bool Packet::build(size_t head_size, Pipe& pipe)
 }
 
 //-------------------------------------------------------------------------------------
-bool Packet::build(size_t head_size, RingBuf& ring_buf)
+bool Packet::build_from_ringbuf(size_t head_size, RingBuf& ring_buf)
 {
 	clean();
 

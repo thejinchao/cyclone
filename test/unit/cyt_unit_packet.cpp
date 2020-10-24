@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
 #include <gtest/gtest.h>
@@ -47,7 +47,7 @@ TEST(Packet, Basic)
 	Packet packet;
 	PACKET_CHECK_ZERO();
 
-	packet.build(HEAD_SIZE, PACKET_ID, 0, 0);
+	packet.build_from_memory(HEAD_SIZE, PACKET_ID, 0, nullptr, 0, nullptr);
 	EXPECT_EQ(0, memcmp(packet.get_memory_buf(), _makeHead(0, PACKET_ID, head), sizeof(uint32_t)));
 	EXPECT_EQ(HEAD_SIZE, packet.get_memory_size());
 	EXPECT_EQ(PACKET_ID, packet.get_packet_id());
@@ -65,14 +65,21 @@ TEST(Packet, Basic)
 	}
 
 	//build from small memory
-	packet.build(HEAD_SIZE, PACKET_ID, (uint16_t)half_size, temp_buf);
+	packet.build_from_memory(HEAD_SIZE, PACKET_ID, (uint16_t)half_size, temp_buf);
 	PACKET_CHECK(half_size, PACKET_ID, HEAD_SIZE, temp_buf);
 
 	packet.clean();
 	PACKET_CHECK_ZERO();
 
 	//build 1k memory buf
-	packet.build(HEAD_SIZE, PACKET_ID, (uint16_t)buf_size, temp_buf);
+	packet.build_from_memory(HEAD_SIZE, PACKET_ID, (uint16_t)buf_size, temp_buf);
+	PACKET_CHECK(buf_size, PACKET_ID, HEAD_SIZE, temp_buf);
+
+	packet.clean();
+	PACKET_CHECK_ZERO();
+
+	//build as 2 parts
+	packet.build_from_memory(HEAD_SIZE, PACKET_ID, (uint16_t)half_size, temp_buf, (uint16_t)half_size, temp_buf+ half_size);
 	PACKET_CHECK(buf_size, PACKET_ID, HEAD_SIZE, temp_buf);
 
 	packet.clean();
@@ -80,17 +87,17 @@ TEST(Packet, Basic)
 
 	//build from ringbuf
 	RingBuf rb;
-	EXPECT_FALSE(packet.build(HEAD_SIZE, rb));
+	EXPECT_FALSE(packet.build_from_ringbuf(HEAD_SIZE, rb));
 
 	rb.memcpy_into(_makeHead(buf_size, PACKET_ID, head), sizeof(uint32_t));
 	rb.memcpy_into(&RESERVED, sizeof(RESERVED));
-	EXPECT_FALSE(packet.build(HEAD_SIZE, rb));
+	EXPECT_FALSE(packet.build_from_ringbuf(HEAD_SIZE, rb));
 
 	rb.memcpy_into(temp_buf, half_size);
-	EXPECT_FALSE(packet.build(HEAD_SIZE, rb));
+	EXPECT_FALSE(packet.build_from_ringbuf(HEAD_SIZE, rb));
 
 	rb.memcpy_into(temp_buf+ half_size, half_size);
-	EXPECT_TRUE(packet.build(HEAD_SIZE, rb));
+	EXPECT_TRUE(packet.build_from_ringbuf(HEAD_SIZE, rb));
 	PACKET_CHECK_WITH_RESERVED(buf_size, PACKET_ID, HEAD_SIZE, temp_buf, &RESERVED, sizeof(RESERVED));
 
 	packet.clean();
@@ -98,26 +105,31 @@ TEST(Packet, Basic)
 
 	//build from pipe
 	Pipe pipe;
-	EXPECT_FALSE(packet.build(HEAD_SIZE, pipe));
+	EXPECT_FALSE(packet.build_from_pipe(HEAD_SIZE, pipe));
 
 	pipe.write((const char*)_makeHead(buf_size, PACKET_ID, head), sizeof(uint32_t));
 	pipe.write((const char*)&RESERVED, sizeof(RESERVED));
-	EXPECT_FALSE(packet.build(HEAD_SIZE, pipe));
+	EXPECT_FALSE(packet.build_from_pipe(HEAD_SIZE, pipe));
 	PACKET_CHECK_ZERO();
 
 	pipe.write((const char*)_makeHead(buf_size, PACKET_ID, head), sizeof(uint32_t));
 	pipe.write((const char*)&RESERVED, sizeof(RESERVED));
 	pipe.write(temp_buf, buf_size);
-	EXPECT_TRUE(packet.build(HEAD_SIZE, pipe));
+	EXPECT_TRUE(packet.build_from_pipe(HEAD_SIZE, pipe));
 	PACKET_CHECK_WITH_RESERVED(buf_size, PACKET_ID, HEAD_SIZE, temp_buf, &RESERVED, sizeof(RESERVED));
 
 	//large memory
 	const size_t max_size = 0xFFFF;
+	const size_t half_max_size = max_size / 2;
 	char* large_buf = (char*)CY_MALLOC(max_size);
 	for (size_t i = 0; i < max_size; i++) {
 		((uint8_t*)large_buf)[i] = (uint8_t)(rand() & 0xFF);
 	}
-	packet.build(HEAD_SIZE, PACKET_ID, (uint16_t)max_size, large_buf);
+	packet.build_from_memory(HEAD_SIZE, PACKET_ID, (uint16_t)max_size, large_buf);
+	PACKET_CHECK(max_size, PACKET_ID, HEAD_SIZE, large_buf);
+
+	//build as 2 parts
+	packet.build_from_memory(HEAD_SIZE, PACKET_ID, (uint16_t)half_max_size, large_buf, (uint16_t)(max_size-half_max_size), large_buf + half_max_size);
 	PACKET_CHECK(max_size, PACKET_ID, HEAD_SIZE, large_buf);
 
 	CY_FREE(large_buf);
