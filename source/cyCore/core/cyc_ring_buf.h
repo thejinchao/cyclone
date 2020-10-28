@@ -70,8 +70,8 @@ public:
 	//// copy n bytes from the ring buffer into a contiguous memory area dst
 	size_t memcpy_out(void *dst, size_t count);
 
-	//// copy data to another ringbuf dst
-	size_t copyto(RingBuf* dst, size_t count);
+	//// move data to another ring buf dst
+	size_t moveto(RingBuf& dst, size_t count);
 
 	//// search data(1 byte) and return the first position, return -1 means not find
 	ssize_t search(size_t off, uint8_t data) const;
@@ -85,7 +85,7 @@ public:
 
 	//// call read on the socket descriptor(fd), using the ring buffer rb as the 
 	//// destination buffer for the read, and read as more data as impossible data.
-	//// set extra_read to false if you don't want expand this ringbuf
+	//// set extra_read to false if you don't want expand this ring buf
 	ssize_t read_socket(socket_t fd, bool extra_read=true);
 
 	//// call write on the socket descriptor(fd), using the ring buffer rb as the 
