@@ -51,6 +51,9 @@ public:
 		return (m_address.sin_addr.s_addr < other.m_address.sin_addr.s_addr) || (m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr && m_address.sin_port < other.m_address.sin_port);
 	}
 
+public:
+	static uint32_t hash_value(const sockaddr_in& addr);
+
 private:
 	struct sockaddr_in m_address;
 
@@ -58,6 +61,15 @@ private:
 	char m_ip_string[IP_ADDRESS_LEN];
 };
 
+}
+
+namespace std {
+	template <>
+	struct hash<cyclone::Address> {
+		std::size_t operator()(const cyclone::Address& addr) const {
+			return std::hash<uint32_t>()(cyclone::Address::hash_value(addr.get_sockaddr_in()));
+		}
+	};
 }
 
 #endif

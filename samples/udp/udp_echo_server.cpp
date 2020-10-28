@@ -18,14 +18,23 @@ CSimpleOptA::SOption g_rgOptions[] = {
 };
 
 //-------------------------------------------------------------------------------------
-void onPeerMessage(UdpServer* server, int32_t thread_index, int32_t socket_index, RingBuf& ring_buf, const Address& peer_address)
+void onPeerConnected(UdpServer* server, int32_t thread_index, UdpConnectionPtr conn)
+{
+	CY_LOG(L_INFO, "[T=%d]peer connected(from '%s:%d')", thread_index, conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
+}
+
+//-------------------------------------------------------------------------------------
+void onPeerMessage(UdpServer* server, int32_t thread_index, UdpConnectionPtr conn)
 {
 	char temp[MAX_ECHO_LENGTH + 1] = { 0 };
-	ring_buf.memcpy_out(temp, MAX_ECHO_LENGTH);
+	conn->get_input_buf().memcpy_out(temp, MAX_ECHO_LENGTH);
 
-	CY_LOG(L_INFO, "[T=%d]receive(from '%s:%d'):'%s'", thread_index, peer_address.get_ip(), peer_address.get_port(), temp);
+	CY_LOG(L_INFO, "[T=%d]receive(from '%s:%d'):'%s'", thread_index, conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port(), temp);
 
-	if (strcmp(temp, "shutdown") == 0) {
+	if (strcmp(temp, "exit") == 0) {
+		server->shutdown_connection(conn);
+		return;
+	}else if (strcmp(temp, "shutdown") == 0) {
 		sys_api::thread_create_detached([server](void*) {
 			server->stop();
 		}, 0, nullptr);
@@ -34,8 +43,13 @@ void onPeerMessage(UdpServer* server, int32_t thread_index, int32_t socket_index
 
 	size_t len = strlen(temp);
 	for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
+	conn->send(temp, (int32_t)len + 1);
+}
 
-	server->sendto(thread_index, socket_index, temp, len + 1, peer_address);
+//-------------------------------------------------------------------------------------
+void onPeerClose(UdpServer* server, int32_t thread_index, UdpConnectionPtr conn)
+{
+	CY_LOG(L_INFO, "[T=%d]peer closed(from '%s:%d')", thread_index, conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
 }
 
 //-------------------------------------------------------------------------------------
@@ -69,15 +83,17 @@ int main(int argc, char* argv[])
 	}
 	CY_LOG(L_DEBUG, "listen port %d", server_port);
 
-	UdpServer server(sys_api::get_cpu_counts());
+	UdpServer server;
 
-	if (server.bind(Address(server_port, false))<0 ) {
-			CY_LOG(L_ERROR, "Can't bind port");
+	if (!server.bind(Address(server_port, false))) {
+		CY_LOG(L_ERROR, "Can't bind port");
 		return 1;
 	}
 
+	server.m_listener.on_connected = onPeerConnected;
 	server.m_listener.on_message = onPeerMessage;
-	if (!server.start()) {
+	server.m_listener.on_close = onPeerClose;
+	if (!server.start(sys_api::get_cpu_counts())) {
 		CY_LOG(L_ERROR, "Start udp server failed!");
 		return 1;
 	}

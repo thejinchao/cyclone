@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -71,6 +71,29 @@ const char* Address::get_ip(void) const
 uint16_t Address::get_port(void) const
 {
 	return socket_api::ntoh_16(m_address.sin_port);
+}
+
+//-------------------------------------------------------------------------------------
+uint32_t Address::hash_value(const sockaddr_in& addr)
+{
+	const uint32_t FNV_offset_basis = 2166136261;
+	const uint32_t FNV_prime = 16777619;
+
+	uint32_t hash = FNV_offset_basis;
+
+	//hash address
+	const uint8_t* v = (const uint8_t*)&(addr.sin_addr);
+	for (size_t i = 0; i < 4; i++) {
+		hash = hash ^ v[0];
+		hash = hash * FNV_prime;
+	}
+	//hash port
+	v = (const uint8_t*)&(addr.sin_port);
+	for (size_t i = 0; i < 2; i++) {
+		hash = hash ^ v[0];
+		hash = hash * FNV_prime;
+	}
+	return hash;
 }
 
 }

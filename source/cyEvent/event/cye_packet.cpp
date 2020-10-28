@@ -122,7 +122,7 @@ void Packet::build_from_memory(size_t head_size, uint16_t packet_id,
 	//prepare memory
 	_resize(head_size, packet_size);
 
-	*m_packet_size = socket_api::ntoh_16(packet_size);
+	*m_packet_size = socket_api::ntoh_16((uint16_t)packet_size);
 	*m_packet_id = socket_api::ntoh_16(packet_id);
 
 	// no content?

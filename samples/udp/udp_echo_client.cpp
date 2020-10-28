@@ -27,6 +27,58 @@ void printUsage(const char* moduleName)
 	printf("Usage: %s [-h HOST_IP][-p HOST_PORT] [-?] [--help]\n", moduleName);
 }
 
+class UdpClient
+{
+public:
+	void thread_function(void)
+	{
+		CY_LOG(L_TRACE, "Begin work thread...");
+
+		m_looper = Looper::create_looper();
+
+		//create connection
+		m_connection = std::make_shared<UdpConnection>(m_looper);
+		if (!m_connection->init(m_server_addr)) {
+			return;
+		}
+
+		//set callback 
+		m_connection->set_on_message(std::bind(&UdpClient::on_peer_message, this, std::placeholders::_1));
+
+		m_looper->loop();
+		Looper::destroy_looper(m_looper);
+	}
+
+	void send(const char* buf, int32_t len)
+	{
+		m_connection->send(buf, len);
+	}
+
+	void on_peer_message(UdpConnectionPtr conn)
+	{
+		char temp_buf[1024] = { 0 };
+		
+		RingBuf& input_buf = conn->get_input_buf();
+		input_buf.memcpy_out(temp_buf, 1024);
+
+		CY_LOG(L_TRACE, "Receive: %s", temp_buf);
+	}
+private:
+	Address m_server_addr;
+	Looper* m_looper;
+	UdpConnectionPtr m_connection;
+
+public:
+	UdpClient(const char* server_ip, uint16_t server_port)
+		: m_server_addr(server_ip, server_port)
+		, m_looper(nullptr)
+	{
+	}
+	~UdpClient()
+	{
+	}
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
@@ -53,23 +105,18 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
-	socket_t s = socket_api::create_socket(true);
-	Address server_addr(server_ip.c_str(), server_port);
-	CY_LOG(L_DEBUG, "udp server %s:%d", server_ip.c_str(), server_port);
+	CY_LOG(L_DEBUG, "ServerAddress: %s:%d", server_ip.c_str(), server_port);
+
+	UdpClient theClient(server_ip.c_str(), server_port);
+	sys_api::thread_create_detached(std::bind(&UdpClient::thread_function, &theClient), nullptr, "udp_send");
 
 	//input
 	char line[MAX_ECHO_LENGTH + 1] = { 0 };
 	while (std::cin.getline(line, MAX_ECHO_LENGTH + 1))
 	{
 		if (line[0] == 0) continue;
-		socket_api::sendto(s, line, strlen(line) + 1, server_addr.get_sockaddr_in());
 
-		char tempBuf[MAX_ECHO_LENGTH+1] = { 0 };
-		sockaddr_in peer_addr;
-		socket_api::recvfrom(s, tempBuf, MAX_ECHO_LENGTH, peer_addr);
-
-		Address remote_addr(peer_addr);
-		printf("RecvFrom(%s:%d):%s\n", remote_addr.get_ip(), remote_addr.get_port(), tempBuf);
+		theClient.send(line, (int32_t)strlen(line) + 1);
 	}
 
 	return 0;

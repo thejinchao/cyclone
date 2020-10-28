@@ -4,111 +4,63 @@
 namespace cyclone
 {
 //-------------------------------------------------------------------------------------
-UdpServerWorkThread::UdpServerWorkThread(int32_t index, UdpServer* server)
-	: m_index(index)
-	, m_work_thread(nullptr)
-	, m_server(server)
-	, m_read_buf(1024*1024*8-1) // 8MB read cache
+UdpServerWorkThread::UdpServerWorkThread(UdpServer* server, int32_t index)
+	: m_server(server)
+	, m_index(index)
+	, m_thread(nullptr)
 {
-	m_work_thread = new WorkThread();
+	m_thread = new WorkThread();
 }
 
 //-------------------------------------------------------------------------------------
 UdpServerWorkThread::~UdpServerWorkThread()
 {
-	delete m_work_thread;
-}
-
-//-------------------------------------------------------------------------------------
-bool UdpServerWorkThread::bind_socket(const Address& bind_addr)
-{
-	//must bind socket before run master thread
-	assert(!(m_work_thread->is_running()));
-	if (m_work_thread->is_running()) return false;
-
-	//create a non blocking udp socket
-	socket_t sfd = socket_api::create_socket(true);
-	if (sfd == INVALID_SOCKET) {
-		CY_LOG(L_ERROR, "create udp socket error");
-		return false;
-	}
-
-	//set socket to non-block mode
-	if (!socket_api::set_nonblock(sfd, true)) {
-		//the process should be stop		
-		CY_LOG(L_ERROR, "set socket to non block mode error");
-		return false;
-	}
-
-	//bind address
-	if (!(socket_api::bind(sfd, bind_addr.get_sockaddr_in()))) {
-		CY_LOG(L_ERROR, "bind to address %s:%d failed", bind_addr.get_ip(), bind_addr.get_port());
-		socket_api::close_socket(sfd);
-		return false;
-	}
-
-	CY_LOG(L_TRACE, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
-	m_sockets.push_back(std::make_tuple(sfd, (int32_t)m_sockets.size()));
-
-	return true;
+	delete m_thread;
 }
 
 //-------------------------------------------------------------------------------------
 bool UdpServerWorkThread::start(void)
 {
 	//already running?
-	assert(!(m_work_thread->is_running()));
-	if (m_work_thread->is_running()) return false;
+	assert(!(m_thread->is_running()));
+	if (m_thread->is_running()) return false;
 
 	char name[32] = { 0 };
 	std::snprintf(name, 32, "udp_%d", m_index);
 
-	m_work_thread->setOnStartFunction(std::bind(&UdpServerWorkThread::_on_thread_start, this));
-	m_work_thread->setOnMessageFunction(std::bind(&UdpServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
-	m_work_thread->start(name);
+	m_thread->setOnStartFunction(std::bind(&UdpServerWorkThread::_on_thread_start, this));
+	m_thread->setOnMessageFunction(std::bind(&UdpServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
+	m_thread->start(name);
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 void UdpServerWorkThread::join(void)
 {
-	m_work_thread->join();
+	m_thread->join();
 }
 
 //-------------------------------------------------------------------------------------
-void UdpServerWorkThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
+void UdpServerWorkThread::send_thread_message(uint16_t id, uint16_t size_part1, const char* msg_part1, uint16_t size_part2, const char* msg_part2)
 {
-	assert(m_work_thread);
-	m_work_thread->send_message(id, size, message);
+	assert(m_thread);
+	m_thread->send_message(id, size_part1, msg_part1, size_part2, msg_part2);
 }
 
 //-------------------------------------------------------------------------------------
 bool UdpServerWorkThread::is_in_workthread(void) const
 {
-	assert(m_work_thread);
-	return sys_api::thread_get_current_id() == m_work_thread->get_looper()->get_thread_id();
+	assert(m_thread);
+	return sys_api::thread_get_current_id() == m_thread->get_looper()->get_thread_id();
 }
 
 //-------------------------------------------------------------------------------------
 bool UdpServerWorkThread::_on_thread_start(void)
 {
-	CY_LOG(L_TRACE, "udp work thread run, total %zd socket(s)", m_sockets.size());
-
-	for (auto& s : m_sockets)
-	{
-		socket_t sfd = std::get<0>(s);
-		int32_t socket_index = std::get<1>(s);
-
-		//register accept event
-		m_work_thread->get_looper()->register_event(sfd,
-			Looper::kRead,
-			reinterpret_cast<void*>(static_cast<std::intptr_t>(socket_index)),
-			std::bind(&UdpServerWorkThread::_on_read_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4),
-			0);
-	}
+	CY_LOG(L_TRACE, "udp work thread %d run", m_index);
 
 	if (m_server->m_listener.on_work_thread_start) {
-		m_server->m_listener.on_work_thread_start(m_server, m_index, m_work_thread->get_looper());
+		m_server->m_listener.on_work_thread_start(m_server, m_index, m_thread->get_looper());
 	}
 	return true;
 }
@@ -121,43 +73,90 @@ void UdpServerWorkThread::_on_workthread_message(Packet* message)
 	assert(m_server);
 
 	uint16_t msg_id = message->get_packet_id();
-	if (msg_id == ShutdownCmd::ID)
+	if (msg_id == kReceiveUdpMessage)
+	{
+		//udp message head
+		ReceiveUdpMessage udpMessage;
+		memcpy(&udpMessage, message->get_packet_content(), sizeof(udpMessage));
+
+		//udp message buf
+		const char* buf = message->get_packet_content() + sizeof(ReceiveUdpMessage);
+		int32_t len = (int32_t)message->get_packet_size() - (int32_t)sizeof(ReceiveUdpMessage);
+
+		_on_receive_udp_message(udpMessage.local_address, udpMessage.peer_address, buf, len);
+	}
+	else if (msg_id == kCloseConnectionCmd)
+	{
+		CloseConnectionCmd closeConnCmd;
+		memcpy(&closeConnCmd, message->get_packet_content(), sizeof(closeConnCmd));
+
+		ConnectionMap::iterator it = m_connections.find(Address(closeConnCmd.peer_address));
+		if (it == m_connections.end()) return;
+
+		//shutdown connection and remove from map directly
+		it->second->shutdown();
+		m_connections.erase(it);
+
+		//if all connection is shutdown, and server is in shutdown process, quit the loop
+		if (m_connections.empty() && closeConnCmd.shutdown_ing > 0) {
+			//push loop quit command
+			m_thread->get_looper()->push_stop_request();
+			return;
+		}
+	}
+	else if (msg_id == kShutdownCmdID)
 	{
 		CY_LOG(L_DEBUG, "receive shutdown cmd");
-		//push loop request command
-		m_work_thread->get_looper()->push_stop_request();
-		return;
+
+		//all connection is disconnect, just quit the loop
+		if (m_connections.empty()) {
+			//push loop request command
+			m_thread->get_looper()->push_stop_request();
+			return;
+		}
+
+		//send shutdown command to all connection
+		ConnectionMap::iterator it, end = m_connections.end();
+		for (it = m_connections.begin(); it != end; ++it)
+		{
+			UdpConnectionPtr conn = it->second;
+			conn->shutdown();
+		}
+		//just wait...
 	}
 }
 
 //-------------------------------------------------------------------------------------
-void UdpServerWorkThread::_on_read_event(Looper::event_id_t id, socket_t fd, Looper::event_t event, void* param)
+void UdpServerWorkThread::_on_receive_udp_message(const sockaddr_in& local_addr, const sockaddr_in& peer_addr, const char* buf, int32_t len)
 {
-	m_read_buf.reset();
+	//is connection already exist?
+	ConnectionMap::iterator it = m_connections.find(peer_addr);
+	if (it == m_connections.end()) {
+		//new connection
+		UdpConnectionPtr conn = std::make_shared<UdpConnection>(m_thread->get_looper(), m_server->_get_next_connection_id());
 
-	int32_t socket_index = static_cast<int32_t>(reinterpret_cast<intptr_t>(param));
+		//init udp connection
+		Address localAddress(local_addr);
+		Address peerAddress(peer_addr);
+		if (!conn->init(peerAddress, &localAddress)) {
+			return;
+		}
+		it = m_connections.insert(std::make_pair(peerAddress, conn)).first;
 
-	sockaddr_in addr;
-	ssize_t len = m_read_buf.recvfrom_socket(fd, addr);
+		//notify server a new connection connected
+		m_server->_on_socket_connected(this->m_index, conn);
 
-	Address peerAddress(addr);
-	if (len>0 && m_server->m_listener.on_message) {
-		m_server->m_listener.on_message(m_server, m_index, socket_index, m_read_buf, peerAddress);
+		//set callback functions
+		conn->m_on_message = [this](UdpConnectionPtr connection) {
+			this->m_server->_on_socket_message(this->m_index, connection);
+		};
+		conn->m_on_close = [this](UdpConnectionPtr connection) {
+			this->m_server->_on_socket_close(this->m_index, connection);
+		};
 	}
 
-	assert(m_read_buf.empty());
-}
-
-//-------------------------------------------------------------------------------------
-void UdpServerWorkThread::sendto(int32_t socket_index, const char* buf, size_t len, const Address& peer_address)
-{
-	assert(is_in_workthread());
-	assert(socket_index >= 0 && socket_index < (int32_t)m_sockets.size());
-
-	if (socket_index < 0 || socket_index >= (int32_t)m_sockets.size()) return;
-
-	socket_t sfd = std::get<0>(m_sockets[socket_index]);
-	socket_api::sendto(sfd, buf, len, peer_address.get_sockaddr_in());
+	//push udp message to UDP Connection
+	it->second->_on_udp_input(buf, len);
 }
 
 }
