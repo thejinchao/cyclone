@@ -284,22 +284,6 @@ ssize_t RingBuf::read_socket(socket_t fd, bool extra_buf)
 }
 
 //-------------------------------------------------------------------------------------
-ssize_t RingBuf::recvfrom_socket(socket_t fd, struct sockaddr_in& peer_addr)
-{
-	assert(empty()); //should clean buf before call this function 
-	reset();
-
-	//call recvfrom once
-	ssize_t len = socket_api::recvfrom(fd, m_buf + m_write, get_free_size(), peer_addr);
-
-	if (len == 0) return 0; //EOF
-	if (len < 0) return socket_api::is_lasterror_WOULDBLOCK() ? 0 : len;
-
-	m_write += len;
-	return len;
-}
-
-//-------------------------------------------------------------------------------------
 ssize_t RingBuf::write_socket(socket_t fd)
 {
 	assert(!empty());

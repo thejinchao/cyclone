@@ -54,7 +54,7 @@ socket_t create_socket(bool udp)
 	AUTO_INIT_WIN_SOCKET();
 #endif
 
-	socket_t sockfd = ::socket(AF_INET, udp ? SOCK_DGRAM : SOCK_STREAM, 0);
+	socket_t sockfd = ::socket(AF_INET, udp ? SOCK_DGRAM : SOCK_STREAM, udp ? IPPROTO_UDP : IPPROTO_TCP);
 	if (sockfd == INVALID_SOCKET)
 	{
 		CY_LOG(L_FATAL, "socket_api::create_socket, err=%d", get_lasterror());
