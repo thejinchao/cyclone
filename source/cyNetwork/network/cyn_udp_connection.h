@@ -8,6 +8,9 @@ Copyright(C) thecodeway.com
 #include <network/cyn_address.h>
 #include <event/cye_looper.h>
 
+//pre-define
+struct IKCPCB;
+
 namespace cyclone
 {
 //pre-define
@@ -28,8 +31,8 @@ public:
 	const Address& get_peer_addr(void) const { return m_peer_addr; }
 	/// get input stream buf (NOT thread safe, call it in work thread)
 	RingBuf& get_input_buf(void) { return m_read_buf; }
-	/// send message(thread safe)
-	void send(const char* buf, int32_t len);
+	/// send message(thread safe), 
+	bool send(const char* buf, int32_t len);
 	/// shutdown the connection
 	void shutdown(void);
 
@@ -46,10 +49,12 @@ private:
 	void _on_socket_read(void);
 	//// on socket write event
 	void _on_socket_write(void);
+	//// on timer
+	void _on_timer(void);
 
 private:
 	/// send message (not thread safe, must int work thread)
-	void _send(const char* buf, int32_t len);
+	int32_t _send(const char* buf, int32_t len);
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
 
@@ -72,8 +77,20 @@ private:
 
 	bool m_closed; //closed already
 
+private:
+	//kcp data
+	enum { KCP_CONV = 0xC0DE };
+	enum { KCP_TIMER_FREQ = 10 }; //every 10 millisecond
+
+	bool m_enable_kcp;
+	IKCPCB* m_kcp;
+	Looper::event_id_t m_timer_id;
+
+	// send udp data
+	static int _kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *user);
+
 public:
-	UdpConnection(Looper* looper, int32_t id=0);
+	UdpConnection(Looper* looper, bool enable_kcp = false, int32_t id=0);
 	~UdpConnection();
 };
 

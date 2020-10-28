@@ -18,7 +18,11 @@ class UdpServerWorkThread;
 class UdpServer : noncopyable
 {
 public:
-	enum { MAX_UDP_READ_SIZE = 32 * 1024 }; //32KB
+	//udp mtu size(don't send one udp package larger than this value)
+	enum { MAX_UDP_SEND_SIZE = 1400 }; 
+	//max read size 
+	enum { MAX_UDP_READ_SIZE = 2 * 1024 }; //2KB
+	//max work thread counts
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 
 	typedef std::function<void(UdpServer* server, Looper* looper)> MasterThreadStartCallback;
@@ -49,6 +53,8 @@ public:
 	void stop(void);
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(UdpConnectionPtr conn);
+	/// is kcp enable?
+	bool is_kcp_enable(void) const { return m_enable_kcp; }
 
 private:
 	// master thread
@@ -64,6 +70,9 @@ private:
 
 	enum { kStartConnectionID = 1 };
 	atomic_int32_t m_next_connection_id;
+
+	//kcp enable
+	bool m_enable_kcp;
 
 private:
 	// called by work thread
@@ -81,7 +90,7 @@ private:
 	void _on_udp_message_received(const char* buf, int32_t len, const sockaddr_in& peer_address, const sockaddr_in& local_address);
 
 public:
-	UdpServer();
+	UdpServer(bool enable_kcp=false);
 	~UdpServer();
 };
 

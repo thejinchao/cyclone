@@ -8,10 +8,11 @@ using namespace cyclone;
 using namespace std::placeholders;
 
 #define MAX_ECHO_LENGTH (255)
-enum { OPT_PORT, OPT_HELP };
+enum { OPT_PORT, OPT_KCP, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
+	{ OPT_KCP,  "-k",	  SO_NONE },	// "-k"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	// "--help"
 	SO_END_OF_OPTIONS                   // END
@@ -31,10 +32,7 @@ void onPeerMessage(UdpServer* server, int32_t thread_index, UdpConnectionPtr con
 
 	CY_LOG(L_INFO, "[T=%d]receive(from '%s:%d'):'%s'", thread_index, conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port(), temp);
 
-	if (strcmp(temp, "exit") == 0) {
-		server->shutdown_connection(conn);
-		return;
-	}else if (strcmp(temp, "shutdown") == 0) {
+	if (strcmp(temp, "shutdown") == 0) {
 		sys_api::thread_create_detached([server](void*) {
 			server->stop();
 		}, 0, nullptr);
@@ -55,8 +53,8 @@ void onPeerClose(UdpServer* server, int32_t thread_index, UdpConnectionPtr conn)
 //-------------------------------------------------------------------------------------
 void printUsage(const char* moduleName)
 {
-	printf("===== UDP Echo Server(Powerd by Cyclone) =====\n");
-	printf("Usage: %s [-p LISTEN_PORT] [-?] [--help]\n", moduleName);
+	printf("===== UDP/KCP Echo Server(Powerd by Cyclone) =====\n");
+	printf("Usage: %s [-p LISTEN_PORT] [-k] [-?] [--help]\n", moduleName);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +62,7 @@ int main(int argc, char* argv[])
 {
 	CSimpleOptA args(argc, argv, g_rgOptions);
 	uint16_t server_port = 1978;
+	bool enable_kcp = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -74,17 +73,18 @@ int main(int argc, char* argv[])
 			else if (args.OptionId() == OPT_PORT) {
 				server_port = (uint16_t)atoi(args.OptionArg());
 			}
-
+			else if (args.OptionId() == OPT_KCP) {
+				enable_kcp = true;
+			}
 		}
 		else {
 			printf("Invalid argument: %s\n", args.OptionText());
 			return 1;
 		}
 	}
-	CY_LOG(L_DEBUG, "listen port %d", server_port);
+	CY_LOG(L_INFO, "Listen port %d, KCP %s", server_port, enable_kcp?"enable":"disable");
 
-	UdpServer server;
-
+	UdpServer server(enable_kcp);
 	if (!server.bind(Address(server_port, false))) {
 		CY_LOG(L_ERROR, "Can't bind port");
 		return 1;
@@ -93,6 +93,7 @@ int main(int argc, char* argv[])
 	server.m_listener.on_connected = onPeerConnected;
 	server.m_listener.on_message = onPeerMessage;
 	server.m_listener.on_close = onPeerClose;
+
 	if (!server.start(sys_api::get_cpu_counts())) {
 		CY_LOG(L_ERROR, "Start udp server failed!");
 		return 1;

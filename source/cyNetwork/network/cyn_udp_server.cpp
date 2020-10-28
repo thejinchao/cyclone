@@ -9,11 +9,12 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-UdpServer::UdpServer()
+UdpServer::UdpServer(bool enable_kcp)
 	: m_master_thread(nullptr)
 	, m_workthread_counts(0)
 	, m_running(0)
 	, m_shutdown_ing(0)
+	, m_enable_kcp(enable_kcp)
 {
 	m_master_thread = new UdpServerMasterThread(this, std::bind(&UdpServer::_on_udp_message_received, this, 
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));

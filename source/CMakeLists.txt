@@ -102,6 +102,8 @@ set(CY_NETWORK_INTERNAL_FILES
 	cyNetwork/network/internal/cyn_udp_server_master_thread.cpp
 	cyNetwork/network/internal/cyn_udp_server_work_thread.h
 	cyNetwork/network/internal/cyn_udp_server_work_thread.cpp
+	cyNetwork/network/internal/cyn_ikcp.h
+	cyNetwork/network/internal/cyn_ikcp.c
 )
 source_group("cyNetwork\\internal" FILES ${CY_NETWORK_INTERNAL_FILES})
 
