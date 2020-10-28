@@ -236,13 +236,13 @@ TEST(RingBuf, Basic)
 
 	_fillRandom(buffer2, buffer_size);
 
-	//copyto
+	//moveto
 	{
 		const size_t COPY_SIZE = 8;
 
 		RingBuf rb1, rb2;
 		rb1.memcpy_into(text_pattern, text_length);
-		EXPECT_EQ(COPY_SIZE, rb1.copyto(&rb2, COPY_SIZE));
+		EXPECT_EQ(COPY_SIZE, rb1.moveto(rb2, COPY_SIZE));
 
 		CHECK_RINGBUF_SIZE(rb1, text_length- COPY_SIZE, RingBuf::kDefaultCapacity);
 		CHECK_RINGBUF_SIZE(rb2, COPY_SIZE, RingBuf::kDefaultCapacity);
@@ -255,7 +255,7 @@ TEST(RingBuf, Basic)
 
 	_fillRandom(buffer2, buffer_size);
 
-	//make wrap condition and copyto
+	//make wrap condition and moveto
 	{
 		const size_t TEST_WRAP_SIZE = 32;
 		assert(TEST_WRAP_SIZE * 4 < RingBuf::kDefaultCapacity);
@@ -266,7 +266,7 @@ TEST(RingBuf, Basic)
 		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
 
-		EXPECT_EQ(COPY_SIZE, rb1.copyto(&rb2, COPY_SIZE));
+		EXPECT_EQ(COPY_SIZE, rb1.moveto(rb2, COPY_SIZE));
 
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE, RingBuf::kDefaultCapacity);
 		CHECK_RINGBUF_SIZE(rb2, COPY_SIZE, RingBuf::kDefaultCapacity);

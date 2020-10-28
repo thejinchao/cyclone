@@ -100,7 +100,7 @@ size_t RingBuf::memcpy_out(void *dst, size_t count)
 }
 
 //-------------------------------------------------------------------------------------
-size_t RingBuf::copyto(RingBuf* dst, size_t count)
+size_t RingBuf::moveto(RingBuf& dst, size_t count)
 {
 	size_t bytes_used = size();
 	if (count > bytes_used)
@@ -109,7 +109,7 @@ size_t RingBuf::copyto(RingBuf* dst, size_t count)
 	size_t nread = 0;
 	while (nread != count) {
 		size_t n = MIN((size_t)(m_end - m_read), count - nread);
-		dst->memcpy_into(m_buf + m_read, n);
+		dst.memcpy_into(m_buf + m_read, n);
 		m_read += n;
 		nread += n;
 
