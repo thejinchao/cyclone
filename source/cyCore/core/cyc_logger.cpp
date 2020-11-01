@@ -68,7 +68,7 @@ struct DiskLogFile
 		lock = sys_api::mutex_create();
 
 		//default level(all level will be written)
-		level_threshold = L_TRACE;
+		level_threshold = L_DEBUG;
 
 		//log path didn't created
 		logpath_created = false;
