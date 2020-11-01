@@ -48,13 +48,13 @@ void global_init(void)
 }
 
 //-------------------------------------------------------------------------------------
-socket_t create_socket(void)
+socket_t create_socket(bool udp)
 {
 #ifdef CY_SYS_WINDOWS
 	AUTO_INIT_WIN_SOCKET();
 #endif
 
-	socket_t sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+	socket_t sockfd = ::socket(AF_INET, udp ? SOCK_DGRAM : SOCK_STREAM, udp ? IPPROTO_UDP : IPPROTO_TCP);
 	if (sockfd == INVALID_SOCKET)
 	{
 		CY_LOG(L_FATAL, "socket_api::create_socket, err=%d", get_lasterror());
@@ -206,6 +206,12 @@ ssize_t write(socket_t s, const char* buf, size_t len)
 }
 
 //-------------------------------------------------------------------------------------
+ssize_t sendto(socket_t s, const char* buf, size_t len, const struct sockaddr_in& peer_addr)
+{
+	return (ssize_t)::sendto(s, buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, (int32_t)sizeof(peer_addr));
+}
+
+//-------------------------------------------------------------------------------------
 ssize_t read(socket_t s, void *buf, size_t len)
 {
 #ifdef CY_SYS_WINDOWS
@@ -215,6 +221,13 @@ ssize_t read(socket_t s, void *buf, size_t len)
 #endif
 
 	return _len;
+}
+
+//-------------------------------------------------------------------------------------
+ssize_t recvfrom(socket_t s, void* buf, size_t len, struct sockaddr_in& peer_addr)
+{
+	socklen_t addr_len = sizeof(peer_addr);
+	return (ssize_t)::recvfrom(s, (char *)buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, &addr_len);
 }
 
 //-------------------------------------------------------------------------------------

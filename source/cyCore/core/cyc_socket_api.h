@@ -15,7 +15,7 @@ namespace socket_api
 void global_init(void);
 
 /// Creates a blocking socket file descriptor, return INVALID_SOCKET if failed
-socket_t create_socket(void);
+socket_t create_socket(bool udp=false);
 
 /// Close socket
 void close_socket(socket_t s);
@@ -41,8 +41,14 @@ bool connect(socket_t s, const struct sockaddr_in& addr);
 /// write to socket file desc
 ssize_t write(socket_t s, const char* buf, size_t len);
 
+/// send data to socket file desc
+ssize_t sendto(socket_t s, const char* buf, size_t len, const struct sockaddr_in& peer_addr);
+
 /// read from a socket file desc
 ssize_t read(socket_t s, void *buf, size_t len);
+
+/// receive from socket
+ssize_t recvfrom(socket_t s, void* buf, size_t len, struct sockaddr_in& peer_addr);
 
 /// shutdown read and write part of a socket connection
 bool shutdown(socket_t s);
