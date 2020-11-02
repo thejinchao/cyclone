@@ -23,12 +23,8 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 struct DiskLogFile
 {
-#ifndef _MAX_PATH
-#define _MAX_PATH (260)
-#endif
-
-	char file_path[_MAX_PATH];
-	char file_path_name[_MAX_PATH];
+	std::string file_path;
+	std::string file_path_name;
 	sys_api::mutex_t lock;
 	const char* level_name[L_MAXIMUM_LEVEL];
 	LOG_LEVEL level_threshold;
@@ -40,29 +36,29 @@ struct DiskLogFile
 		socket_api::global_init();
 #endif
 		//log file path
-		strncpy(file_path, DEFAULT_LOG_PATH, _MAX_PATH);
+		file_path = DEFAULT_LOG_PATH;
 
 		//get process name
-		char process_name[256] = { 0 };
-		sys_api::process_get_module_name(process_name, 256);
+		char process_name[32] = { 0 };
+		sys_api::process_get_module_name(process_name, 32);
 		
 		//get host name
-		char host_name[256];
-		::gethostname(host_name, 256);
+		char host_name[32];
+		::gethostname(host_name, 32);
 
 		//get process id
 		pid_t process_id = sys_api::process_get_id();
 
 		//time 
-		char time_patten[64] = { 0 };
-		sys_api::local_time_now(time_patten, 64, "%Y%m%d-%H%M%S");
+		char time_patten[20] = { 0 };
+		sys_api::local_time_now(time_patten, 20, "%Y%m%d-%H%M%S");
 
 		//filename
 		char file_name[256] = { 0 };
 		std::snprintf(file_name, 256, "%s.%s.%s.%d.log", process_name, time_patten, host_name, process_id);
 
 		//full file path
-		std::snprintf(file_path_name, _MAX_PATH, "%s%s", file_path, file_name);
+		file_path_name = file_path + file_name;
 
 		//create lock
 		lock = sys_api::mutex_create();
@@ -102,8 +98,12 @@ bool set_log_filename(const char* pathName, const char* fileName)
 	DiskLogFile& thefile = _get_disk_log();
 	sys_api::auto_mutex guard(thefile.lock);
 
-	strncpy(thefile.file_path, pathName, _MAX_PATH);
-	std::snprintf(thefile.file_path_name, _MAX_PATH, "%s%s%s", pathName, (withSeperator?"":"/"), fileName);
+	thefile.file_path = pathName;
+
+	thefile.file_path_name = pathName;
+	if (!withSeperator) thefile.file_path_name += "/";
+	thefile.file_path_name += fileName;
+
 	thefile.logpath_created = false;
 	return true;
 }
@@ -112,7 +112,7 @@ bool set_log_filename(const char* pathName, const char* fileName)
 const char* get_log_filename(void)
 {
 	DiskLogFile& thefile = _get_disk_log();
-	return thefile.file_path_name;
+	return thefile.file_path_name.c_str();
 }
 
 //-------------------------------------------------------------------------------------
@@ -141,11 +141,11 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 
 	//check dir
 #ifdef CY_SYS_WINDOWS
-	if (!thefile.logpath_created && PathFileExists(thefile.file_path)!=TRUE) {
-		if (0 == CreateDirectory(thefile.file_path, NULL))
+	if (!thefile.logpath_created && PathFileExists(thefile.file_path.c_str())!=TRUE) {
+		if (0 == CreateDirectory(thefile.file_path.c_str(), NULL))
 #else
-	if (!thefile.logpath_created && access(thefile.file_path, F_OK)!=0) {
-		if (mkdir(thefile.file_path, 0755) != 0)
+	if (!thefile.logpath_created && access(thefile.file_path.c_str(), F_OK)!=0) {
+		if (mkdir(thefile.file_path.c_str(), 0755) != 0)
 #endif
 		{
 			//create log path failed!
@@ -154,10 +154,10 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		thefile.logpath_created = true;
 	}
 
-	FILE* fp = fopen(thefile.file_path_name, "a");
+	FILE* fp = fopen(thefile.file_path_name.c_str(), "a");
 	if (fp == 0) {
 		//create the log file first
-		fp = fopen(thefile.file_path_name, "w");
+		fp = fopen(thefile.file_path_name.c_str(), "w");
 	}
 	if (fp == 0) return;
 
