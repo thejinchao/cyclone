@@ -84,7 +84,7 @@ bool ServerMasterThread::bind_socket(const Address& bind_addr, bool enable_reuse
 		return false;
 	}
 
-	CY_LOG(L_TRACE, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
+	CY_LOG(L_DEBUG, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
 	m_acceptor_sockets.push_back(std::make_tuple(sfd, Looper::INVALID_EVENT_ID));
 
 	return true;
@@ -136,7 +136,7 @@ bool ServerMasterThread::_on_thread_start(void)
 		counts++;
 	}
 
-	CY_LOG(L_TRACE, "accept thread run, listen %d port(s)", counts);
+	CY_LOG(L_DEBUG, "tcp master thread run, listen %d port(s)", counts);
 
 	if (m_server->m_listener.on_master_thread_start)
 	{
