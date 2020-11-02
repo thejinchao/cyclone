@@ -14,6 +14,7 @@ UdpServer::UdpServer(bool enable_kcp)
 	, m_workthread_counts(0)
 	, m_running(0)
 	, m_shutdown_ing(0)
+	, m_next_connection_id(kStartConnectionID)
 	, m_enable_kcp(enable_kcp)
 {
 	m_master_thread = new UdpServerMasterThread(this, std::bind(&UdpServer::_on_udp_message_received, this, 

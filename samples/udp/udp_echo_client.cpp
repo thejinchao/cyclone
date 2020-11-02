@@ -62,7 +62,7 @@ public:
 		RingBuf& input_buf = conn->get_input_buf();
 		input_buf.memcpy_out(temp_buf, 1024);
 
-		CY_LOG(L_TRACE, "Receive: %s", temp_buf);
+		CY_LOG(L_INFO, "Receive: %s", temp_buf);
 	}
 private:
 	Address m_server_addr;

@@ -62,7 +62,7 @@ bool UdpServerMasterThread::bind_socket(const Address& bind_addr)
 		return false;
 	}
 
-	CY_LOG(L_TRACE, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
+	CY_LOG(L_DEBUG, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
 
 	ReceiveSocket socket;
 	socket.index = (int32_t)m_receive_sockets.size();
@@ -105,7 +105,7 @@ void UdpServerMasterThread::send_thread_message(uint16_t id, uint16_t size, cons
 //-------------------------------------------------------------------------------------
 bool UdpServerMasterThread::_on_thread_start(void)
 {
-	CY_LOG(L_TRACE, "udp master thread run, total %zd receive socket(s)", m_receive_sockets.size());
+	CY_LOG(L_DEBUG, "udp master thread run, total %zd receive socket(s)", m_receive_sockets.size());
 
 	Looper* looper = m_thread->get_looper();
 

@@ -35,6 +35,8 @@ public:
 	bool send(const char* buf, int32_t len);
 	/// shutdown the connection
 	void shutdown(void);
+	/// get looper
+	Looper* get_looper(void) const { return m_looper; }
 
 	///set callback function
 	void set_on_message(EventCallback callback) { m_on_message = callback; }
@@ -49,12 +51,10 @@ private:
 	void _on_socket_read(void);
 	//// on socket write event
 	void _on_socket_write(void);
-	//// on timer
-	void _on_timer(void);
 
 private:
-	/// send message (not thread safe, must int work thread)
-	int32_t _send(const char* buf, int32_t len);
+	/// send udp message (not thread safe, must int work thread)
+	int32_t _send_udp_data(const char* buf, int32_t len);
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
 
@@ -75,7 +75,7 @@ private:
 	EventCallback m_on_send_complete;
 	EventCallback m_on_close;
 
-	bool m_closed; //closed already
+	bool m_closed; //connection closed
 
 private:
 	//kcp data
@@ -88,6 +88,7 @@ private:
 
 	// send udp data
 	static int _kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *user);
+	void _kcp_update(void);
 
 public:
 	UdpConnection(Looper* looper, bool enable_kcp = false, int32_t id=0);

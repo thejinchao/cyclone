@@ -24,6 +24,8 @@ public:
 	enum { MAX_UDP_READ_SIZE = 2 * 1024 }; //2KB
 	//max work thread counts
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
+	//after connection shutdown, address locked time(ms), in this time, would not accept any udp message from this address
+	enum { ADDRESS_LOCKED_TIME = 2*1000 };
 
 	typedef std::function<void(UdpServer* server, Looper* looper)> MasterThreadStartCallback;
 	typedef std::function<void(UdpServer* server, int32_t thread_index, Looper* looper)> WorkThreadStartCallback;
@@ -90,7 +92,7 @@ private:
 	void _on_udp_message_received(const char* buf, int32_t len, const sockaddr_in& peer_address, const sockaddr_in& local_address);
 
 public:
-	UdpServer(bool enable_kcp=false);
+	UdpServer(bool enable_kcp=true);
 	~UdpServer();
 };
 

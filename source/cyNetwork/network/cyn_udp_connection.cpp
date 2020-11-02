@@ -54,10 +54,12 @@ UdpConnection::~UdpConnection()
 
 	if (m_write_buf_lock) {
 		sys_api::mutex_destroy(m_write_buf_lock);
+		m_write_buf_lock = nullptr;
 	}
 
 	if (m_socket != INVALID_SOCKET) {
 		socket_api::close_socket(m_socket);
+		m_socket = INVALID_SOCKET;
 	}
 }
 
@@ -120,8 +122,14 @@ bool UdpConnection::init(const Address& peer_address, const Address* local_addre
 		m_kcp = ikcp_create(KCP_CONV, this);
 		m_kcp->output = _kcp_udp_output;
 
-		//init kcp timer
-		m_timer_id = m_looper->register_timer_event(KCP_TIMER_FREQ, nullptr, std::bind(&UdpConnection::_on_timer, this));
+		//set kcp no delay mode
+		ikcp_nodelay(m_kcp, 1, 10, 2, 1);
+		ikcp_wndsize(m_kcp, UdpServer::MAX_UDP_READ_SIZE, UdpServer::MAX_UDP_READ_SIZE);
+
+		//create kcp update timer
+		m_timer_id = m_looper->register_timer_event(KCP_TIMER_FREQ, nullptr, [this](Looper::event_id_t, void*) {
+			this->_kcp_update();
+		});
 	}
 	return true;
 }
@@ -130,30 +138,34 @@ bool UdpConnection::init(const Address& peer_address, const Address* local_addre
 int UdpConnection::_kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *user)
 {
 	UdpConnection* conn = (UdpConnection*)user;
-	return conn->_send(buf, len);
+	return conn->_send_udp_data(buf, len);
 }
 
 //-------------------------------------------------------------------------------------
 void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 {
-	if (buf == nullptr || len == 0) return;
+	CY_LOG(L_TRACE, "[CONN]receive UDP message %d", len);
 
 	if (m_enable_kcp) {
 		//input udp data to kcp 
-		int32_t ret = ikcp_input(m_kcp, buf, len);
-		if (ret < 0) {
-			CY_LOG(L_ERROR, "call ikcp_input error, ret=%d", ret);
-			return;
+		if (buf && len > 0) {
+			int32_t ret = ikcp_input(m_kcp, buf, len);
+			if (ret < 0) {
+				CY_LOG(L_ERROR, "call ikcp_input error, ret=%d", ret);
+				return;
+			}
 		}
 
+		if (m_closed) return;
+
 		//try read data from kcp
-		ret = ikcp_recv(m_kcp, m_udp_buf, UdpServer::MAX_UDP_READ_SIZE);
-		if (ret <= 0) {
-			return;
-		}
+		int32_t ret = ikcp_recv(m_kcp, m_udp_buf, UdpServer::MAX_UDP_READ_SIZE);
+		if (ret <= 0) return;
+
 		m_read_buf.memcpy_into(m_udp_buf, ret);
 	}
 	else {
+		if (buf == nullptr || len == 0 || m_closed) return;
 		m_read_buf.memcpy_into(buf, len);
 	}
 
@@ -167,7 +179,7 @@ void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 bool UdpConnection::send(const char* buf, int32_t len)
 {
 	//check size
-	if (buf == nullptr || len == 0) return true;
+	if (buf == nullptr || len == 0 || m_closed) return true;
 	if (len > UdpServer::MAX_UDP_SEND_SIZE) {
 		CY_LOG(L_ERROR, "Can't send udp package large than udp mtu size %d>%d", len, UdpServer::MAX_UDP_SEND_SIZE);
 		return false;
@@ -180,9 +192,11 @@ bool UdpConnection::send(const char* buf, int32_t len)
 				CY_LOG(L_ERROR, "call ikcp_send failed, ret=%d", kcp_ret);
 				return false;
 			}
+
+			ikcp_flush(m_kcp);
 		}
 		else {
-			_send(buf, len);
+			_send_udp_data(buf, len);
 		}
 	}
 	else
@@ -205,7 +219,7 @@ bool UdpConnection::_is_writeBuf_empty(void) const
 }
 
 //-------------------------------------------------------------------------------------
-int32_t UdpConnection::_send(const char* buf, int32_t len)
+int32_t UdpConnection::_send_udp_data(const char* buf, int32_t len)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	if (len <= 0) return 0;
@@ -228,7 +242,7 @@ int32_t UdpConnection::_send(const char* buf, int32_t len)
 		}
 	}
 
-	//leave other data to kcp
+	//leave remain data in kcp
 	if (m_enable_kcp) return nwrote;
 
 	if (remaining > 0) {
@@ -268,11 +282,12 @@ void UdpConnection::_on_socket_write(void)
 
 			if (m_enable_kcp) {
 				//send from kcp protocol
-				int32_t kcp_ret = ikcp_send((ikcpcb *)m_kcp, (const char*)m_write_buf.normalize(), (int32_t)m_write_buf.size());
+				int32_t kcp_ret = ikcp_send(m_kcp, (const char*)m_write_buf.normalize(), (int32_t)m_write_buf.size());
 				if (kcp_ret < 0) {
 					CY_LOG(L_ERROR, "call ikcp_send error, ret=%d", kcp_ret);
 					return;
 				}
+				ikcp_flush(m_kcp);
 				nwrote = (int32_t)m_write_buf.size();
 			}
 			else {
@@ -302,11 +317,15 @@ void UdpConnection::_on_socket_write(void)
 }
 
 //-------------------------------------------------------------------------------------
-void UdpConnection::_on_timer(void)
+void UdpConnection::_kcp_update(void)
 {
-	if (m_enable_kcp) {
-		ikcp_update(m_kcp, (int32_t)(sys_api::utc_time_now()/1000));
-	}
+	if (!m_enable_kcp) return;
+
+	int32_t now = (int32_t)(sys_api::utc_time_now()/1000);
+	ikcp_update(m_kcp, now);
+
+	//try read kcp data force
+	_on_udp_input(nullptr, 0);
 }
 
 //-------------------------------------------------------------------------------------
@@ -315,14 +334,38 @@ void UdpConnection::shutdown(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	if (m_closed) return; //closed already?
 
-	//close the socket now
-	UdpConnectionPtr thisPtr = shared_from_this();
-	m_closed = true;
+	CY_LOG(L_DEBUG, "[CONN]shutdown UDP connection");
 
-	//delete looper event
-	m_looper->disable_all(m_event_id);
-	m_looper->delete_event(m_event_id);
-	m_event_id = Looper::INVALID_EVENT_ID;
+	if (m_enable_kcp) {
+		//flush kcp data to peer
+		ikcp_flush(m_kcp);
+	}
+
+	//close the socket now
+	m_closed = true;
+	UdpConnectionPtr thisPtr = shared_from_this();
+
+	if (m_event_id != Looper::INVALID_EVENT_ID) {
+		m_looper->disable_all(m_event_id);
+		m_looper->delete_event(m_event_id);
+		m_event_id = Looper::INVALID_EVENT_ID;
+	}
+
+	if (m_timer_id != Looper::INVALID_EVENT_ID) {
+		m_looper->disable_all(m_timer_id);
+		m_looper->delete_event(m_timer_id);
+		m_timer_id = Looper::INVALID_EVENT_ID;
+	}
+
+	if (m_write_buf_lock) {
+		sys_api::mutex_destroy(m_write_buf_lock);
+		m_write_buf_lock = nullptr;
+	}
+
+	if (m_socket != INVALID_SOCKET) {
+		socket_api::close_socket(m_socket);
+		m_socket = INVALID_SOCKET;
+	}
 
 	//logic callback
 	if (m_on_close) {
@@ -332,14 +375,6 @@ void UdpConnection::shutdown(void)
 	//reset read/write buf
 	m_write_buf.reset();
 	m_read_buf.reset();
-
-	//close socket
-	socket_api::close_socket(m_socket);
-	m_socket = INVALID_SOCKET;
-
-	//destroy write buf lock
-	sys_api::mutex_destroy(m_write_buf_lock);
-	m_write_buf_lock = nullptr;
 }
 
 }

@@ -41,11 +41,11 @@ public:
 public: // call by UdpServer Only
 	// start master thread
 	bool start(void);
-	//// join work thread(thread safe)
+	// join work thread(thread safe)
 	void join(void);
-	//// is current thread in work thread (thread safe)
+	// is current thread in work thread (thread safe)
 	bool is_in_workthread(void) const;
-	//// send message to this work thread (thread safe)
+	// send message to this work thread (thread safe)
 	void send_thread_message(uint16_t id, uint16_t size_part1, const char* msg_part1, uint16_t size_part2=0, const char* msg_part2=nullptr);
 
 private:
@@ -57,13 +57,20 @@ private:
 	typedef std::unordered_map< Address, UdpConnectionPtr > ConnectionMap;
 	ConnectionMap m_connections;
 
+	//Locked address
+	typedef std::map< Address, int64_t> LockedAddressMap;
+	LockedAddressMap m_locked_address;
+	Looper::event_id_t m_clear_locked_address_timer;
+
 private:
-	/// work thread function start
+	// work thread function start
 	bool _on_thread_start(void);
-	/// work thread message
+	// work thread message
 	void _on_workthread_message(Packet*);
-	/// on receive udp message from master thread
+	// on receive udp message from master thread
 	void _on_receive_udp_message(const sockaddr_in& local_addr, const sockaddr_in& peer_addr, const char* buf, int32_t len);
+	// auto clear locked address map
+	void _on_clear_locked_address_timer(Looper::event_id_t, void*);
 
 public:
 	UdpServerWorkThread(UdpServer* server, int32_t index);
