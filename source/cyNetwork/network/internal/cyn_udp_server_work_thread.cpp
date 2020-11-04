@@ -188,7 +188,7 @@ void UdpServerWorkThread::_on_receive_udp_message(const sockaddr_in& local_addr,
 	ConnectionMap::iterator it = m_connections.find(peerAddress);
 	if (it == m_connections.end()) {
 		//new connection
-		UdpConnectionPtr conn = std::make_shared<UdpConnection>(m_thread->get_looper(), m_server->is_kcp_enable(), m_server->_get_next_connection_id());
+		UdpConnectionPtr conn = std::make_shared<UdpConnection>(m_thread->get_looper(), m_server->_get_next_connection_id());
 
 		//init udp connection
 		Address localAddress(local_addr);

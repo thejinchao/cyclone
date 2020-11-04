@@ -55,8 +55,6 @@ public:
 	void stop(void);
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(UdpConnectionPtr conn);
-	/// is kcp enable?
-	bool is_kcp_enable(void) const { return m_enable_kcp; }
 
 private:
 	// master thread
@@ -72,9 +70,6 @@ private:
 
 	enum { kStartConnectionID = 1 };
 	atomic_int32_t m_next_connection_id;
-
-	//kcp enable
-	bool m_enable_kcp;
 
 private:
 	// called by work thread
@@ -92,7 +87,7 @@ private:
 	void _on_udp_message_received(const char* buf, int32_t len, const sockaddr_in& peer_address, const sockaddr_in& local_address);
 
 public:
-	UdpServer(bool enable_kcp=true);
+	UdpServer();
 	~UdpServer();
 };
 

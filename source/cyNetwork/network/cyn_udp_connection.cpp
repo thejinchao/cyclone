@@ -6,60 +6,44 @@
 namespace cyclone
 {
 //-------------------------------------------------------------------------------------
-UdpConnection::UdpConnection(Looper* looper, bool enable_kcp, int32_t id)
+UdpConnection::UdpConnection(Looper* looper, int32_t id)
 	: m_id(id)
 	, m_socket(INVALID_SOCKET)
+	, m_state(kDisconnected)
 	, m_looper(looper)
 	, m_event_id(Looper::INVALID_EVENT_ID)
 	, m_write_buf_lock(nullptr)
 	, m_udp_buf(nullptr)
 	, m_on_message(nullptr)
 	, m_on_send_complete(nullptr)
+	, m_on_closing(nullptr)
 	, m_on_close(nullptr)
-	, m_closed(false)
-	, m_enable_kcp(enable_kcp)
 	, m_kcp(nullptr)
-	, m_timer_id(Looper::INVALID_EVENT_ID)
+	, m_update_timer_id(Looper::INVALID_EVENT_ID)
+	, m_closing_timer_id(Looper::INVALID_EVENT_ID)
+	, m_start_time(0)
 {
 	//create write buf lock
 	m_write_buf_lock = sys_api::mutex_create();
 	//prepare read buf
 	m_udp_buf = new char[UdpServer::MAX_UDP_READ_SIZE];
+	//get current time
+	m_start_time = sys_api::utc_time_now();
 }
 
 //-------------------------------------------------------------------------------------
 UdpConnection::~UdpConnection()
 {
-	if (m_kcp) {
-		ikcp_release((ikcpcb*)m_kcp);
-		m_kcp = nullptr;
-	}
+	assert(get_state() == kDisconnected);
 
 	if (m_udp_buf) {
 		delete[] m_udp_buf;
 		m_udp_buf = nullptr;
 	}
 
-	if (m_event_id != Looper::INVALID_EVENT_ID) {
-		m_looper->disable_all(m_event_id);
-		m_looper->delete_event(m_event_id);
-		m_event_id = Looper::INVALID_EVENT_ID;
-	}
-
-	if (m_timer_id != Looper::INVALID_EVENT_ID) {
-		m_looper->disable_all(m_timer_id);
-		m_looper->delete_event(m_timer_id);
-		m_timer_id = Looper::INVALID_EVENT_ID;
-	}
-
 	if (m_write_buf_lock) {
 		sys_api::mutex_destroy(m_write_buf_lock);
 		m_write_buf_lock = nullptr;
-	}
-
-	if (m_socket != INVALID_SOCKET) {
-		socket_api::close_socket(m_socket);
-		m_socket = INVALID_SOCKET;
 	}
 }
 
@@ -104,10 +88,10 @@ bool UdpConnection::init(const Address& peer_address, const Address* local_addre
 		return false;
 	}
 
-	//socket ok
+	//socket ok, set state to Connected
 	m_socket = sfd;
 	m_peer_addr = peer_address;
-	m_closed = false;
+	m_state = kConnected;
 
 	//watch writable event
 	m_event_id = m_looper->register_event(m_socket,
@@ -118,60 +102,68 @@ bool UdpConnection::init(const Address& peer_address, const Address* local_addre
 	);
 
 	//init kcp
-	if (m_enable_kcp) {
-		m_kcp = ikcp_create(KCP_CONV, this);
-		m_kcp->output = _kcp_udp_output;
+	m_kcp = ikcp_create(KCP_CONV, this);
+	m_kcp->output = _kcp_udp_output;
 
-		//set kcp no delay mode
-		ikcp_nodelay(m_kcp, 1, 10, 2, 1);
-		ikcp_wndsize(m_kcp, UdpServer::MAX_UDP_READ_SIZE, UdpServer::MAX_UDP_READ_SIZE);
+	//set kcp no delay mode
+	ikcp_nodelay(m_kcp, 1, 10, 2, 1);
 
-		//create kcp update timer
-		m_timer_id = m_looper->register_timer_event(KCP_TIMER_FREQ, nullptr, [this](Looper::event_id_t, void*) {
-			this->_kcp_update();
-		});
-	}
+	//create kcp update timer
+	m_update_timer_id = m_looper->register_timer_event(KCP_TIMER_FREQ, nullptr, [this](Looper::event_id_t, void*) {
+		this->_kcp_update();
+	});
 	return true;
+}
+
+//-------------------------------------------------------------------------------------
+UdpConnection::State UdpConnection::get_state(void) const
+{
+	return m_state.load();
 }
 
 //-------------------------------------------------------------------------------------
 int UdpConnection::_kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *user)
 {
 	UdpConnection* conn = (UdpConnection*)user;
-	return conn->_send_udp_data(buf, len);
+
+	assert(sys_api::thread_get_current_id() == conn->m_looper->get_thread_id());
+	if (len <= 0) return 0;
+
+	int32_t nwrote = (int32_t)socket_api::write(conn->m_socket, buf, len);
+	if (nwrote <= 0)
+	{
+		//log error
+		CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
+	}
+
+	//enable write event, wait socket ready
+	conn->m_looper->enable_write(conn->m_event_id);
+	return nwrote;
 }
 
 //-------------------------------------------------------------------------------------
 void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 {
-	CY_LOG(L_TRACE, "[CONN]receive UDP message %d", len);
-
-	if (m_enable_kcp) {
-		//input udp data to kcp 
-		if (buf && len > 0) {
-			int32_t ret = ikcp_input(m_kcp, buf, len);
-			if (ret < 0) {
-				CY_LOG(L_ERROR, "call ikcp_input error, ret=%d", ret);
-				return;
-			}
+	//input UDP data to kcp 
+	if (buf != nullptr && len > 0) {
+		int32_t ret = ikcp_input(m_kcp, buf, len);
+		if (ret < 0) {
+			CY_LOG(L_ERROR, "call ikcp_input error, ret=%d", ret);
+			return;
 		}
+	}
 
-		if (m_closed) return;
+	//is still working?
+	if (get_state()!=kConnected) return;
 
-		//try read data from kcp
-		int32_t ret = ikcp_recv(m_kcp, m_udp_buf, UdpServer::MAX_UDP_READ_SIZE);
-		if (ret <= 0) return;
-
+	//try read data from kcp
+	int32_t ret = ikcp_recv(m_kcp, m_udp_buf, UdpServer::MAX_UDP_READ_SIZE);
+	if (ret > 0) {
+		//notify logic layer...
 		m_read_buf.memcpy_into(m_udp_buf, ret);
-	}
-	else {
-		if (buf == nullptr || len == 0 || m_closed) return;
-		m_read_buf.memcpy_into(buf, len);
-	}
-
-	//notify logic layer...
-	if (m_on_message) {
-		m_on_message(shared_from_this());
+		if (m_on_message) {
+			m_on_message(shared_from_this());
+		}
 	}
 }
 
@@ -179,25 +171,17 @@ void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 bool UdpConnection::send(const char* buf, int32_t len)
 {
 	//check size
-	if (buf == nullptr || len == 0 || m_closed) return true;
+	if (buf == nullptr || len <= 0) return true;
+	if (get_state() != kConnected) return false;
+
 	if (len > UdpServer::MAX_UDP_SEND_SIZE) {
 		CY_LOG(L_ERROR, "Can't send udp package large than udp mtu size %d>%d", len, UdpServer::MAX_UDP_SEND_SIZE);
 		return false;
 	}
 
+	// is in working thread?
 	if (sys_api::thread_get_current_id() == m_looper->get_thread_id()) {
-		if (m_enable_kcp) {
-			int32_t kcp_ret = ikcp_send((ikcpcb*)m_kcp, buf, len);
-			if (kcp_ret < 0) {
-				CY_LOG(L_ERROR, "call ikcp_send failed, ret=%d", kcp_ret);
-				return false;
-			}
-
-			ikcp_flush(m_kcp);
-		}
-		else {
-			_send_udp_data(buf, len);
-		}
+		return _send(buf, len);
 	}
 	else
 	{
@@ -208,6 +192,35 @@ bool UdpConnection::send(const char* buf, int32_t len)
 		//enable write event, wait socket ready
 		m_looper->enable_write(m_event_id);
 	}
+
+	return true;
+}
+
+//-------------------------------------------------------------------------------------
+bool UdpConnection::_send(const char* buf, int32_t len)
+{
+	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
+	if (buf == nullptr || len <= 0) return true;
+
+	//nothing in write buf, send it directly
+	if (_is_writeBuf_empty())
+	{
+		int32_t kcp_ret = ikcp_send((ikcpcb*)m_kcp, buf, len);
+		if (kcp_ret < 0) {
+			CY_LOG(L_ERROR, "call ikcp_send failed, ret=%d", kcp_ret);
+			return false;
+		}
+		//flush
+		ikcp_flush(m_kcp);
+	}
+	else {
+		//write to write buffer wait next time socket is ready
+		sys_api::auto_mutex lock(m_write_buf_lock);
+		m_write_buf.memcpy_into(buf, len);
+	}
+
+	//enable write event, wait socket ready
+	m_looper->enable_write(m_event_id);
 	return true;
 }
 
@@ -216,44 +229,6 @@ bool UdpConnection::_is_writeBuf_empty(void) const
 {
 	sys_api::auto_mutex lock(m_write_buf_lock);
 	return m_write_buf.empty();
-}
-
-//-------------------------------------------------------------------------------------
-int32_t UdpConnection::_send_udp_data(const char* buf, int32_t len)
-{
-	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	if (len <= 0) return 0;
-
-	int32_t nwrote = 0;
-	int32_t remaining = len;
-
-	//nothing in write buf, send it directly
-	if (!(m_looper->is_write(m_event_id)) && _is_writeBuf_empty())
-	{
-		nwrote = (int32_t)socket_api::write(m_socket, buf, len);
-		if (nwrote > 0)
-		{
-			remaining = len - nwrote;
-		}
-		else
-		{
-			//log error
-			CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
-		}
-	}
-
-	//leave remain data in kcp
-	if (m_enable_kcp) return nwrote;
-
-	if (remaining > 0) {
-		sys_api::auto_mutex lock(m_write_buf_lock);
-		//write to write buffer
-		m_write_buf.memcpy_into(buf + nwrote, remaining);
-	}
-
-	//enable write event, wait socket ready
-	m_looper->enable_write(m_event_id);
-	return nwrote;
 }
 
 //-------------------------------------------------------------------------------------
@@ -276,53 +251,45 @@ void UdpConnection::_on_socket_write(void)
 
 	{
 		sys_api::auto_mutex lock(m_write_buf_lock);
-		if (!m_write_buf.empty()) 
-		{
-			int32_t nwrote = 0;
-
-			if (m_enable_kcp) {
-				//send from kcp protocol
-				int32_t kcp_ret = ikcp_send(m_kcp, (const char*)m_write_buf.normalize(), (int32_t)m_write_buf.size());
-				if (kcp_ret < 0) {
-					CY_LOG(L_ERROR, "call ikcp_send error, ret=%d", kcp_ret);
-					return;
-				}
-				ikcp_flush(m_kcp);
-				nwrote = (int32_t)m_write_buf.size();
+		if (!m_write_buf.empty()) {
+			//send kcp data
+			int32_t kcp_ret = ikcp_send(m_kcp, (const char*)m_write_buf.normalize(), (int32_t)m_write_buf.size());
+			if (kcp_ret < 0) {
+				CY_LOG(L_ERROR, "call ikcp_send error, ret=%d", kcp_ret);
+				return;
 			}
-			else {
-				nwrote = (int32_t)socket_api::write(m_socket, (const char*)m_write_buf.normalize(), m_write_buf.size());
-			}
-
-			if (nwrote > 0)
-			{
-				m_write_buf.discard(nwrote);
-			} 
-			else 
-			{
-				//log error
-				CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
-			}
+			ikcp_flush(m_kcp);
+			m_write_buf.reset();
 		}
+	}
 
-		//still remain some data, wait next socket write time
-		if (!m_write_buf.empty()) 
-		{
-			return;
-		}
+	int32_t wait_snd = ikcp_waitsnd(m_kcp);
+	int32_t snd_wnd = (int32_t)(m_kcp->snd_wnd);
 
-		//no longer need care write-able event
+	//no longer need care write-able event
+	if (wait_snd <= 0) {
 		m_looper->disable_write(m_event_id);
+	}
+
+	//kcp send queue is available
+	if (get_state() == kConnected) {
+		if (m_on_send_complete && wait_snd < snd_wnd * 2) {
+			m_on_send_complete(this->shared_from_this());
+		}
 	}
 }
 
 //-------------------------------------------------------------------------------------
 void UdpConnection::_kcp_update(void)
 {
-	if (!m_enable_kcp) return;
-
-	int32_t now = (int32_t)(sys_api::utc_time_now()/1000);
+	//call kcp update function
+	int32_t now = (int32_t)((sys_api::utc_time_now() - m_start_time) / 1000ll);
 	ikcp_update(m_kcp, now);
+
+	if (get_state() == kDisconnecting && ikcp_waitsnd(m_kcp) <=0 ) {
+		shutdown(); //all kcp packet sent, shutdown again
+		return;
+	}
 
 	//try read kcp data force
 	_on_udp_input(nullptr, 0);
@@ -332,18 +299,30 @@ void UdpConnection::_kcp_update(void)
 void UdpConnection::shutdown(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	if (m_closed) return; //closed already?
-
-	CY_LOG(L_DEBUG, "[CONN]shutdown UDP connection");
-
-	if (m_enable_kcp) {
-		//flush kcp data to peer
-		ikcp_flush(m_kcp);
-	}
+	if (get_state() == kDisconnected ) return; //closed already?
 
 	//close the socket now
-	m_closed = true;
 	UdpConnectionPtr thisPtr = shared_from_this();
+
+	//start closing timer
+	if (get_state()==kConnected) {
+		CY_LOG(L_DEBUG, "[CONN]shutdown UDP connection on Connected state.");
+		//flush kcp data to peer
+		ikcp_flush(m_kcp);
+
+		//enter Disconnecting state, make sure all kcp message send to peer 
+		m_state = kDisconnecting;
+
+		//logic callback
+		if (m_on_closing) {
+			m_on_closing(thisPtr);
+		}
+		return;
+	}
+
+	CY_LOG(L_DEBUG, "[CONN]shutdown UDP connection on Disconnecting state.");
+	//set state to Disconnected
+	m_state = kDisconnected;
 
 	if (m_event_id != Looper::INVALID_EVENT_ID) {
 		m_looper->disable_all(m_event_id);
@@ -351,15 +330,16 @@ void UdpConnection::shutdown(void)
 		m_event_id = Looper::INVALID_EVENT_ID;
 	}
 
-	if (m_timer_id != Looper::INVALID_EVENT_ID) {
-		m_looper->disable_all(m_timer_id);
-		m_looper->delete_event(m_timer_id);
-		m_timer_id = Looper::INVALID_EVENT_ID;
+	if (m_update_timer_id != Looper::INVALID_EVENT_ID) {
+		m_looper->disable_all(m_update_timer_id);
+		m_looper->delete_event(m_update_timer_id);
+		m_update_timer_id = Looper::INVALID_EVENT_ID;
 	}
 
-	if (m_write_buf_lock) {
-		sys_api::mutex_destroy(m_write_buf_lock);
-		m_write_buf_lock = nullptr;
+	if (m_closing_timer_id != Looper::INVALID_EVENT_ID) {
+		m_looper->disable_all(m_closing_timer_id);
+		m_looper->delete_event(m_closing_timer_id);
+		m_closing_timer_id = Looper::INVALID_EVENT_ID;
 	}
 
 	if (m_socket != INVALID_SOCKET) {
@@ -375,6 +355,11 @@ void UdpConnection::shutdown(void)
 	//reset read/write buf
 	m_write_buf.reset();
 	m_read_buf.reset();
+
+	if (m_kcp) {
+		ikcp_release((ikcpcb*)m_kcp);
+		m_kcp = nullptr;
+	}
 }
 
 }

@@ -9,13 +9,12 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-UdpServer::UdpServer(bool enable_kcp)
+UdpServer::UdpServer()
 	: m_master_thread(nullptr)
 	, m_workthread_counts(0)
 	, m_running(0)
 	, m_shutdown_ing(0)
 	, m_next_connection_id(kStartConnectionID)
-	, m_enable_kcp(enable_kcp)
 {
 	m_master_thread = new UdpServerMasterThread(this, std::bind(&UdpServer::_on_udp_message_received, this, 
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
@@ -88,7 +87,7 @@ void UdpServer::join(void)
 	m_work_thread_pool.clear();
 
 	m_running = 0;
-	CY_LOG(L_TRACE, "udp server stop!");
+	CY_LOG(L_DEBUG, "udp server stop!");
 }
 
 //-------------------------------------------------------------------------------------

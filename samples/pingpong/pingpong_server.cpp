@@ -12,11 +12,12 @@ using namespace std::placeholders;
 
 #define MAX_DATA_SIZE (1024*4)
 
-enum { OPT_SERVER_PORT, OPT_KCP, OPT_HELP };
+enum { OPT_SERVER_PORT, OPT_KCP, OPT_VERBOSE, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_SERVER_PORT, "-p",	SO_REQ_SEP }, // "-p SERVER_PORT"
 	{ OPT_KCP,  "-k",	  SO_NONE },	// "-k"
+	{ OPT_VERBOSE,  "-v",	  SO_NONE },	// "-v"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	// "--help"
 	SO_END_OF_OPTIONS                   // END
@@ -48,9 +49,9 @@ public:
 
 		m_server.join();
 	}
-private:
+protected:
 	//-------------------------------------------------------------------------------------
-	void on_client_connected(ConnectionType conn)
+	virtual void on_client_connected(ConnectionType conn)
 	{
 		if (!atomic_compare_exchange(m_status, PS_Listening, PS_Waiting_Handshake)) {
 			CY_LOG(L_ERROR, "Only support one client");
@@ -68,33 +69,34 @@ private:
 		assert(m_status.load() == PS_Waiting_Handshake || m_status.load() == PS_Working);
 
 		RingBuf& rb = conn->get_input_buf();
-		if (rb.size() < sizeof(PingPong_Head)) return;
-
-		PingPong_Head head;
-		rb.peek(0, &head, sizeof(PingPong_Head));
-		if ((int32_t)rb.size() < head.size) return;
-
-		switch (head.id)
+		while (rb.size() >= sizeof(PingPong_Head))
 		{
-		case PingPong_HandShake::ID:
-			_on_recv_handshake_message(conn);
-			break;
+			PingPong_Head head;
+			rb.peek(0, &head, sizeof(PingPong_Head));
+			if ((int32_t)rb.size() < head.size) return;
 
-		case PingPong_PingData::ID:
-			_on_recv_ping_data(conn);
-			break;
+			switch (head.id)
+			{
+			case PingPong_HandShake::ID:
+				_on_recv_handshake_message(conn);
+				break;
 
-		case PingPong_Close::ID:
-			_on_recev_close_message(conn);
-			break;
+			case PingPong_PingData::ID:
+				_on_recv_ping_data(conn);
+				break;
 
-		default:
-		{
-			//error
-			CY_LOG(L_ERROR, "Error! Receive unknown message: %d", head.id);
-			conn->shutdown();
-			return;
-		}
+			case PingPong_Close::ID:
+				_on_recev_close_message(conn);
+				break;
+
+			default:
+				{
+				//error
+				CY_LOG(L_ERROR, "Error! Receive unknown message: %d", head.id);
+				conn->shutdown();
+				return;
+				}
+			}
 		}
 	}
 
@@ -113,9 +115,10 @@ private:
 		PingPong_HandShake handshake;
 		rb.memcpy_out(&handshake, sizeof(PingPong_HandShake));
 
-		//
-		//TODO: handshake
-		//
+		// handshake
+		m_work_mode = handshake.work_mode;
+		m_data_crc = INITIAL_ADLER;
+		m_pingpong_counts = handshake.counts;
 
 		//send handshake back
 		_send_handshake_message(conn);
@@ -130,6 +133,8 @@ private:
 		PingPong_HandShake msg;
 		msg.id = PingPong_HandShake::ID;
 		msg.size = sizeof(PingPong_HandShake);
+		msg.work_mode = m_work_mode;
+		msg.counts = m_pingpong_counts;
 		conn->send((const char*)&msg, sizeof(msg));
 	}
 
@@ -141,8 +146,6 @@ private:
 			conn->shutdown();
 			return;
 		}
-
-		CY_LOG(L_TRACE, "Receive ping message");
 
 		RingBuf& rb = conn->get_input_buf();
 
@@ -157,12 +160,19 @@ private:
 			return;
 		}
 
+		CY_LOG(L_TRACE, "Receive %d/%d ping message", ping.index+1, m_pingpong_counts);
+
 		//receive ping data
 		char temp_data[MAX_DATA_SIZE];
 		rb.memcpy_out(temp_data, ping.data_size);
 
 		//send pong data
-		_send_pong_data(conn, temp_data, ping.data_size);
+		if (m_work_mode == 1) {
+			_send_pong_data(conn, temp_data, ping.data_size);
+		}
+		else if (m_work_mode == 2) {
+			m_data_crc = adler32(m_data_crc, (const uint8_t*)temp_data, ping.data_size);
+		}
 	}
 
 	//-------------------------------------------------------------------------------------
@@ -201,13 +211,14 @@ private:
 	//-------------------------------------------------------------------------------------
 	void _send_close_message(ConnectionType conn)
 	{
-		CY_LOG(L_INFO, "send close message to client, switch status to Closing and begin shutdown connection!");
+		CY_LOG(L_INFO, "send close message to client(CRC=0x%08X), switch status to Closing and begin shutdown connection!", m_data_crc);
 
 		m_status = PS_Closing;
 
 		PingPong_Close close_msg;
 		close_msg.id = PingPong_Close::ID;
 		close_msg.size = sizeof(PingPong_Close);
+		close_msg.data_crc = m_data_crc;
 		conn->send((const char*)&close_msg, sizeof(PingPong_Close));
 
 		//shutdown connection
@@ -224,7 +235,7 @@ private:
 		m_status = PS_Listening;
 		m_client_id = -1;
 	}
-private:
+protected:
 	enum Status
 	{
 		PS_Closed,
@@ -237,12 +248,36 @@ private:
 	int32_t m_listen_port;
 	std::atomic<Status> m_status;
 	int32_t m_client_id;
+	int32_t m_work_mode;
+	uint32_t m_data_crc;
+	int32_t m_pingpong_counts;
 
 public:
 	PingPongServer(int32_t listen_port)
 		: m_listen_port(listen_port)
 		, m_status(PS_Closed)
 		, m_client_id(-1)
+		, m_work_mode(1)
+		, m_data_crc(INITIAL_ADLER)
+		, m_pingpong_counts(0)
+	{
+	}
+};
+
+//-------------------------------------------------------------------------------------
+class KcpPingPongServer : public PingPongServer<UdpServer, UdpConnectionPtr>
+{
+public:
+	virtual void on_client_connected(UdpConnectionPtr conn)
+	{
+		PingPongServer<UdpServer, UdpConnectionPtr>::on_client_connected(conn);
+		m_server.m_listener.on_close = nullptr;
+		conn->set_on_closing(std::bind(&KcpPingPongServer::on_client_close, this, _1));
+	}
+
+public:
+	KcpPingPongServer(int32_t listen_port) 
+		: PingPongServer<UdpServer, UdpConnectionPtr>(listen_port)
 	{
 
 	}
@@ -255,6 +290,7 @@ void printUsage(const char* moduleName)
 	printf("Usage: %s [OPTIONS]\n\n", moduleName);
 	printf("\t -p  SERVER_PORT\tListen Port, Default 1978\n");
 	printf("\t -k\t\t\tEnable KCP Protocol\n");
+	printf("\t -v\t\t\tEnable Verbose Mode\n");
 	printf("\t --help -?\t\tShow this help\n");
 }
 
@@ -265,6 +301,7 @@ int main(int argc, char* argv[])
 
 	uint16_t server_port = 1978;
 	bool enable_kcp = false;
+	bool verbose_mode = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -278,6 +315,9 @@ int main(int argc, char* argv[])
 			else if (args.OptionId() == OPT_KCP) {
 				enable_kcp = true;
 			}
+			else if (args.OptionId() == OPT_VERBOSE) {
+				verbose_mode = true;
+			}
 		}
 		else {
 			printf("Invalid argument: %s\n", args.OptionText());
@@ -285,11 +325,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	CY_LOG(L_DEBUG, "ServerMode, ListenPort:%d, KCP:%s", server_port, enable_kcp ? "enable" : "disable");
-	//set_log_threshold(L_TRACE);
+	set_log_threshold(verbose_mode ? L_TRACE : L_DEBUG);
+	CY_LOG(L_DEBUG, "======== PingPongServer ========");
+	CY_LOG(L_DEBUG, "ListenPort:%d", server_port);
+	CY_LOG(L_DEBUG, "KCP : %s",  enable_kcp ? "enable" : "disable");
+	CY_LOG(L_DEBUG, "Verbose: %s", verbose_mode ? "enable" : "disable");
 
 	if (enable_kcp) {
-		PingPongServer<UdpServer, UdpConnectionPtr> server(server_port);
+		KcpPingPongServer server(server_port);
 		server.start_and_join();
 	}
 	else {

@@ -14,12 +14,14 @@ using namespace std::placeholders;
 #define DEF_DATA_SIZE		(512)
 #define MAX_DATA_COUNTS		(0xFFFF)
 
-enum { OPT_SERVER_ADDR, OPT_SERVER_PORT, OPT_KCP, OPT_DATA_SIZE, OPT_DATA_COUNTS, OPT_HELP };
+enum { OPT_SERVER_ADDR, OPT_SERVER_PORT, OPT_WORK_MODE, OPT_KCP, OPT_VERBOSE, OPT_DATA_SIZE, OPT_DATA_COUNTS, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_SERVER_ADDR, "-h",	SO_REQ_SEP }, // "-h SERVER_IP"
 	{ OPT_SERVER_PORT, "-p",	SO_REQ_SEP }, // "-p SERVER_PORT"
+	{ OPT_WORK_MODE, "-m",		SO_REQ_SEP }, // "-m WORK_MODE"
 	{ OPT_KCP,  "-k",			SO_NONE },	// "-k"
+	{ OPT_VERBOSE,  "-v",	  SO_NONE },	// "-v"
 	{ OPT_DATA_SIZE, "-s",		SO_REQ_SEP }, // "-s DATA_SIZE"
 	{ OPT_DATA_COUNTS, "-c",		SO_REQ_SEP }, // "-c DATA_COUNTS"
 	{ OPT_HELP, "-?",		SO_NONE },	// "-?"
@@ -85,6 +87,8 @@ protected:
 		PingPong_HandShake msg;
 		msg.id = PingPong_HandShake::ID;
 		msg.size = sizeof(PingPong_HandShake);
+		msg.work_mode = m_work_mode;
+		msg.counts = m_pingpong_counts;
 		m_connection->send((const char*)&msg, sizeof(msg));
 	}
 
@@ -102,20 +106,23 @@ protected:
 		rb.memcpy_out(&handshake, sizeof(PingPong_HandShake));
 
 		CY_LOG(L_INFO, "Receive handshake message.");
-		//
-		//TODO: handshake
-		//
+		//handshake
+		if (m_work_mode != handshake.work_mode || m_pingpong_counts != handshake.counts) {
+			CY_LOG(L_ERROR, "Handshake failed!");
+			conn->shutdown();
+			return;
+		}
 
 		//begin send ping data
 		m_status = PS_Working;
 		m_index = 0;
-		m_send_data_crc = INITIAL_ADLER;
+		m_data_crc = INITIAL_ADLER;
 		m_begin_time = sys_api::utc_time_now();
 		_send_ping_message();
 	}
 
 	//-------------------------------------------------------------------------------------
-	void _send_ping_message()
+	void _send_ping_message(void)
 	{
 		assert(m_status == PS_Working);
 
@@ -127,10 +134,28 @@ protected:
 		data.id = PingPong_PingData::ID;
 		data.size = (int32_t)sizeof(PingPong_PingData) + m_data_size;
 		data.data_size = m_data_size;
+		data.index = m_index;
 
 		//send...
 		m_connection->send((const char*)&data, sizeof(PingPong_PingData));
 		m_connection->send((const char*)m_send_data, m_data_size);
+	}
+
+	//-------------------------------------------------------------------------------------
+	void _on_send_complete(void)
+	{
+		if (m_work_mode != 2) return;
+		if (m_status != PS_Working) return;
+
+		CY_LOG(L_TRACE, "Send %d/%d ping data", m_index+1, m_pingpong_counts);
+
+		if (++m_index < m_pingpong_counts) {
+			_send_ping_message();
+			return;
+		}
+
+		CY_LOG(L_INFO, "Send ping data complete, send close message");
+		_send_close_message();
 	}
 
 	//-------------------------------------------------------------------------------------
@@ -157,9 +182,7 @@ protected:
 		}
 		rb.discard(m_data_size);
 
-		if (m_index % 10 == 0) {
-			CY_LOG(L_DEBUG, "Receive %d/%d pong data", m_index, m_pingpong_counts);
-		}
+		CY_LOG(L_TRACE, "Receive %d/%d pong data", m_index, m_pingpong_counts);
 
 		//send next ping data
 		if (++m_index < m_pingpong_counts) {
@@ -169,7 +192,7 @@ protected:
 
 		//last pong data
 		m_end_time = sys_api::utc_time_now();
-		CY_LOG(L_INFO, "Receive Last pong, send close message");
+		CY_LOG(L_INFO, "Receive Last pong, send close message, CRC=0x%08X", m_data_crc);
 		_send_close_message();
 	}
 
@@ -181,6 +204,7 @@ protected:
 		PingPong_Close close_msg;
 		close_msg.id = PingPong_Close::ID;
 		close_msg.size = sizeof(PingPong_Close);
+		close_msg.data_crc = 0;
 		m_connection->send((const char*)&close_msg, sizeof(PingPong_Close));
 	}
 
@@ -199,6 +223,17 @@ protected:
 		PingPong_Close close_msg;
 		rb.memcpy_out(&close_msg, sizeof(PingPong_Close));
 
+		//check data crc
+		if (m_work_mode == 2) {
+			m_end_time = sys_api::utc_time_now();
+			if (close_msg.data_crc != m_data_crc) {
+				CY_LOG(L_ERROR, "Error! Data CRC error 0x%08X should be: 0x%08X", close_msg.data_crc, m_data_crc);
+				conn->shutdown();
+				return;
+			}
+			CY_LOG(L_INFO, "Data CRC return from server: 0x%08X", close_msg.data_crc, m_data_crc);
+		}
+
 		//shutdown connection
 		conn->shutdown();
 	}
@@ -211,7 +246,7 @@ protected:
 		for (size_t i = 0; i < m_data_size / sizeof(uint64_t) + 1; i++) {
 			((uint64_t*)m_send_data)[i] = xorShift128.next();
 		}
-		m_send_data_crc = adler32(m_send_data_crc, (const uint8_t*)m_send_data, m_data_size);
+		m_data_crc = adler32(m_data_crc, (const uint8_t*)m_send_data, m_data_size);
 	}
 
 protected:
@@ -228,23 +263,26 @@ protected:
 	int32_t m_index;
 	int32_t m_pingpong_counts;
 	uint8_t m_send_data[MAX_DATA_SIZE + 8];
-	uint32_t m_send_data_crc;
+	uint32_t m_data_crc;
 	int32_t m_data_size;
 	RingBuf m_receive_data;
 	int64_t m_begin_time, m_end_time;
+	int32_t m_work_mode;
 
 public:
-	PingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts)
+	PingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
 		: m_server_address(server_ip, (uint16_t)server_port)
 		, m_status(PS_Connecting)
 		, m_index(0)
 		, m_pingpong_counts(pingpong_counts)
-		, m_send_data_crc(INITIAL_ADLER)
+		, m_data_crc(INITIAL_ADLER)
 		, m_data_size(data_size)
 		, m_begin_time(-1)
 		, m_end_time(-1)
+		, m_work_mode(work_mode)
 	{
 		assert(m_data_size <= MAX_DATA_SIZE);
+		assert(m_work_mode == 1 || m_work_mode == 2);
 
 		//fill random data
 		srand((unsigned int)::time(0));
@@ -285,6 +323,7 @@ protected:
 			return 1000 * 5;
 		}
 		m_connection = conn;
+		m_connection->set_on_send_complete(std::bind(&TcpPingPongClient::_on_send_complete, this));
 
 		//send handshake message after connected
 		_send_handshake_message();
@@ -295,8 +334,8 @@ private:
 	TcpClientPtr m_client;
 
 public:
-	TcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts)
-		: PingPongClient<ConnectionPtr>(server_ip, server_port, data_size, pingpong_counts)
+	TcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
+		: PingPongClient<ConnectionPtr>(server_ip, server_port, data_size, pingpong_counts, work_mode)
 	{
 
 	}
@@ -310,13 +349,14 @@ public:
 	{
 		m_looper = Looper::create_looper();
 
-		m_connection = std::make_shared<UdpConnection>(m_looper, true);
+		m_connection = std::make_shared<UdpConnection>(m_looper);
 		if (!m_connection->init(m_server_address)) {
 			CY_LOG(L_ERROR, "Init udp socket failed...");
 			return;
 		}
 		m_connection->set_on_message(std::bind(&KcpPingPongClient::on_server_message, this, _1));
 		m_connection->set_on_close(std::bind(&KcpPingPongClient::on_server_close, this));
+		m_connection->set_on_send_complete(std::bind(&KcpPingPongClient::_on_send_complete, this));
 
 		//send handshake message
 		_send_handshake_message();
@@ -331,8 +371,8 @@ public:
 	}
 
 public:
-	KcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts)
-		: PingPongClient<UdpConnectionPtr>(server_ip, server_port, data_size, pingpong_counts)
+	KcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
+		: PingPongClient<UdpConnectionPtr>(server_ip, server_port, data_size, pingpong_counts, work_mode)
 	{
 
 	}
@@ -345,6 +385,7 @@ void printUsage(const char* moduleName)
 	printf("Usage: %s [OPTIONS]\n\n", moduleName);
 	printf("\t -h  SERVER_IP\t\tTarget Server IP, Default 127.0.0.1\n");
 	printf("\t -p  SERVER_PORT\tListen Port(server mode) or Server Port(client mode), Default 1978\n");
+	printf("\t -m  WORK_MODE\tWorkMode(1,2) 1:Ping-Pong 2:Ping-Ping-...-Pong, Default is 1\n");
 	printf("\t -k\t\t\tEnable KCP Protocol, Default not\n");
 	printf("\t -s  DATA_SIZE\t\tData Size(bytes), max size %d, Default %d\n", MAX_DATA_SIZE, DEF_DATA_SIZE);
 	printf("\t -c  DATA_COUNTS\tData counts, max counts %d, Default 500\n", MAX_DATA_COUNTS);
@@ -361,6 +402,8 @@ int main(int argc, char* argv[])
 	bool enable_kcp = false;
 	int32_t data_size = DEF_DATA_SIZE;
 	int32_t data_counts = 500;
+	int32_t work_mode = 1;
+	bool verbose_mode = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -376,6 +419,16 @@ int main(int argc, char* argv[])
 			}
 			else if (args.OptionId() == OPT_KCP) {
 				enable_kcp = true;
+			}
+			else if (args.OptionId() == OPT_VERBOSE) {
+				verbose_mode = true;
+			}
+			else if (args.OptionId() == OPT_WORK_MODE) {
+				work_mode = (int32_t)atoi(args.OptionArg());
+				if (work_mode != 1 && work_mode != 2) {
+					printUsage(argv[0]);
+					return 0;
+				}
 			}
 			else if (args.OptionId() == OPT_DATA_SIZE) {
 				data_size = (int32_t)atoi(args.OptionArg());
@@ -398,16 +451,20 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	CY_LOG(L_DEBUG, "ServerAddress:%s:%d, KCP:%s, DataSize:%d, DataCounts:%d", 
-		server_ip.c_str(), server_port, enable_kcp ? "enable" : "disable", data_size, data_counts);
-	//set_log_threshold(L_TRACE);
+	set_log_threshold(verbose_mode ? L_TRACE : L_DEBUG);
+	CY_LOG(L_DEBUG, "======== PingPongServer ========");
+	CY_LOG(L_DEBUG, "ServerAddress: %s:%d", server_ip.c_str(), server_port);
+	CY_LOG(L_DEBUG, "WorkMode:%d", work_mode);
+	CY_LOG(L_DEBUG, "KCP:%s", enable_kcp ? "enable" : "disable");
+	CY_LOG(L_DEBUG, "DataSize:%d", data_size);
+	CY_LOG(L_DEBUG, "DataCounts:%d", data_counts);
 
 	if (enable_kcp) {
-		KcpPingPongClient client(server_ip.c_str(), server_port, data_size, data_counts);
+		KcpPingPongClient client(server_ip.c_str(), server_port, data_size, data_counts, work_mode);
 		client.start_and_join();
 	}
 	else {
-		TcpPingPongClient client(server_ip.c_str(), server_port, data_size, data_counts);
+		TcpPingPongClient client(server_ip.c_str(), server_port, data_size, data_counts, work_mode);
 		client.start_and_join();
 	}
 

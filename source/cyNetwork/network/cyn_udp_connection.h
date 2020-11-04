@@ -22,6 +22,9 @@ class UdpConnection : public std::enable_shared_from_this<UdpConnection>, noncop
 public:
 	typedef std::function<void(UdpConnectionPtr conn)> EventCallback;
 
+	// connection status
+	enum State { kConnected, kDisconnecting, kDisconnected };
+
 public:
 	/// init udp connection
 	bool init(const Address& peer_address, const Address* local_address = nullptr);
@@ -37,30 +40,32 @@ public:
 	void shutdown(void);
 	/// get looper
 	Looper* get_looper(void) const { return m_looper; }
+	/// get current state(thread safe)
+	State get_state(void) const;
 
 	///set callback function
 	void set_on_message(EventCallback callback) { m_on_message = callback; }
 	void set_on_send_complete(EventCallback callback) { m_on_send_complete = callback; }
+	void set_on_closing(EventCallback callback) { m_on_closing = callback; }
 	void set_on_close(EventCallback callback) { m_on_close = callback; }
 
 private:
 	friend class UdpServerWorkThread;
+	// send kcp data (work thread)
+	bool _send(const char* buf, int32_t len);
 	//call by udp work thread, received udp socket message
 	void _on_udp_input(const char* buf, int32_t len);
 	//// on socket read event
 	void _on_socket_read(void);
 	//// on socket write event
 	void _on_socket_write(void);
-
-private:
-	/// send udp message (not thread safe, must int work thread)
-	int32_t _send_udp_data(const char* buf, int32_t len);
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
 
 private:
 	int32_t m_id;
 	socket_t m_socket; //socket for send data
+	std::atomic<State> m_state;
 	Address m_peer_addr;
 	Looper* m_looper;
 	Looper::event_id_t m_event_id;
@@ -73,25 +78,26 @@ private:
 
 	EventCallback m_on_message;
 	EventCallback m_on_send_complete;
+	EventCallback m_on_closing;
 	EventCallback m_on_close;
-
-	bool m_closed; //connection closed
 
 private:
 	//kcp data
 	enum { KCP_CONV = 0xC0DE };
 	enum { KCP_TIMER_FREQ = 10 }; //every 10 millisecond
+	enum { KCP_DISCONNECTING_TIME = 1000 }; //wait another 1000 millisecond after shutdown to make sure kcp message sent to peer
 
-	bool m_enable_kcp;
 	IKCPCB* m_kcp;
-	Looper::event_id_t m_timer_id;
+	Looper::event_id_t m_update_timer_id;
+	Looper::event_id_t m_closing_timer_id;
+	int64_t m_start_time;
 
 	// send udp data
 	static int _kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *user);
 	void _kcp_update(void);
 
 public:
-	UdpConnection(Looper* looper, bool enable_kcp = false, int32_t id=0);
+	UdpConnection(Looper* looper, int32_t id=0);
 	~UdpConnection();
 };
 
