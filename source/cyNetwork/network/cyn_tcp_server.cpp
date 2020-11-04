@@ -140,7 +140,7 @@ void TcpServer::_on_accept_socket(socket_t fd)
 	newConnectionCmd.sfd = fd;
 	work->send_message(ServerWorkThread::NewConnectionCmd::ID, sizeof(newConnectionCmd), (const char*)&newConnectionCmd);
 
-	CY_LOG(L_TRACE, "accept a socket, send to work thread %d ", index);
+	CY_LOG(L_DEBUG, "accept a socket, send to work thread %d ", index);
 }
 
 //-------------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ void TcpServer::join(void)
 	m_work_thread_pool.clear();
 	m_running = 0;
 
-	CY_LOG(L_TRACE, "accept thread stop!");
+	CY_LOG(L_DEBUG, "accept thread stop!");
 }
 
 //-------------------------------------------------------------------------------------

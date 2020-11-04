@@ -37,13 +37,13 @@ bool set_log_filename(const char* pathName, const char* fileName);
 //get current log filename
 const char* get_log_filename(void);
 
-//set the a global log level, default is L_TRACE, 
+//set the a global log level, default is L_DEBUG, 
 //all the log message lower than this level will be ignored
 void set_log_threshold(LOG_LEVEL level);
 
 }
 
-//userful macro
+//useful macro
 #ifdef CY_ENABLE_LOG
 #define CY_LOG cyclone::disk_log
 #else
