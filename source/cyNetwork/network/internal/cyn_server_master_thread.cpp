@@ -97,8 +97,8 @@ bool ServerMasterThread::start(void)
 	assert(!m_master_thread.is_running());
 	if (m_master_thread.is_running()) return false;
 
-	m_master_thread.setOnStartFunction(std::bind(&ServerMasterThread::_on_thread_start, this));
-	m_master_thread.setOnMessageFunction(std::bind(&ServerMasterThread::_on_thread_message, this, std::placeholders::_1));
+	m_master_thread.set_on_start(std::bind(&ServerMasterThread::_on_thread_start, this));
+	m_master_thread.set_on_message(std::bind(&ServerMasterThread::_on_thread_message, this, std::placeholders::_1));
 	m_master_thread.start("master");
 	return true;
 }

@@ -14,8 +14,8 @@ WorkThread::WorkThread()
 	: m_thread(nullptr)
 	, m_looper(nullptr)
 	, m_is_queue_empty(true)
-	, m_onStart(nullptr)
-	, m_onMessage(nullptr)
+	, m_on_start(nullptr)
+	, m_on_message(nullptr)
 {
 }
 
@@ -61,7 +61,7 @@ void WorkThread::_work_thread(void* param)
 	thread_param = nullptr;//we don't use it again!
 
 	//we start!
-	if (m_onStart && !m_onStart()) {
+	if (m_on_start && !m_on_start()) {
 		Looper::destroy_looper(m_looper);
 		m_looper = nullptr;
 		return;
@@ -89,8 +89,8 @@ void WorkThread::_on_message(void)
 			if (!m_message_queue.pop(packet)) break;
 
 			//call listener
-			if (m_onMessage) {
-				m_onMessage(packet);
+			if (m_on_message) {
+				m_on_message(packet);
 			}
 
 			Packet::free_packet(packet);
