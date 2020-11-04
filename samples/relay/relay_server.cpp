@@ -3,6 +3,8 @@
 #include <cy_event.h>
 #include <cy_network.h>
 #include <utility/cyu_simple_opt.h>
+#include <utility/cyu_statistics.h>
+#include <utility/cyu_string_util.h>
 
 #include "relay_protocol.h"
 
@@ -10,7 +12,7 @@ using namespace cyclone;
 using namespace std::placeholders;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_HELP };
+enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP },  // "-p LISTEN_PORT"
@@ -18,6 +20,7 @@ CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_UP_PORT, "-up",  SO_REQ_SEP }, // "-up UP_SERVER_PORT"
 	{ OPT_ENCRYPT_MODE, "-e",  SO_NONE }, // "-e"
 	{ OPT_THREADS, "-t",  SO_REQ_SEP }, // "-t THREAD_COUNTS"
+	{ OPT_STATISTICS, "-s",  SO_NONE },	// "-s"
 	{ OPT_VERBOSE_MODE, "-v",  SO_NONE },	// "-v"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	 // "--help"
@@ -113,6 +116,16 @@ private:
 	RelayPipeMap m_relayPipes;
 	sys_api::mutex_t m_relayPipesLock;
 
+	enum { kSpeedTimePeriod = 5 * 1000 }; //(2 seconds)
+
+	bool m_enable_statistics;
+
+	std::atomic<int64_t> m_up_total;
+	PeriodValue<int32_t, true> m_up_statistics;
+
+	std::atomic<int64_t> m_down_total;
+	PeriodValue<int32_t, true> m_down_statistics;
+
 public:
 	//-------------------------------------------------------------------------------------
 	void startAndJoin(uint16_t local_port, const Address& upAddress, int32_t workThreadCounts)
@@ -120,6 +133,7 @@ public:
 		m_upAddress = upAddress;
 
 		TcpServer server("rs", nullptr);
+		server.m_listener.on_master_thread_start = std::bind(&RelayServer::onMasterThreadStart, this, _1, _2);
 		server.m_listener.on_work_thread_start = std::bind(&RelayServer::onWorkthreadStart, this, _2, _3);
 		server.m_listener.on_connected = std::bind(&RelayServer::onDownConnected, this, _1, _2, _3);
 		server.m_listener.on_message = std::bind(&RelayServer::onDownMessage, this, _1, _2, _3);
@@ -134,6 +148,14 @@ public:
 		server.join();
 	}
 private:
+	//-------------------------------------------------------------------------------------
+	void onMasterThreadStart(TcpServer* /*server*/, Looper* looper)
+	{
+		if (m_enable_statistics) {
+			looper->register_timer_event(kSpeedTimePeriod, nullptr, std::bind(&RelayServer::printStatisticsInfo, this));
+		}
+	}
+
 	//-------------------------------------------------------------------------------------
 	void onWorkthreadStart(int32_t /*index*/, Looper* /*looper*/)
 	{
@@ -306,6 +328,12 @@ private:
 				{
 					pipe->m_decrypt->decrypt(buf, buf, packet.get_packet_size() - sizeof(RelayForwardMsg));
 				}
+
+				if (m_enable_statistics) {
+					m_up_total += forwardMsg.size;
+					m_up_statistics.push(forwardMsg.size);
+				}
+
 				session->m_upClient->send((const char*)buf, (size_t)forwardMsg.size);
 
 				CY_LOG(L_TRACE, "[%d]receive from DOWN client(%zd/%zd), send to UP!", id,
@@ -350,6 +378,19 @@ private:
 		pipe->m_downState = kWaitConnecting;
 	}
 
+	//-------------------------------------------------------------------------------------
+	void printStatisticsInfo(void)
+	{
+		auto up_statistics = m_up_statistics.sum_and_counts();
+		auto down_statistics = m_down_statistics.sum_and_counts();
+
+		CY_LOG(L_INFO, "===UP:%s Speed:%s/s DOWN:%s Speed:%s/s",
+			string_util::size_to_string((size_t)m_up_total.load()).c_str(),
+			string_util::size_to_string((float)(up_statistics.first * 1000 / kSpeedTimePeriod)).c_str(),
+			string_util::size_to_string((size_t)m_down_total.load()).c_str(),
+			string_util::size_to_string((float)(down_statistics.first * 1000 / kSpeedTimePeriod)).c_str()
+		);
+	}
 private:
 	//-------------------------------------------------------------------------------------
 	uint32_t onServerConnected(TcpClientPtr client, ConnectionPtr conn, bool success)
@@ -430,6 +471,12 @@ private:
 			{
 				pipe->m_encrypt->encrypt(buf, buf, buf_round_size);
 			}
+
+			if (m_enable_statistics) {
+				m_down_total += (int64_t)msgSize;
+				m_down_statistics.push((int32_t)msgSize);
+			}
+			
 			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
 		}
 	}
@@ -479,8 +526,13 @@ private:
 	}
 
 public:
-	RelayServer(bool encryptMode)
+	RelayServer(bool encryptMode, bool enableStatistics)
 		: m_encryptMode(encryptMode)
+		, m_enable_statistics(enableStatistics)
+		, m_up_total(0)
+		, m_up_statistics(1024, kSpeedTimePeriod)
+		, m_down_total(0)
+		, m_down_statistics(1024, kSpeedTimePeriod)
 	{
 	}
 	~RelayServer() 
@@ -498,6 +550,7 @@ static void printUsage(const char* moduleName)
 	printf("\t -up UP_PORT\tUp Server(Target Server) Port\n");
 	printf("\t -t THREAD_COUNTS\tWork thread counts(must be 1 when relay_pipe used)\n");
 	printf("\t -e\t\tEncrypt Message\n");
+	printf("\t -s\t\tPrint speed statistics\n");
 	printf("\t -v\t\tVerbose Mode\n");
 	printf("\t --help -?\tShow this help\n");
 }
@@ -513,6 +566,7 @@ int main(int argc, char* argv[])
 	bool verbose_mode = false;
 	bool encrypt_mode = false;
 	int32_t work_thread_counts = sys_api::get_cpu_counts();
+	bool enable_statistics = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -538,7 +592,9 @@ int main(int argc, char* argv[])
 			else if (args.OptionId() == OPT_VERBOSE_MODE) {
 				verbose_mode = true;
 			}
-
+			else if (args.OptionId() == OPT_STATISTICS) {
+				enable_statistics = true;
+			}
 		}
 		else {
 			printf("Invalid argument: %s\n", args.OptionText());
@@ -556,8 +612,9 @@ int main(int argc, char* argv[])
 	CY_LOG(L_DEBUG, "final up address %s:%d", up_ip.c_str(), up_port);
 	CY_LOG(L_DEBUG, "encrypt mode %s", encrypt_mode?"true":"false");
 	CY_LOG(L_DEBUG, "work thread counts %d", work_thread_counts);
+	CY_LOG(L_DEBUG, "speed statistics: %s", enable_statistics?"true":"false");
 
-	RelayServer server(encrypt_mode);
+	RelayServer server(encrypt_mode, enable_statistics);
 	server.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
 	return 0;
 }
