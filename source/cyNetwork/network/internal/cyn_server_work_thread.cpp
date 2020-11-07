@@ -58,7 +58,7 @@ bool ServerWorkThread::is_in_workthread(void) const
 }
 
 //-------------------------------------------------------------------------------------
-ConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
+TcpConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
 {
 	assert(is_in_workthread());
 
@@ -93,16 +93,16 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		memcpy(&newConnectionCmd, message->get_packet_content(), sizeof(NewConnectionCmd));
 
 		//create tcp connection 
-		ConnectionPtr conn = std::make_shared<Connection>(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
+		TcpConnectionPtr conn = std::make_shared<TcpConnection>(m_server->get_next_connection_id(), newConnectionCmd.sfd, m_work_thread->get_looper(), this);
 		CY_LOG(L_DEBUG, "receive new connection, id=%d, peer_addr=%s:%d", conn->get_id(), conn->get_peer_addr().get_ip(), conn->get_peer_addr().get_port());
 
 		//bind onMessage function
-		conn->set_on_message([this](ConnectionPtr connection) {
+		conn->set_on_message([this](TcpConnectionPtr connection) {
 			m_server->_on_socket_message(this->get_index(), connection);
 		});
 
 		//bind onClose function
-		conn->set_on_close([this](ConnectionPtr connection) {
+		conn->set_on_close([this](TcpConnectionPtr connection) {
 			m_server->_on_socket_close(this->get_index(), connection);
 		});
 
@@ -120,16 +120,16 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		ConnectionMap::iterator it = m_connections.find(closeConnectionCmd.conn_id);
 		if (it == m_connections.end()) return;
 
-		ConnectionPtr conn = it->second;
-		Connection::State curr_state = conn->get_state();
+		TcpConnectionPtr conn = it->second;
+		TcpConnection::State curr_state = conn->get_state();
 
 		CY_LOG(L_DEBUG, "receive close connection cmd, id=%d, state=%d", conn->get_id(), conn->get_state());
-		if (curr_state == Connection::kConnected)
+		if (curr_state == TcpConnection::kConnected)
 		{
 			//shutdown,and wait 
 			conn->shutdown();
 		}
-		else if (curr_state == Connection::kDisconnected)
+		else if (curr_state == TcpConnection::kDisconnected)
 		{
 			//delete the connection object
 			m_connections.erase(conn->get_id());
@@ -161,8 +161,8 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 		ConnectionMap::iterator it, end = m_connections.end();
 		for (it = m_connections.begin(); it != end; ++it)
 		{
-			ConnectionPtr conn = it->second;
-			if (conn->get_state() == Connection::kConnected)
+			TcpConnectionPtr conn = it->second;
+			if (conn->get_state() == TcpConnection::kConnected)
 			{
 				conn->shutdown();
 			}

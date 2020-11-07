@@ -161,7 +161,7 @@ void TcpServer::join(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::shutdown_connection(ConnectionPtr conn)
+void TcpServer::shutdown_connection(TcpConnectionPtr conn)
 {
 	ServerWorkThread* work = (ServerWorkThread*)(conn->get_owner());
 
@@ -206,7 +206,7 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr conn)
+void TcpServer::_on_socket_connected(int32_t work_thread_index, TcpConnectionPtr conn)
 {
 	if (m_listener.on_connected) {
 		m_listener.on_connected(this, work_thread_index, conn);
@@ -214,7 +214,7 @@ void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr co
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_socket_message(int32_t work_thread_index, ConnectionPtr conn)
+void TcpServer::_on_socket_message(int32_t work_thread_index, TcpConnectionPtr conn)
 {
 	if (m_listener.on_message) {
 		m_listener.on_message(this, work_thread_index, conn);
@@ -222,7 +222,7 @@ void TcpServer::_on_socket_message(int32_t work_thread_index, ConnectionPtr conn
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_socket_close(int32_t work_thread_index, ConnectionPtr conn)
+void TcpServer::_on_socket_close(int32_t work_thread_index, TcpConnectionPtr conn)
 {
 	if (m_listener.on_close) {
 		m_listener.on_close(this, work_thread_index, conn);

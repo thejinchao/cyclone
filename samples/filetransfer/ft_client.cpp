@@ -90,7 +90,7 @@ public:
 
 		TcpClientPtr client = std::make_shared<TcpClient>(looper, nullptr);
 
-		client->m_listener.on_connected = [](TcpClientPtr _client, ConnectionPtr _conn, bool _success) -> uint32_t {
+		client->m_listener.on_connected = [](TcpClientPtr _client, TcpConnectionPtr _conn, bool _success) -> uint32_t {
 			if (!_success) {
 				uint32_t retry_time = 1000 * 5;
 				CY_LOG(L_INFO, "connect failed!, retry after %d milliseconds...", retry_time);
@@ -106,7 +106,7 @@ public:
 			return 0;
 		};
 
-		client->m_listener.on_message = [this](TcpClientPtr, ConnectionPtr _conn) {
+		client->m_listener.on_message = [this](TcpClientPtr, TcpConnectionPtr _conn) {
 			RingBuf& ringBuf = _conn->get_input_buf();
 			if (ringBuf.size() < sizeof(FT_Head)) return;
 
@@ -132,7 +132,7 @@ public:
 			_conn->shutdown();
 		};
 
-		client->m_listener.on_close = [looper](TcpClientPtr, ConnectionPtr) {
+		client->m_listener.on_close = [looper](TcpClientPtr, TcpConnectionPtr) {
 			looper->push_stop_request();
 			return;
 		};
@@ -179,7 +179,7 @@ public:
 		return 0;
 	}
 
-	bool _onReceiveFragmentBegin(DownloadThreadContext* ctx, ConnectionPtr conn)
+	bool _onReceiveFragmentBegin(DownloadThreadContext* ctx, TcpConnectionPtr conn)
 	{
 		assert(ctx->status == TS_RequireFragment);
 
@@ -204,7 +204,7 @@ public:
 		return false;
 	}
 
-	void _onReceiveFileData(DownloadThreadContext* ctx, ConnectionPtr conn)
+	void _onReceiveFileData(DownloadThreadContext* ctx, TcpConnectionPtr conn)
 	{
 		assert(ctx->status == TS_Receiving);
 		RingBuf& ringBuff = conn->get_input_buf();
@@ -229,7 +229,7 @@ public:
 		}
 	}
 
-	bool _onReceiveFragmentEnd(DownloadThreadContext* ctx, ConnectionPtr conn)
+	bool _onReceiveFragmentEnd(DownloadThreadContext* ctx, TcpConnectionPtr conn)
 	{
 		assert(ctx->status == TS_Complete);
 
@@ -268,7 +268,7 @@ public:
 		return false;
 	}
 
-	void _onMessage(TcpClientPtr client, ConnectionPtr conn)
+	void _onMessage(TcpClientPtr client, TcpConnectionPtr conn)
 	{
 		DownloadThreadContext* ctx = (DownloadThreadContext*)(client->get_param());
 		RingBuf& ringBuff = conn->get_input_buf();

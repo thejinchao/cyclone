@@ -6,7 +6,7 @@ Copyright(C) thecodeway.com
 
 #include <cy_core.h>
 #include <cy_event.h>
-#include "cyn_connection.h"
+#include "cyn_tcp_connection.h"
 
 namespace cyclone
 {
@@ -24,7 +24,7 @@ public:
 	typedef std::function<void(TcpServer* server, int32_t thread_index, Looper* looper)> WorkThreadStartCallback;
 	typedef std::function<void(TcpServer* server, int32_t thread_index, Packet* cmd)> WorkThreadCommandCallback;
 
-	typedef std::function<void(TcpServer* server, int32_t thread_index, ConnectionPtr conn)> EventCallback;
+	typedef std::function<void(TcpServer* server, int32_t thread_index, TcpConnectionPtr conn)> EventCallback;
 
 	enum { kCustomMasterThreadCmdID_Begin=10 };
 
@@ -58,7 +58,7 @@ public:
 	void stop(void);
 
 	/// shutdown one of connection(thread safe)
-	void shutdown_connection(ConnectionPtr conn);
+	void shutdown_connection(TcpConnectionPtr conn);
 
 	/// get bind address, if index is invalid return default Address value
 	Address get_bind_address(size_t index);
@@ -107,9 +107,9 @@ private:
 	friend class ServerMasterThread;
 private:
 	// called by server work thread only
-	void _on_socket_connected(int32_t work_thread_index, ConnectionPtr conn);
-	void _on_socket_message(int32_t work_thread_index, ConnectionPtr conn);
-	void _on_socket_close(int32_t work_thread_index, ConnectionPtr conn);
+	void _on_socket_connected(int32_t work_thread_index, TcpConnectionPtr conn);
+	void _on_socket_message(int32_t work_thread_index, TcpConnectionPtr conn);
+	void _on_socket_close(int32_t work_thread_index, TcpConnectionPtr conn);
 
 	friend class ServerWorkThread;
 public:

@@ -4,13 +4,13 @@ Copyright(C) thecodeway.com
 #include <cy_core.h>
 #include <cy_event.h>
 #include <cy_network.h>
-#include "cyn_connection.h"
+#include "cyn_tcp_connection.h"
 
 namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
+TcpConnection::TcpConnection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	: m_id(id)
 	, m_socket(sfd)
 	, m_state(kConnected)
@@ -55,13 +55,13 @@ Connection::Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner)
 	m_event_id = m_looper->register_event(m_socket,
 		Looper::kRead,			//care read event only
 		this,
-		std::bind(&Connection::_on_socket_read, this),
-		std::bind(&Connection::_on_socket_write, this)
+		std::bind(&TcpConnection::_on_socket_read, this),
+		std::bind(&TcpConnection::_on_socket_write, this)
 	);
 }
 
 //-------------------------------------------------------------------------------------
-Connection::~Connection()
+TcpConnection::~TcpConnection()
 {
 	assert(get_state()==kDisconnected);
 	assert(m_socket == INVALID_SOCKET);
@@ -70,13 +70,13 @@ Connection::~Connection()
 }
 
 //-------------------------------------------------------------------------------------
-Connection::State Connection::get_state(void) const
+TcpConnection::State TcpConnection::get_state(void) const
 { 
 	return m_state.load(); 
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::send(const char* buf, size_t len)
+void TcpConnection::send(const char* buf, size_t len)
 {
 	if (buf == nullptr || len == 0) return;
 
@@ -106,14 +106,14 @@ void Connection::send(const char* buf, size_t len)
 }
 
 //-------------------------------------------------------------------------------------
-bool Connection::_is_writeBuf_empty(void) const
+bool TcpConnection::_is_writeBuf_empty(void) const
 {
 	sys_api::auto_mutex lock(m_write_buf_lock);
 	return  m_write_buf.empty();
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_send(const char* buf, size_t len)
+void TcpConnection::_send(const char* buf, size_t len)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
@@ -179,7 +179,7 @@ void Connection::_send(const char* buf, size_t len)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::shutdown(void)
+void TcpConnection::shutdown(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state==kDisconnecting);
@@ -196,7 +196,7 @@ void Connection::shutdown(void)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_on_socket_read(void)
+void TcpConnection::_on_socket_read(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
@@ -227,7 +227,7 @@ void Connection::_on_socket_read(void)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_on_socket_write(void)
+void TcpConnection::_on_socket_write(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
@@ -271,12 +271,12 @@ void Connection::_on_socket_write(void)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_on_socket_close(void)
+void TcpConnection::_on_socket_close(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(m_state == kConnected || m_state == kDisconnecting);
 
-	ConnectionPtr thisPtr = shared_from_this();
+	TcpConnectionPtr thisPtr = shared_from_this();
 
 	//disable all event
 	m_state = kDisconnected;
@@ -305,13 +305,13 @@ void Connection::_on_socket_close(void)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::_on_socket_error(void)
+void TcpConnection::_on_socket_error(void)
 {
 	_on_socket_close();
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::set_name(const char* name)
+void TcpConnection::set_name(const char* name)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
@@ -319,20 +319,20 @@ void Connection::set_name(const char* name)
 }
 
 //-------------------------------------------------------------------------------------
-void Connection::set_param(void* param)
+void TcpConnection::set_param(void* param)
 {
 	m_param = param;
 }
 
 #if CY_ENABLE_DEBUG
 //-------------------------------------------------------------------------------------
-float Connection::get_read_speed(void)
+float TcpConnection::get_read_speed(void)
 {
 	return (float)m_read_speed.sum_and_counts().first / ((float)m_read_speed.get_time_period() / 1000.f);
 }
 
 //-------------------------------------------------------------------------------------
-float Connection::get_write_speed(void)
+float TcpConnection::get_write_speed(void)
 {
 	return (float)m_write_speed.sum_and_counts().first / ((float)m_read_speed.get_time_period() / 1000.f);
 }

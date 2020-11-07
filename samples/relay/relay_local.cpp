@@ -32,10 +32,10 @@ class RelaySession
 {
 public:
 	int32_t m_id;
-	ConnectionPtr m_downConnection;
+	TcpConnectionPtr m_downConnection;
 
 public:
-	RelaySession(int32_t id, ConnectionPtr downConnection)
+	RelaySession(int32_t id, TcpConnectionPtr downConnection)
 		: m_id(id)
 		, m_downConnection(downConnection)
 	{
@@ -149,7 +149,7 @@ private:
 		newPipe->m_upClient->connect(m_upAddress);
 	}
 	//-------------------------------------------------------------------------------------
-	void onLocalConnected(TcpServer* server, int32_t index, ConnectionPtr conn)
+	void onLocalConnected(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = m_relayPipes[index];
 
@@ -170,7 +170,7 @@ private:
 		CY_LOG(L_TRACE, "[%d]CLIENT connected, send new session msg to UP", conn->get_id());
 	}
 	//-------------------------------------------------------------------------------------
-	void onLocalMessage(TcpServer* server, int32_t index, ConnectionPtr conn)
+	void onLocalMessage(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = m_relayPipes[index];
 
@@ -213,7 +213,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onLocalClose(int32_t index, ConnectionPtr conn)
+	void onLocalClose(int32_t index, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = m_relayPipes[index];
 
@@ -250,7 +250,7 @@ private:
 
 private:
 	//-------------------------------------------------------------------------------------
-	uint32_t onUpConnected(ConnectionPtr conn, bool success)
+	uint32_t onUpConnected(TcpConnectionPtr conn, bool success)
 	{
 		if (success) {
 			RelayPipe* pipe = m_relayPipes[conn->get_id()];
@@ -274,7 +274,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onUpMessage(TcpClientPtr client, ConnectionPtr conn)
+	void onUpMessage(TcpClientPtr client, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = m_relayPipes[conn->get_id()];
 
@@ -398,7 +398,7 @@ private:
 					if (it == pipe->m_sessionMap.end()) {
 						break;
 					}
-					ConnectionPtr downConn = it->second.m_downConnection;
+					TcpConnectionPtr downConn = it->second.m_downConnection;
 
 					pipe->m_sessionMap.erase(it);
 					m_downServer->shutdown_connection(downConn);
@@ -412,7 +412,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onUpClose(TcpClientPtr client, ConnectionPtr conn)
+	void onUpClose(TcpClientPtr client, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = m_relayPipes[conn->get_id()];
 		

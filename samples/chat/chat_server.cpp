@@ -42,7 +42,7 @@ public:
 	}
 private:
 	//-------------------------------------------------------------------------------------
-	void onClientConnected(ConnectionPtr conn)
+	void onClientConnected(TcpConnectionPtr conn)
 	{
 		//new connection
 		sys_api::auto_mutex lock(m_clients_lock);
@@ -56,7 +56,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onClientMessage(ConnectionPtr conn)
+	void onClientMessage(TcpConnectionPtr conn)
 	{
 		RingBuf& buf = conn->get_input_buf();
 
@@ -76,7 +76,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onClientClose(ConnectionPtr conn)
+	void onClientClose(TcpConnectionPtr conn)
 	{
 		sys_api::auto_mutex lock(m_clients_lock);
 
@@ -90,7 +90,7 @@ private:
 	struct Client
 	{
 		int32_t agent_id;
-		ConnectionPtr connection;
+		TcpConnectionPtr connection;
 	};
 	std::map< int32_t, Client > m_clients;
 	sys_api::mutex_t m_clients_lock;

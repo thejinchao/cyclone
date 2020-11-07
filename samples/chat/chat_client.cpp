@@ -77,7 +77,7 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void onMessage(ConnectionPtr conn)
+	virtual void onMessage(TcpConnectionPtr conn)
 	{
 		RingBuf& buf = conn->get_input_buf();
 

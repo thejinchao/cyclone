@@ -5,7 +5,7 @@ Copyright(C) thecodeway.com
 #define _CYCLONE_NETWORK_TCP_CLIENT_H_
 
 #include <cy_core.h>
-#include "cyn_connection.h"
+#include "cyn_tcp_connection.h"
 
 namespace cyclone
 {
@@ -14,12 +14,12 @@ namespace cyclone
 class TcpClient;
 typedef std::shared_ptr<TcpClient> TcpClientPtr;
     
-class TcpClient : public std::enable_shared_from_this<TcpClient>, noncopyable, public Connection::Owner
+class TcpClient : public std::enable_shared_from_this<TcpClient>, noncopyable, public TcpConnection::Owner
 {
 public:
-	typedef std::function<uint32_t(TcpClientPtr client, ConnectionPtr conn, bool success)> ConnectedCallback;
-	typedef std::function<void(TcpClientPtr client, ConnectionPtr conn)> MessageCallback;
-	typedef std::function<void(TcpClientPtr client, ConnectionPtr conn)> CloseCallback;
+	typedef std::function<uint32_t(TcpClientPtr client, TcpConnectionPtr conn, bool success)> ConnectedCallback;
+	typedef std::function<void(TcpClientPtr client, TcpConnectionPtr conn)> MessageCallback;
+	typedef std::function<void(TcpClientPtr client, TcpConnectionPtr conn)> CloseCallback;
 
 	struct Listener {
 		ConnectedCallback on_connected;
@@ -40,7 +40,7 @@ public:
 	/// get callback param(thread safe)
 	const void* get_param(void) const { return m_param; }
 	/// get current connection state(thread safe);
-	Connection::State get_connection_state(void) const;
+	TcpConnection::State get_connection_state(void) const;
 	/// Connection Owner type
 	virtual OWNER_TYPE get_connection_owner_type(void) const { return kClient; }
 
@@ -53,7 +53,7 @@ private:
 	Address	 m_serverAddr;
 	Looper*	m_looper;
 	void* m_param;
-	ConnectionPtr m_connection;
+	TcpConnectionPtr m_connection;
 	sys_api::mutex_t m_connection_lock;
 	RingBuf m_sendCache;
 

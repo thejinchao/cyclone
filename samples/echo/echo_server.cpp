@@ -19,7 +19,7 @@ CSimpleOptA::SOption g_rgOptions[] = {
 };
 
 //-------------------------------------------------------------------------------------
-void onPeerConnected(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+void onPeerConnected(TcpServer* server, int32_t thread_index, TcpConnectionPtr conn)
 {
 	(void)server;
 
@@ -32,7 +32,7 @@ void onPeerConnected(TcpServer* server, int32_t thread_index, ConnectionPtr conn
 }
 
 //-------------------------------------------------------------------------------------
-void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+void onPeerMessage(TcpServer* server, int32_t thread_index, TcpConnectionPtr conn)
 {
 	RingBuf& buf = conn->get_input_buf();
 
@@ -60,7 +60,7 @@ void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
 }
 
 //-------------------------------------------------------------------------------------
-void onPeerClose(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+void onPeerClose(TcpServer* server, int32_t thread_index, TcpConnectionPtr conn)
 {
 	(void)server;
 
