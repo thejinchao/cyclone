@@ -33,9 +33,9 @@ public:
 
 public: //call by TcpServer Only
 	//// send message to this work thread (thread safe)
-	void send_message(uint16_t id, uint16_t size, const char* message);
-	void send_message(const Packet* message);
-	void send_message(const Packet** message, int32_t counts);
+	void send_thread_message(uint16_t id, uint16_t size, const char* message);
+	void send_thread_message(const Packet* message);
+	void send_thread_message(const Packet** message, int32_t counts);
 
 	//// get work thread index in work thread pool (thread safe)
 	int32_t get_index(void) const { return m_index; }

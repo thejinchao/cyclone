@@ -21,7 +21,7 @@ ServerMasterThread::~ServerMasterThread()
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::send_message(uint16_t id, uint16_t size, const char* message)
+void ServerMasterThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
 {
 	assert(m_master_thread.is_running());
 
@@ -29,14 +29,14 @@ void ServerMasterThread::send_message(uint16_t id, uint16_t size, const char* me
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::send_message(const Packet* message)
+void ServerMasterThread::send_thread_message(const Packet* message)
 {
 	assert(m_master_thread.is_running());
 	m_master_thread.send_message(message);
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::send_message(const Packet** message, int32_t counts)
+void ServerMasterThread::send_thread_message(const Packet** message, int32_t counts)
 {
 	assert(m_master_thread.is_running());
 	m_master_thread.send_message(message, counts);
