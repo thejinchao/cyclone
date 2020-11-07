@@ -54,7 +54,7 @@ public:
 	{
 		assert(m_upState==kDisconnected);
 		if (m_upClient) {
-			assert(m_upClient->get_connection_state() == Connection::kDisconnected);
+			assert(m_upClient->get_connection_state() == TcpConnection::kDisconnected);
             m_upClient = nullptr;
 		}
 	}

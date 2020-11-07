@@ -26,8 +26,8 @@ public:
     RelayPipe(TcpConnectionPtr port1, TcpConnectionPtr port2)
     : m_port1(port1), m_port2(port2)
     {
-        assert(port1->get_state()==Connection::kConnected);
-        assert(port2->get_state()==Connection::kConnected);
+        assert(port1->get_state()==TcpConnection::kConnected);
+        assert(port2->get_state()==TcpConnection::kConnected);
         
         //check cache
         forward1To2();
