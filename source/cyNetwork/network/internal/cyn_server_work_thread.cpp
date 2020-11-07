@@ -34,7 +34,7 @@ ServerWorkThread::~ServerWorkThread()
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_message(uint16_t id, uint16_t size, const char* message)
+void ServerWorkThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
 {
 	assert(m_work_thread);
 
@@ -42,14 +42,14 @@ void ServerWorkThread::send_message(uint16_t id, uint16_t size, const char* mess
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_message(const Packet* message)
+void ServerWorkThread::send_thread_message(const Packet* message)
 {
 	assert(m_work_thread);
 	m_work_thread->send_message(message);
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_message(const Packet** message, int32_t counts)
+void ServerWorkThread::send_thread_message(const Packet** message, int32_t counts)
 {
 	assert(m_work_thread);
 	m_work_thread->send_message(message, counts);
