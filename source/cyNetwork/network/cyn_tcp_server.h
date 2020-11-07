@@ -39,10 +39,8 @@ public:
 		EventCallback on_message;
 		EventCallback on_close;
 	};
-
-
-
 	Listener m_listener;
+
 public:
 	/// add a bind port, return false means too much port has been binded or bind failed
 	// NOT thread safe, and this function must be called before start the server
@@ -83,17 +81,8 @@ public:
 		return m_next_connection_id++;
 	}
 
-	/// get custom param
-	void* get_param(void) const { return m_param; }
-
-	/// get name
-	const std::string& get_name(void) const { return m_name; }
-
 private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
-
-	/// custom param
-	void* m_param;
 
 	/// master thread
 	ServerMasterThread* m_master_thread;
@@ -111,8 +100,6 @@ private:
 	enum { kStartConnectionID = 1 };
 	atomic_int32_t m_next_connection_id;
 
-	std::string	m_name;
-
 private:
 	//called by master thread
 	void _on_accept_socket(socket_t fd);
@@ -126,7 +113,7 @@ private:
 
 	friend class ServerWorkThread;
 public:
-	TcpServer(const char* name = nullptr, void* param = nullptr);
+	TcpServer();
 	~TcpServer();
 };
 

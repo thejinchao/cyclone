@@ -9,22 +9,18 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char* name)
-	: m_index(index)
-	, m_server(server)
+ServerWorkThread::ServerWorkThread(TcpServer* server, int32_t index)
+	: m_server(server)
+	, m_index(index)
 {
-
-	//run the work thread
-	char temp[MAX_PATH] = { 0 };
-	std::snprintf(temp, MAX_PATH, "%s_%d", (name ? name : "worker"), m_index);
-	m_name = temp;
-
 	//run work thread
 	m_work_thread = new WorkThread();
 	m_work_thread->set_on_start(std::bind(&ServerWorkThread::_on_workthread_start, this));
 	m_work_thread->set_on_message(std::bind(&ServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
 
-	m_work_thread->start(m_name.c_str());
+	char temp[MAX_PATH] = { 0 };
+	std::snprintf(temp, MAX_PATH, "tcp_work_%d", m_index);
+	m_work_thread->start(temp);
 }
 
 //-------------------------------------------------------------------------------------
@@ -74,7 +70,7 @@ ConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
 //-------------------------------------------------------------------------------------
 bool ServerWorkThread::_on_workthread_start(void)
 {
-	CY_LOG(L_INFO, "Work thread \"%s\" start...", m_name.c_str());
+	CY_LOG(L_INFO, "Tcp work thread %d start...", m_index);
 
 	if (m_server->m_listener.on_work_thread_start) {
 		m_server->m_listener.on_work_thread_start(m_server, get_index(), m_work_thread->get_looper());

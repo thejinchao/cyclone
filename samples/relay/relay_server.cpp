@@ -132,7 +132,7 @@ public:
 	{
 		m_upAddress = upAddress;
 
-		TcpServer server("rs", nullptr);
+		TcpServer server;
 		server.m_listener.on_master_thread_start = std::bind(&RelayServer::onMasterThreadStart, this, _1, _2);
 		server.m_listener.on_work_thread_start = std::bind(&RelayServer::onWorkthreadStart, this, _2, _3);
 		server.m_listener.on_connected = std::bind(&RelayServer::onDownConnected, this, _1, _2, _3);

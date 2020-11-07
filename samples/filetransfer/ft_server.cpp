@@ -349,8 +349,7 @@ public:
 
 public:
 	FileTransferServer() 
-		: m_server("FileTransfer", nullptr)
-		, m_workingCounts(0)
+		: m_workingCounts(0)
 	{
 	}
 

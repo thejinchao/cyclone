@@ -163,7 +163,7 @@ public:
 	{
 		m_threadContext.resize((size_t)work_thread_counts);
 
-		TcpServer server("s5", 0);
+		TcpServer server;
 		server.m_listener.on_work_thread_start = std::bind(&S5Server::onWorkthreadStart, this, _1, _2, _3);
 		server.m_listener.on_connected = std::bind(&S5Server::onPeerConnected, this, _1, _2, _3);
 		server.m_listener.on_message = std::bind(&S5Server::onPeerMessage, this, _1, _2, _3);

@@ -27,7 +27,7 @@ public:
 	{
 		m_clients_lock = sys_api::mutex_create();
 
-		TcpServer server("chat_server", nullptr);
+		TcpServer server;
 		server.m_listener.on_connected = std::bind(&ChatServer::onClientConnected, this, _3);
 		server.m_listener.on_message = std::bind(&ChatServer::onClientMessage, this, _3);
 		server.m_listener.on_close = std::bind(&ChatServer::onClientClose, this, _3);
