@@ -3,20 +3,20 @@ Copyright(C) thecodeway.com
 */
 
 #include <cy_network.h>
-#include "cyn_server_work_thread.h"
+#include "cyn_tcp_server_work_thread.h"
 
 namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-ServerWorkThread::ServerWorkThread(TcpServer* server, int32_t index)
+TcpServerWorkThread::TcpServerWorkThread(TcpServer* server, int32_t index)
 	: m_server(server)
 	, m_index(index)
 {
 	//run work thread
 	m_work_thread = new WorkThread();
-	m_work_thread->set_on_start(std::bind(&ServerWorkThread::_on_workthread_start, this));
-	m_work_thread->set_on_message(std::bind(&ServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
+	m_work_thread->set_on_start(std::bind(&TcpServerWorkThread::_on_workthread_start, this));
+	m_work_thread->set_on_message(std::bind(&TcpServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
 
 	char temp[MAX_PATH] = { 0 };
 	std::snprintf(temp, MAX_PATH, "tcp_work_%d", m_index);
@@ -24,13 +24,13 @@ ServerWorkThread::ServerWorkThread(TcpServer* server, int32_t index)
 }
 
 //-------------------------------------------------------------------------------------
-ServerWorkThread::~ServerWorkThread()
+TcpServerWorkThread::~TcpServerWorkThread()
 {
 	delete m_work_thread;
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
+void TcpServerWorkThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
 {
 	assert(m_work_thread);
 
@@ -38,27 +38,27 @@ void ServerWorkThread::send_thread_message(uint16_t id, uint16_t size, const cha
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_thread_message(const Packet* message)
+void TcpServerWorkThread::send_thread_message(const Packet* message)
 {
 	assert(m_work_thread);
 	m_work_thread->send_message(message);
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::send_thread_message(const Packet** message, int32_t counts)
+void TcpServerWorkThread::send_thread_message(const Packet** message, int32_t counts)
 {
 	assert(m_work_thread);
 	m_work_thread->send_message(message, counts);
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerWorkThread::is_in_workthread(void) const
+bool TcpServerWorkThread::is_in_workthread(void) const
 {
 	return sys_api::thread_get_current_id() == m_work_thread->get_looper()->get_thread_id();
 }
 
 //-------------------------------------------------------------------------------------
-TcpConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
+TcpConnectionPtr TcpServerWorkThread::get_connection(int32_t connection_id)
 {
 	assert(is_in_workthread());
 
@@ -68,7 +68,7 @@ TcpConnectionPtr ServerWorkThread::get_connection(int32_t connection_id)
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerWorkThread::_on_workthread_start(void)
+bool TcpServerWorkThread::_on_workthread_start(void)
 {
 	CY_LOG(L_INFO, "Tcp work thread %d start...", m_index);
 
@@ -79,7 +79,7 @@ bool ServerWorkThread::_on_workthread_start(void)
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::_on_workthread_message(Packet* message)
+void TcpServerWorkThread::_on_workthread_message(Packet* message)
 {
 	assert(is_in_workthread());
 	assert(message);
@@ -179,7 +179,7 @@ void ServerWorkThread::_on_workthread_message(Packet* message)
 }
 
 //-------------------------------------------------------------------------------------
-void ServerWorkThread::join(void)
+void TcpServerWorkThread::join(void)
 {
 	m_work_thread->join();
 }

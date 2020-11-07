@@ -10,7 +10,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class ServerMasterThread : noncopyable
+class TcpServerMasterThread : noncopyable
 {
 public:
 	//accept thread command
@@ -69,8 +69,8 @@ private:
 	void _on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event);
 
 public:
-	ServerMasterThread(TcpServer* server);
-	~ServerMasterThread();
+	TcpServerMasterThread(TcpServer* server);
+	~TcpServerMasterThread();
 };
 
 }

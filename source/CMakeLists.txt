@@ -90,10 +90,10 @@ set(CY_NETWORK_SOURCE_FILES
 source_group("cyNetwork" FILES ${CY_NETWORK_SOURCE_FILES})
 
 set(CY_NETWORK_INTERNAL_FILES
-	cyNetwork/network/internal/cyn_server_master_thread.h
-	cyNetwork/network/internal/cyn_server_work_thread.h
-	cyNetwork/network/internal/cyn_server_master_thread.cpp
-	cyNetwork/network/internal/cyn_server_work_thread.cpp
+	cyNetwork/network/internal/cyn_tcp_server_master_thread.h
+	cyNetwork/network/internal/cyn_tcp_server_work_thread.h
+	cyNetwork/network/internal/cyn_tcp_server_master_thread.cpp
+	cyNetwork/network/internal/cyn_tcp_server_work_thread.cpp
 )
 source_group("cyNetwork\\internal" FILES ${CY_NETWORK_INTERNAL_FILES})
 

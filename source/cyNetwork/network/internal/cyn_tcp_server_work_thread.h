@@ -9,7 +9,7 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class ServerWorkThread : noncopyable, public TcpConnection::Owner
+class TcpServerWorkThread : noncopyable, public TcpConnection::Owner
 {
 public:
 	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID };
@@ -62,8 +62,8 @@ private:
 	void _on_workthread_message(Packet*);
 
 public:
-	ServerWorkThread(TcpServer* server, int32_t index);
-	virtual ~ServerWorkThread();
+	TcpServerWorkThread(TcpServer* server, int32_t index);
+	virtual ~TcpServerWorkThread();
 };
 
 }

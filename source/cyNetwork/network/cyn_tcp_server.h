@@ -12,8 +12,8 @@ namespace cyclone
 {
 
 //pre-define
-class ServerMasterThread;
-class ServerWorkThread;
+class TcpServerMasterThread;
+class TcpServerWorkThread;
 
 class TcpServer : noncopyable
 {
@@ -85,10 +85,10 @@ private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 
 	/// master thread
-	ServerMasterThread* m_master_thread;
+	TcpServerMasterThread* m_master_thread;
 
 	/// work thread pool
-	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
+	typedef std::vector< TcpServerWorkThread* > ServerWorkThreadArray;
 	ServerWorkThreadArray m_work_thread_pool;
 
 	int32_t			m_workthread_counts;
@@ -104,14 +104,14 @@ private:
 	//called by master thread
 	void _on_accept_socket(socket_t fd);
 
-	friend class ServerMasterThread;
+	friend class TcpServerMasterThread;
 private:
 	// called by server work thread only
 	void _on_socket_connected(int32_t work_thread_index, TcpConnectionPtr conn);
 	void _on_socket_message(int32_t work_thread_index, TcpConnectionPtr conn);
 	void _on_socket_close(int32_t work_thread_index, TcpConnectionPtr conn);
 
-	friend class ServerWorkThread;
+	friend class TcpServerWorkThread;
 public:
 	TcpServer();
 	~TcpServer();
