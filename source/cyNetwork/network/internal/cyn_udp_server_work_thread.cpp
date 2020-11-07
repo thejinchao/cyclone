@@ -29,8 +29,8 @@ bool UdpServerWorkThread::start(void)
 	char name[32] = { 0 };
 	std::snprintf(name, 32, "udp_%d", m_index);
 
-	m_thread->setOnStartFunction(std::bind(&UdpServerWorkThread::_on_thread_start, this));
-	m_thread->setOnMessageFunction(std::bind(&UdpServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
+	m_thread->set_on_start(std::bind(&UdpServerWorkThread::_on_thread_start, this));
+	m_thread->set_on_message(std::bind(&UdpServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
 	m_thread->start(name);
 	return true;
 }
@@ -46,6 +46,20 @@ void UdpServerWorkThread::send_thread_message(uint16_t id, uint16_t size_part1, 
 {
 	assert(m_thread);
 	m_thread->send_message(id, size_part1, msg_part1, size_part2, msg_part2);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServerWorkThread::send_thread_message(const Packet* message)
+{
+	assert(m_thread);
+	m_thread->send_message(message);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServerWorkThread::send_thread_message(const Packet** message, int32_t counts)
+{
+	assert(m_thread);
+	m_thread->send_message(message, counts);
 }
 
 //-------------------------------------------------------------------------------------

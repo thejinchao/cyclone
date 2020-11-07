@@ -27,8 +27,11 @@ public://called by UdpServer only!
 	bool start(void);
 	//// join work thread(thread safe)
 	void join(void);
+
 	//// send message to this work thread (thread safe)
 	void send_thread_message(uint16_t id, uint16_t size, const char* message);
+	void send_thread_message(const Packet* message);
+	void send_thread_message(const Packet** message, int32_t counts);
 
 private:
 	/// work thread function start

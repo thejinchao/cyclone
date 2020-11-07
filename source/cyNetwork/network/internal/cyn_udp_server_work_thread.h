@@ -47,6 +47,8 @@ public: // call by UdpServer Only
 	bool is_in_workthread(void) const;
 	// send message to this work thread (thread safe)
 	void send_thread_message(uint16_t id, uint16_t size_part1, const char* msg_part1, uint16_t size_part2=0, const char* msg_part2=nullptr);
+	void send_thread_message(const Packet* message);
+	void send_thread_message(const Packet** message, int32_t counts);
 
 private:
 	UdpServer* m_server;

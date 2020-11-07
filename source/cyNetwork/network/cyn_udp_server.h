@@ -56,6 +56,14 @@ public:
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(UdpConnectionPtr conn);
 
+	/// send message to master thread(thread safe)
+	void send_master_message(uint16_t id, uint16_t size, const char* message);
+	void send_master_message(const Packet* message);
+
+	/// send work message to one of work thread(thread safe)
+	void send_work_message(int32_t work_thread_index, const Packet* message);
+	void send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts);
+
 private:
 	// master thread
 	UdpServerMasterThread* m_master_thread;

@@ -131,6 +131,40 @@ void UdpServer::shutdown_connection(UdpConnectionPtr conn)
 }
 
 //-------------------------------------------------------------------------------------
+void UdpServer::send_master_message(uint16_t id, uint16_t size, const char* message)
+{
+	if (!m_master_thread) return;
+
+	m_master_thread->send_thread_message(id, size, message);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServer::send_master_message(const Packet* message)
+{
+	if (!m_master_thread) return;
+
+	m_master_thread->send_thread_message(message);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServer::send_work_message(int32_t work_thread_index, const Packet* message)
+{
+	assert(work_thread_index >= 0 && work_thread_index < m_workthread_counts);
+
+	UdpServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
+	work->send_thread_message(message);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServer::send_work_message(int32_t work_thread_index, const Packet** message, int32_t counts)
+{
+	assert(work_thread_index >= 0 && work_thread_index < m_workthread_counts && counts>0);
+
+	UdpServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
+	work->send_thread_message(message, counts);
+}
+
+//-------------------------------------------------------------------------------------
 void UdpServer::_on_udp_message_received(const char* buf, int32_t len, const sockaddr_in& peer_address, const sockaddr_in& local_address)
 {
 	//not running?

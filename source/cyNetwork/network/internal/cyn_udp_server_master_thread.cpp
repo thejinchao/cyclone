@@ -80,8 +80,8 @@ bool UdpServerMasterThread::start(void)
 	assert(!(m_thread->is_running()));
 	if (m_thread->is_running()) return false;
 
-	m_thread->setOnStartFunction(std::bind(&UdpServerMasterThread::_on_thread_start, this));
-	m_thread->setOnMessageFunction(std::bind(&UdpServerMasterThread::_on_workthread_message, this, std::placeholders::_1));
+	m_thread->set_on_start(std::bind(&UdpServerMasterThread::_on_thread_start, this));
+	m_thread->set_on_message(std::bind(&UdpServerMasterThread::_on_workthread_message, this, std::placeholders::_1));
 
 	//start thread
 	m_thread->start("udp_master");
@@ -100,6 +100,20 @@ void UdpServerMasterThread::send_thread_message(uint16_t id, uint16_t size, cons
 {
 	assert(m_thread);
 	m_thread->send_message(id, size, message);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServerMasterThread::send_thread_message(const Packet* message)
+{
+	assert(m_thread->is_running());
+	m_thread->send_message(message);
+}
+
+//-------------------------------------------------------------------------------------
+void UdpServerMasterThread::send_thread_message(const Packet** message, int32_t counts)
+{
+	assert(m_thread->is_running());
+	m_thread->send_message(message, counts);
 }
 
 //-------------------------------------------------------------------------------------
