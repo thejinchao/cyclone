@@ -43,6 +43,10 @@ public:
 	/// get current state(thread safe)
 	State get_state(void) const;
 
+	/// set/get param(NOT thread safe)
+	void set_param(void* param) { m_param = param; }
+	void* get_param(void) { return m_param; }
+
 	///set callback function
 	void set_on_message(EventCallback callback) { m_on_message = callback; }
 	void set_on_send_complete(EventCallback callback) { m_on_send_complete = callback; }
@@ -70,6 +74,7 @@ private:
 	Looper* m_looper;
 	Looper::event_id_t m_event_id;
 	RingBuf m_read_buf;
+	void* m_param;
 
 	RingBuf m_write_buf;
 	sys_api::mutex_t m_write_buf_lock;	//for multi thread lock
