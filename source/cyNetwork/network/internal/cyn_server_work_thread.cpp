@@ -21,8 +21,8 @@ ServerWorkThread::ServerWorkThread(int32_t index, TcpServer* server, const char*
 
 	//run work thread
 	m_work_thread = new WorkThread();
-	m_work_thread->setOnStartFunction(std::bind(&ServerWorkThread::_on_workthread_start, this));
-	m_work_thread->setOnMessageFunction(std::bind(&ServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
+	m_work_thread->set_on_start(std::bind(&ServerWorkThread::_on_workthread_start, this));
+	m_work_thread->set_on_message(std::bind(&ServerWorkThread::_on_workthread_message, this, std::placeholders::_1));
 
 	m_work_thread->start(m_name.c_str());
 }

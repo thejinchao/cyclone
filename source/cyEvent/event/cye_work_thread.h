@@ -25,8 +25,8 @@ public:
 	bool is_running(void) const { return m_thread != nullptr; }
 
 	//// set callback function
-	void setOnStartFunction(StartCallback func) { m_onStart = func; }
-	void setOnMessageFunction(MessageCallback func) { m_onMessage = func; }
+	void set_on_start(StartCallback func) { m_on_start = func; }
+	void set_on_message(MessageCallback func) { m_on_message = func; }
 
 	//// send message to this work thread (thread safe)
 	void send_message(uint16_t id, uint16_t size_part1, const char* msg_part1, uint16_t size_part2 = 0, const char* msg_part2 = nullptr);
@@ -52,8 +52,8 @@ private:
 	typedef LockFreeQueue<Packet*> MessageQueue;
 	MessageQueue		m_message_queue;
 
-	StartCallback	m_onStart;
-	MessageCallback	m_onMessage;
+	StartCallback	m_on_start;
+	MessageCallback	m_on_message;
 
 private:
 	/// work thread param
