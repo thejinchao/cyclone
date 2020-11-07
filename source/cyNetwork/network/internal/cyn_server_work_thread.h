@@ -49,15 +49,12 @@ public: //call by TcpServer Only
 	virtual OWNER_TYPE get_connection_owner_type(void) const { return kServer; }
 
 private:
-	const int32_t	m_index;
 	TcpServer*		m_server;
+	const int32_t	m_index;
 	WorkThread*		m_work_thread;
 
 	typedef std::unordered_map< int32_t, ConnectionPtr > ConnectionMap;
-
 	ConnectionMap	m_connections;
-
-	std::string		m_name;
 
 private:
 	//// called by work thread
@@ -65,7 +62,7 @@ private:
 	void _on_workthread_message(Packet*);
 
 public:
-	ServerWorkThread(int32_t index, TcpServer* server, const char* name);
+	ServerWorkThread(TcpServer* server, int32_t index);
 	virtual ~ServerWorkThread();
 };
 

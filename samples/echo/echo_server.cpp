@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
 	CY_LOG(L_DEBUG, "listen port %d", server_port);
 
-	TcpServer server("echo", 0);
+	TcpServer server;
 
 	server.m_listener.on_connected = onPeerConnected;
 	server.m_listener.on_close = onPeerClose;

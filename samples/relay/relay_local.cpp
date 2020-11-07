@@ -112,7 +112,7 @@ public:
 	{
 		m_upAddress = upAddress;
 
-		TcpServer server("relay_local", nullptr);
+		TcpServer server;
 		m_downServer = &server;
 
 		server.m_listener.on_master_thread_start = std::bind(&RelayLocal::onMasterThreadStart, this, _1, _2);

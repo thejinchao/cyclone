@@ -99,7 +99,7 @@ bool ServerMasterThread::start(void)
 
 	m_master_thread.set_on_start(std::bind(&ServerMasterThread::_on_thread_start, this));
 	m_master_thread.set_on_message(std::bind(&ServerMasterThread::_on_thread_message, this, std::placeholders::_1));
-	m_master_thread.start("master");
+	m_master_thread.start("tcp_master");
 	return true;
 }
 

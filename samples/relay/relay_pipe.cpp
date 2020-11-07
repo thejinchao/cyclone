@@ -68,7 +68,7 @@ public:
 	//-------------------------------------------------------------------------------------
 	void startAndJoin(uint16_t listen_port1, uint16_t listen_port2)
 	{
-		TcpServer server("rp", nullptr);
+		TcpServer server;
 		server.m_listener.on_connected = std::bind(&RelayPipe_DoubleIn::onConnected, this, _1, _3);
 		server.m_listener.on_message = std::bind(&RelayPipe_DoubleIn::onMessage, this, _3);
 		server.m_listener.on_close = std::bind(&RelayPipe_DoubleIn::onClose, this, _1);
@@ -274,7 +274,7 @@ public:
     {
         m_addrToConnect = addrToConnect;
         
-        TcpServer server("rp", nullptr);
+        TcpServer server;
         server.m_listener.on_work_thread_start = std::bind(&RelayPipe_InOut::onWorkthreadStart, this, _1, _3);
         server.m_listener.on_connected = std::bind(&RelayPipe_InOut::onConnectedIn, this, _1, _3);
         server.m_listener.on_message = std::bind(&RelayPipe_InOut::onMessageIn, this, _3);

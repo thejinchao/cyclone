@@ -12,15 +12,13 @@ namespace cyclone
 {
 
 //-------------------------------------------------------------------------------------
-TcpServer::TcpServer(const char* name, void* param)
-	: m_param(param)
-	, m_master_thread(nullptr)
+TcpServer::TcpServer()
+	: m_master_thread(nullptr)
 	, m_workthread_counts(0)
 	, m_next_workthread_id(0)
 	, m_running(0)
 	, m_shutdown_ing(0)
 	, m_next_connection_id(kStartConnectionID)  //start from 1
-	, m_name(name ? name : "server")
 {
 	m_listener.on_master_thread_start = nullptr;
 	m_listener.on_master_thread_command = nullptr;
@@ -72,7 +70,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	m_workthread_counts = work_thread_counts;
 	for (int32_t i = 0; i < m_workthread_counts; i++) {
 		//run the thread
-		m_work_thread_pool.push_back(new ServerWorkThread(i, this, m_name.c_str()));
+		m_work_thread_pool.push_back(new ServerWorkThread(this, i));
 	}
 
 	//start master thread
