@@ -291,7 +291,7 @@ public:
 };
 
 //-------------------------------------------------------------------------------------
-class TcpPingPongClient : public PingPongClient<ConnectionPtr>
+class TcpPingPongClient : public PingPongClient<TcpConnectionPtr>
 {
 public:
 	void start_and_join(void)
@@ -313,7 +313,7 @@ public:
 
 protected:
 	//-------------------------------------------------------------------------------------
-	uint32_t on_server_connected(ConnectionPtr conn, bool success)
+	uint32_t on_server_connected(TcpConnectionPtr conn, bool success)
 	{
 		assert(m_status == PS_Connecting);
 
@@ -335,7 +335,7 @@ private:
 
 public:
 	TcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
-		: PingPongClient<ConnectionPtr>(server_ip, server_port, data_size, pingpong_counts, work_mode)
+		: PingPongClient<TcpConnectionPtr>(server_ip, server_port, data_size, pingpong_counts, work_mode)
 	{
 
 	}

@@ -336,7 +336,7 @@ int main(int argc, char* argv[])
 		server.start_and_join();
 	}
 	else {
-		PingPongServer<TcpServer, ConnectionPtr> server(server_port);
+		PingPongServer<TcpServer, TcpConnectionPtr> server(server_port);
 		server.start_and_join();
 	}
 	return 0;
