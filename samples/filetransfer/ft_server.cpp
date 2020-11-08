@@ -56,7 +56,7 @@ private:
 		uint32_t fragmentCRC;
 		enum { BUFFER_SIZE = 64*1024 };
 		char* buffer;
-		ConnectionPtr conn;
+		TcpConnectionPtr conn;
 		std::atomic<float> sendSpeed;
 
 		ThreadContext() {
@@ -131,7 +131,7 @@ private:
 #endif
 	}
 
-	void _onClientConnected(int32_t index, ConnectionPtr conn)
+	void _onClientConnected(int32_t index, TcpConnectionPtr conn)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 		ThreadContext& ctx = *(m_threadContext[index]);
@@ -147,7 +147,7 @@ private:
 		this->m_workingCounts += 1;
 	}
 
-	void _onMessage_QueryFileInfo(int32_t , const FT_Head&head, ConnectionPtr conn)
+	void _onMessage_QueryFileInfo(int32_t , const FT_Head&head, TcpConnectionPtr conn)
 	{
 		RingBuf& ringBuf = conn->get_input_buf();
 		ringBuf.discard(head.size);
@@ -168,7 +168,7 @@ private:
 		CY_FREE(reply);
 	}
 
-	void _onSendReady(int32_t index, ConnectionPtr conn)
+	void _onSendReady(int32_t index, TcpConnectionPtr conn)
 	{
 		ThreadContext& ctx = *(m_threadContext[index]);
 		assert(ctx.status == TS_Sending);
@@ -207,7 +207,7 @@ private:
 		}
 	}
 
-	void _onMessage_RequireFileFragment(int32_t index, const FT_Head& , ConnectionPtr conn)
+	void _onMessage_RequireFileFragment(int32_t index, const FT_Head& , TcpConnectionPtr conn)
 	{
 		RingBuf& ringBuf = conn->get_input_buf();
 		FT_RequireFileFragment* require = (FT_RequireFileFragment*)ringBuf.normalize();
@@ -244,7 +244,7 @@ private:
 		conn->send((const char*)&fileBegin, sizeof(fileBegin));
 	}
 
-	void _onClientMessage(int32_t index, ConnectionPtr conn)
+	void _onClientMessage(int32_t index, TcpConnectionPtr conn)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 
@@ -272,7 +272,7 @@ private:
 		}
 	}
 
-	void _onClientClose(int32_t index, ConnectionPtr conn)
+	void _onClientClose(int32_t index, TcpConnectionPtr conn)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 		ThreadContext& ctx = *(m_threadContext[index]);

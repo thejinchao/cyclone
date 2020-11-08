@@ -23,11 +23,11 @@ CSimpleOptA::SOption g_rgOptions[] = {
 class RelayPipe
 {
 public:
-    RelayPipe(ConnectionPtr port1, ConnectionPtr port2)
+    RelayPipe(TcpConnectionPtr port1, TcpConnectionPtr port2)
     : m_port1(port1), m_port2(port2)
     {
-        assert(port1->get_state()==Connection::kConnected);
-        assert(port2->get_state()==Connection::kConnected);
+        assert(port1->get_state()==TcpConnection::kConnected);
+        assert(port2->get_state()==TcpConnection::kConnected);
         
         //check cache
         forward1To2();
@@ -57,7 +57,7 @@ public:
         ringBuf.reset();
     }
 private:
-    ConnectionPtr m_port1, m_port2;
+    TcpConnectionPtr m_port1, m_port2;
 };
 typedef std::shared_ptr<RelayPipe> RelayPipePtr;
 
@@ -83,7 +83,7 @@ public:
 
 private:
 	//-------------------------------------------------------------------------------------
-	void onConnected(TcpServer* server, ConnectionPtr conn)
+	void onConnected(TcpServer* server, TcpConnectionPtr conn)
 	{
 		if (m_port1 == conn->get_local_addr().get_port()) {
 			if (m_conn1) {
@@ -115,7 +115,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onMessage(ConnectionPtr conn)
+	void onMessage(TcpConnectionPtr conn)
 	{
 		if (!m_pipe) return;
 
@@ -142,8 +142,8 @@ private:
 private:
 	uint16_t m_port1;
 	uint16_t m_port2;
-	ConnectionPtr m_conn1;
-	ConnectionPtr m_conn2;
+	TcpConnectionPtr m_conn1;
+	TcpConnectionPtr m_conn2;
 	RelayPipePtr m_pipe;
 };
 
@@ -194,7 +194,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	uint32_t onConnected(TcpClientPtr client, ConnectionPtr conn, bool success, int32_t index)
+	uint32_t onConnected(TcpClientPtr client, TcpConnectionPtr conn, bool success, int32_t index)
 	{
 		if (!success) {
 			uint32_t retry_time = 1000 * 5;
@@ -214,7 +214,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onMessage(TcpClientPtr client, ConnectionPtr conn)
+	void onMessage(TcpClientPtr client, TcpConnectionPtr conn)
 	{
         if(!m_pipe) return;
         
@@ -249,8 +249,8 @@ private:
 	Looper* m_looper;
 	TcpClientPtr m_client1;
 	TcpClientPtr m_client2;
-    ConnectionPtr m_connection1;
-    ConnectionPtr m_connection2;
+    TcpConnectionPtr m_connection1;
+    TcpConnectionPtr m_connection2;
 	RelayPipePtr m_pipe;
 
 public:
@@ -304,7 +304,7 @@ private:
         m_client->connect(m_addrToConnect);
     }
     //-------------------------------------------------------------------------------------
-    void onConnectedIn(TcpServer* server, ConnectionPtr conn)
+    void onConnectedIn(TcpServer* server, TcpConnectionPtr conn)
     {
         if(m_connIn) {
             server->shutdown_connection(conn);
@@ -321,7 +321,7 @@ private:
     }
     
     //-------------------------------------------------------------------------------------
-    void onMessageIn(ConnectionPtr conn)
+    void onMessageIn(TcpConnectionPtr conn)
     {
         if(m_pipe)
             m_pipe->forward1To2();
@@ -338,7 +338,7 @@ private:
     
 private:
     //-------------------------------------------------------------------------------------
-    uint32_t onConnectedOut(ConnectionPtr conn, bool success)
+    uint32_t onConnectedOut(TcpConnectionPtr conn, bool success)
     {
         if(!success) return 5*1000;
         
@@ -353,7 +353,7 @@ private:
     }
     
     //-------------------------------------------------------------------------------------
-    void onMessageOut(TcpClientPtr client, ConnectionPtr conn)
+    void onMessageOut(TcpClientPtr client, TcpConnectionPtr conn)
     {
         if(m_pipe) 
 			m_pipe->forward2To1();
@@ -377,8 +377,8 @@ private:
     TcpServer* m_server;
     Looper* m_looper;
     TcpClientPtr m_client;
-    ConnectionPtr m_connIn;
-    ConnectionPtr m_connOut;
+    TcpConnectionPtr m_connIn;
+    TcpConnectionPtr m_connOut;
     RelayPipePtr m_pipe;
     
 public:

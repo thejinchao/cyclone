@@ -6,14 +6,14 @@ Copyright(C) thecodeway.com
 
 #include <cy_core.h>
 #include <cy_event.h>
-#include "cyn_connection.h"
+#include "cyn_tcp_connection.h"
 
 namespace cyclone
 {
 
 //pre-define
-class ServerMasterThread;
-class ServerWorkThread;
+class TcpServerMasterThread;
+class TcpServerWorkThread;
 
 class TcpServer : noncopyable
 {
@@ -24,7 +24,7 @@ public:
 	typedef std::function<void(TcpServer* server, int32_t thread_index, Looper* looper)> WorkThreadStartCallback;
 	typedef std::function<void(TcpServer* server, int32_t thread_index, Packet* cmd)> WorkThreadCommandCallback;
 
-	typedef std::function<void(TcpServer* server, int32_t thread_index, ConnectionPtr conn)> EventCallback;
+	typedef std::function<void(TcpServer* server, int32_t thread_index, TcpConnectionPtr conn)> EventCallback;
 
 	enum { kCustomMasterThreadCmdID_Begin=10 };
 
@@ -58,7 +58,7 @@ public:
 	void stop(void);
 
 	/// shutdown one of connection(thread safe)
-	void shutdown_connection(ConnectionPtr conn);
+	void shutdown_connection(TcpConnectionPtr conn);
 
 	/// get bind address, if index is invalid return default Address value
 	Address get_bind_address(size_t index);
@@ -85,10 +85,10 @@ private:
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 
 	/// master thread
-	ServerMasterThread* m_master_thread;
+	TcpServerMasterThread* m_master_thread;
 
 	/// work thread pool
-	typedef std::vector< ServerWorkThread* > ServerWorkThreadArray;
+	typedef std::vector< TcpServerWorkThread* > ServerWorkThreadArray;
 	ServerWorkThreadArray m_work_thread_pool;
 
 	int32_t			m_workthread_counts;
@@ -104,14 +104,14 @@ private:
 	//called by master thread
 	void _on_accept_socket(socket_t fd);
 
-	friend class ServerMasterThread;
+	friend class TcpServerMasterThread;
 private:
 	// called by server work thread only
-	void _on_socket_connected(int32_t work_thread_index, ConnectionPtr conn);
-	void _on_socket_message(int32_t work_thread_index, ConnectionPtr conn);
-	void _on_socket_close(int32_t work_thread_index, ConnectionPtr conn);
+	void _on_socket_connected(int32_t work_thread_index, TcpConnectionPtr conn);
+	void _on_socket_message(int32_t work_thread_index, TcpConnectionPtr conn);
+	void _on_socket_close(int32_t work_thread_index, TcpConnectionPtr conn);
 
-	friend class ServerWorkThread;
+	friend class TcpServerWorkThread;
 public:
 	TcpServer();
 	~TcpServer();

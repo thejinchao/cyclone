@@ -11,13 +11,13 @@ Copyright(C) thecodeway.com
 namespace cyclone
 {
 
-class Connection;
-typedef std::shared_ptr<Connection> ConnectionPtr;
+class TcpConnection;
+typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 
-class Connection : public std::enable_shared_from_this<Connection>, noncopyable
+class TcpConnection : public std::enable_shared_from_this<TcpConnection>, noncopyable
 {
 public:
-	typedef std::function<void(ConnectionPtr conn)> EventCallback;
+	typedef std::function<void(TcpConnectionPtr conn)> EventCallback;
 	class Owner {
 	public:
 		enum OWNER_TYPE { kServer=0, kClient };
@@ -138,8 +138,8 @@ private:
 #endif
 
 public:
-	Connection(int32_t id, socket_t sfd, Looper* looper, Owner* owner);
-	~Connection();
+	TcpConnection(int32_t id, socket_t sfd, Looper* looper, Owner* owner);
+	~TcpConnection();
 };
 
 }

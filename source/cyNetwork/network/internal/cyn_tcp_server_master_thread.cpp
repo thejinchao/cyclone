@@ -3,25 +3,25 @@ Copyright(C) thecodeway.com
 */
 
 #include <cy_network.h>
-#include "cyn_server_master_thread.h"
+#include "cyn_tcp_server_master_thread.h"
 
 namespace cyclone
 {
 //-------------------------------------------------------------------------------------
-ServerMasterThread::ServerMasterThread(TcpServer* server)
+TcpServerMasterThread::TcpServerMasterThread(TcpServer* server)
 	: m_server(server)
 {
 	assert(m_server);
 }
 
 //-------------------------------------------------------------------------------------
-ServerMasterThread::~ServerMasterThread()
+TcpServerMasterThread::~TcpServerMasterThread()
 {
 	assert(m_acceptor_sockets.empty());
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
+void TcpServerMasterThread::send_thread_message(uint16_t id, uint16_t size, const char* message)
 {
 	assert(m_master_thread.is_running());
 
@@ -29,21 +29,21 @@ void ServerMasterThread::send_thread_message(uint16_t id, uint16_t size, const c
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::send_thread_message(const Packet* message)
+void TcpServerMasterThread::send_thread_message(const Packet* message)
 {
 	assert(m_master_thread.is_running());
 	m_master_thread.send_message(message);
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::send_thread_message(const Packet** message, int32_t counts)
+void TcpServerMasterThread::send_thread_message(const Packet** message, int32_t counts)
 {
 	assert(m_master_thread.is_running());
 	m_master_thread.send_message(message, counts);
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerMasterThread::bind_socket(const Address& bind_addr, bool enable_reuse_port)
+bool TcpServerMasterThread::bind_socket(const Address& bind_addr, bool enable_reuse_port)
 {
 	//must bind socket before run master thread
 	assert(!m_master_thread.is_running());
@@ -91,20 +91,20 @@ bool ServerMasterThread::bind_socket(const Address& bind_addr, bool enable_reuse
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerMasterThread::start(void)
+bool TcpServerMasterThread::start(void)
 {
 	//already running?
 	assert(!m_master_thread.is_running());
 	if (m_master_thread.is_running()) return false;
 
-	m_master_thread.set_on_start(std::bind(&ServerMasterThread::_on_thread_start, this));
-	m_master_thread.set_on_message(std::bind(&ServerMasterThread::_on_thread_message, this, std::placeholders::_1));
+	m_master_thread.set_on_start(std::bind(&TcpServerMasterThread::_on_thread_start, this));
+	m_master_thread.set_on_message(std::bind(&TcpServerMasterThread::_on_thread_message, this, std::placeholders::_1));
 	m_master_thread.start("tcp_master");
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
-Address ServerMasterThread::get_bind_address(size_t index)
+Address TcpServerMasterThread::get_bind_address(size_t index)
 {
 	Address address;
 	if (index >= m_acceptor_sockets.size()) return address;
@@ -116,7 +116,7 @@ Address ServerMasterThread::get_bind_address(size_t index)
 }
 
 //-------------------------------------------------------------------------------------
-bool ServerMasterThread::_on_thread_start(void)
+bool TcpServerMasterThread::_on_thread_start(void)
 {
 	int32_t counts = 0;
 	for (auto& listen_socket : m_acceptor_sockets)
@@ -128,7 +128,7 @@ bool ServerMasterThread::_on_thread_start(void)
 		event_id = m_master_thread.get_looper()->register_event(sfd,
 			Looper::kRead,
 			this,
-			std::bind(&ServerMasterThread::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+			std::bind(&TcpServerMasterThread::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 			0);
 
 		//begin listen
@@ -146,7 +146,7 @@ bool ServerMasterThread::_on_thread_start(void)
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::_on_thread_message(Packet* message)
+void TcpServerMasterThread::_on_thread_message(Packet* message)
 {
 	//accept thread command
 	assert(message);
@@ -206,7 +206,7 @@ void ServerMasterThread::_on_thread_message(Packet* message)
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::_on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event)
+void TcpServerMasterThread::_on_accept_event(Looper::event_id_t id, socket_t fd, Looper::event_t event)
 {
 	(void)id;
 	(void)event;
@@ -227,7 +227,7 @@ void ServerMasterThread::_on_accept_event(Looper::event_id_t id, socket_t fd, Lo
 }
 
 //-------------------------------------------------------------------------------------
-void ServerMasterThread::join(void)
+void TcpServerMasterThread::join(void)
 {
 	m_master_thread.join();
 }

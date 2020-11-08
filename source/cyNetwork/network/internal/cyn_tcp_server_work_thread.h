@@ -4,12 +4,12 @@ Copyright(C) thecodeway.com
 #ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 #define _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
 
-#include "../cyn_connection.h"
+#include "../cyn_tcp_connection.h"
 
 namespace cyclone
 {
 
-class ServerWorkThread : noncopyable, public Connection::Owner
+class TcpServerWorkThread : noncopyable, public TcpConnection::Owner
 {
 public:
 	enum { kNewConnectionCmdID = 1, kCloseConnectionCmdID, kShutdownCmdID };
@@ -44,7 +44,7 @@ public: //call by TcpServer Only
 	//// join work thread(thread safe)
 	void join(void);
 	//// get connection(NOT thread safe, MUST call in work thread)
-	ConnectionPtr get_connection(int32_t connection_id);
+	TcpConnectionPtr get_connection(int32_t connection_id);
 	/// Connection Owner type
 	virtual OWNER_TYPE get_connection_owner_type(void) const { return kServer; }
 
@@ -53,7 +53,7 @@ private:
 	const int32_t	m_index;
 	WorkThread*		m_work_thread;
 
-	typedef std::unordered_map< int32_t, ConnectionPtr > ConnectionMap;
+	typedef std::unordered_map< int32_t, TcpConnectionPtr > ConnectionMap;
 	ConnectionMap	m_connections;
 
 private:
@@ -62,8 +62,8 @@ private:
 	void _on_workthread_message(Packet*);
 
 public:
-	ServerWorkThread(TcpServer* server, int32_t index);
-	virtual ~ServerWorkThread();
+	TcpServerWorkThread(TcpServer* server, int32_t index);
+	virtual ~TcpServerWorkThread();
 };
 
 }

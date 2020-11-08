@@ -47,7 +47,7 @@ TcpClient::~TcpClient()
 	RELEASE_EVENT(m_looper, m_retry_timer_id);
 
 	if (m_connection) {
-		assert(m_connection->get_state() == Connection::kDisconnected);
+		assert(m_connection->get_state() == TcpConnection::kDisconnected);
 	}
 }
 
@@ -88,12 +88,12 @@ bool TcpClient::connect(const Address& addr)
 }
 
 //-------------------------------------------------------------------------------------
-Connection::State TcpClient::get_connection_state(void) const
+TcpConnection::State TcpClient::get_connection_state(void) const
 {
 	sys_api::auto_mutex lock(m_connection_lock);
 
 	if (m_connection) return m_connection->get_state();
-	else return (m_socket==INVALID_SOCKET) ? Connection::kDisconnected : Connection::kConnecting;
+	else return (m_socket==INVALID_SOCKET) ? TcpConnection::kDisconnected : TcpConnection::kConnecting;
 }
 
 //-------------------------------------------------------------------------------------
@@ -113,22 +113,22 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 	else {
 		//connect success!
 		
-		//remove from event system, taked by Connection
+		//remove from event system, taked by TcpConnection
 		RELEASE_EVENT(m_looper, m_socket_event_id);
 
 		//established the connection
-		m_connection = std::make_shared<Connection>(m_id, m_socket, m_looper, this);
+		m_connection = std::make_shared<TcpConnection>(m_id, m_socket, m_looper, this);
 		CY_LOG(L_DEBUG, "connect to %s:%d success", m_serverAddr.get_ip(), m_serverAddr.get_port());
 
 		//bind callback functions
 		if (m_listener.on_message) {
-			m_connection->set_on_message([this](ConnectionPtr conn) {
+			m_connection->set_on_message([this](TcpConnectionPtr conn) {
 				m_listener.on_message(shared_from_this(), conn);
 			});
 		}
 
 		if(m_listener.on_close) {
-			m_connection->set_on_close([this](ConnectionPtr conn) {
+			m_connection->set_on_close([this](TcpConnectionPtr conn) {
 				CY_LOG(L_DEBUG, "disconnect from %s:%d", m_serverAddr.get_ip(), m_serverAddr.get_port());
 				m_listener.on_close(shared_from_this(), conn);
 			});
@@ -150,7 +150,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 void TcpClient::_abort_connect(uint32_t retry_sleep_ms)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	assert(get_connection_state() == Connection::kConnecting);
+	assert(get_connection_state() == TcpConnection::kConnecting);
 
 	RELEASE_EVENT(m_looper, m_socket_event_id);
 	RELEASE_EVENT(m_looper, m_retry_timer_id);
@@ -174,10 +174,10 @@ void TcpClient::disconnect(void)
 	m_sendCache.reset();
 	switch (get_connection_state())
 	{
-	case Connection::kDisconnected:
+	case TcpConnection::kDisconnected:
 		break;
 
-	case Connection::kConnecting:
+	case TcpConnection::kConnecting:
 		_abort_connect(0u);
 		break;
 
@@ -215,7 +215,7 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 //-------------------------------------------------------------------------------------
 void TcpClient::_on_socket_read_write(void)
 {
-	if (get_connection_state() == Connection::kConnecting) {
+	if (get_connection_state() == TcpConnection::kConnecting) {
 		_on_connect_status_changed(false);
 	}
 }
@@ -225,13 +225,13 @@ void TcpClient::send(const char* buf, size_t len)
 {
 	switch (get_connection_state())
 	{
-	case Connection::kConnecting:
+	case TcpConnection::kConnecting:
 	{
 		assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 		m_sendCache.memcpy_into(buf, len);
 	}
 		break;
-	case Connection::kConnected:
+	case TcpConnection::kConnected:
 	{
 		m_connection->send(buf, len);
 	}

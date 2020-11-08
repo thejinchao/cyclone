@@ -60,7 +60,7 @@ public:
 			m_remoteConnection->disconnect();
 	}
 private:
-	uint32_t onServerConnected(ConnectionPtr conn, bool success) 
+	uint32_t onServerConnected(TcpConnectionPtr conn, bool success) 
 	{
 		assert(get_state()== S5_CONNECTING);
 		RingBuf outputBuf;
@@ -84,7 +84,7 @@ private:
 		return 0;
 	}
 
-	void onServerMessage(ConnectionPtr conn) 
+	void onServerMessage(TcpConnectionPtr conn) 
 	{
 		RingBuf& buf = conn->get_input_buf();
 		m_localConnection->send((const char*)buf.normalize(), buf.size());
@@ -102,11 +102,11 @@ private:
 	TcpServer* m_localServer;
 	Looper* m_looper;
 	TcpClientPtr m_remoteConnection;
-	ConnectionPtr m_localConnection;
+	TcpConnectionPtr m_localConnection;
 	Address m_address;
 
 public:
-	S5Tunnel(TcpServer* localServer, Looper* looper, ConnectionPtr localConnection)
+	S5Tunnel(TcpServer* localServer, Looper* looper, TcpConnectionPtr localConnection)
 		: m_state(S5_OPENING)
 		, m_localServer(localServer)
 		, m_looper(looper)
@@ -130,7 +130,7 @@ public:
 		m_looper = looper;
 		m_localServer = localServer;
 	}
-	void add_new_tunnel(ConnectionPtr conn) {
+	void add_new_tunnel(TcpConnectionPtr conn) {
 		m_tunnelMap.insert({ conn->get_id(), S5Tunnel(m_localServer, m_looper, conn)});
 	}
 	S5Tunnel* get_tunnel(int32_t conn_id) {
@@ -189,7 +189,7 @@ private:
 	};
 
 	//-------------------------------------------------------------------------------------
-	void onPeerConnected(TcpServer*, int32_t thread_index, ConnectionPtr conn)
+	void onPeerConnected(TcpServer*, int32_t thread_index, TcpConnectionPtr conn)
 	{
 		assert(thread_index>=0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -200,7 +200,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onPeerMessage(TcpServer* server, int32_t thread_index, ConnectionPtr conn)
+	void onPeerMessage(TcpServer* server, int32_t thread_index, TcpConnectionPtr conn)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
@@ -268,7 +268,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	virtual void onPeerClose(TcpServer*, int32_t thread_index, ConnectionPtr conn)
+	virtual void onPeerClose(TcpServer*, int32_t thread_index, TcpConnectionPtr conn)
 	{
 		assert(thread_index >= 0 && thread_index<(int32_t)m_threadContext.size());
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];

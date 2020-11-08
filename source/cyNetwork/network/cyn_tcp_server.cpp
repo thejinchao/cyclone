@@ -5,8 +5,8 @@ Copyright(C) thecodeway.com
 #include <cy_event.h>
 #include <cy_network.h>
 #include "cyn_tcp_server.h"
-#include "internal/cyn_server_master_thread.h"
-#include "internal/cyn_server_work_thread.h"
+#include "internal/cyn_tcp_server_master_thread.h"
+#include "internal/cyn_tcp_server_work_thread.h"
 
 namespace cyclone
 {
@@ -30,7 +30,7 @@ TcpServer::TcpServer()
 	m_listener.on_message = nullptr;
 	m_listener.on_close = nullptr;
 
-	m_master_thread = new ServerMasterThread(this);
+	m_master_thread = new TcpServerMasterThread(this);
 }
 
 //-------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ bool TcpServer::start(int32_t work_thread_counts)
 	m_workthread_counts = work_thread_counts;
 	for (int32_t i = 0; i < m_workthread_counts; i++) {
 		//run the thread
-		m_work_thread_pool.push_back(new ServerWorkThread(this, i));
+		m_work_thread_pool.push_back(new TcpServerWorkThread(this, i));
 	}
 
 	//start master thread
@@ -95,9 +95,9 @@ void TcpServer::stop_listen(size_t index)
 	if (index >= m_master_thread->get_bind_socket_size()) return;
 
 	//send stop listen cmd to master thread
-	ServerMasterThread::StopListenCmd cmd;
+	TcpServerMasterThread::StopListenCmd cmd;
 	cmd.index = index;
-	m_master_thread->send_thread_message(ServerMasterThread::StopListenCmd::ID, sizeof(cmd), (const char*)&cmd);
+	m_master_thread->send_thread_message(TcpServerMasterThread::StopListenCmd::ID, sizeof(cmd), (const char*)&cmd);
 }
 
 //-------------------------------------------------------------------------------------
@@ -117,12 +117,12 @@ void TcpServer::stop(void)
 	}
 
 	//shutdown the the master thread
-	ServerMasterThread::ShutdownCmd shutdownCmd;
-	m_master_thread->send_thread_message(ServerMasterThread::ShutdownCmd::ID, sizeof(shutdownCmd), (const char*)&shutdownCmd);
+	TcpServerMasterThread::ShutdownCmd shutdownCmd;
+	m_master_thread->send_thread_message(TcpServerMasterThread::ShutdownCmd::ID, sizeof(shutdownCmd), (const char*)&shutdownCmd);
 
 	//shutdown all connection
 	for (auto work : m_work_thread_pool){
-		work->send_thread_message(ServerWorkThread::ShutdownCmd::ID, 0, 0);
+		work->send_thread_message(TcpServerWorkThread::ShutdownCmd::ID, 0, 0);
 	}
 }
 
@@ -131,12 +131,12 @@ void TcpServer::_on_accept_socket(socket_t fd)
 {
 	//send it to one of work thread		
 	int32_t index = (m_next_workthread_id++) % m_workthread_counts;
-	ServerWorkThread* work = m_work_thread_pool[(size_t)index];
+	TcpServerWorkThread* work = m_work_thread_pool[(size_t)index];
 
 	//send new connection to work thread(cmd, socket_t)		
-	ServerWorkThread::NewConnectionCmd newConnectionCmd;
+	TcpServerWorkThread::NewConnectionCmd newConnectionCmd;
 	newConnectionCmd.sfd = fd;
-	work->send_thread_message(ServerWorkThread::NewConnectionCmd::ID, sizeof(newConnectionCmd), (const char*)&newConnectionCmd);
+	work->send_thread_message(TcpServerWorkThread::NewConnectionCmd::ID, sizeof(newConnectionCmd), (const char*)&newConnectionCmd);
 
 	CY_LOG(L_DEBUG, "accept a socket, send to work thread %d ", index);
 }
@@ -161,14 +161,14 @@ void TcpServer::join(void)
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::shutdown_connection(ConnectionPtr conn)
+void TcpServer::shutdown_connection(TcpConnectionPtr conn)
 {
-	ServerWorkThread* work = (ServerWorkThread*)(conn->get_owner());
+	TcpServerWorkThread* work = (TcpServerWorkThread*)(conn->get_owner());
 
-	ServerWorkThread::CloseConnectionCmd closeConnectionCmd;
+	TcpServerWorkThread::CloseConnectionCmd closeConnectionCmd;
 	closeConnectionCmd.conn_id = conn->get_id();
 	closeConnectionCmd.shutdown_ing = m_shutdown_ing;
-	work->send_thread_message(ServerWorkThread::CloseConnectionCmd::ID, sizeof(closeConnectionCmd), (const char*)&closeConnectionCmd);
+	work->send_thread_message(TcpServerWorkThread::CloseConnectionCmd::ID, sizeof(closeConnectionCmd), (const char*)&closeConnectionCmd);
 }
 
 //-------------------------------------------------------------------------------------
@@ -192,7 +192,7 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet* messa
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_workthread_counts);
 
-	ServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
+	TcpServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
 	work->send_thread_message(message);
 }
 
@@ -201,12 +201,12 @@ void TcpServer::send_work_message(int32_t work_thread_index, const Packet** mess
 {
 	assert(work_thread_index >= 0 && work_thread_index < m_workthread_counts && counts>0);
 
-	ServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
+	TcpServerWorkThread* work = m_work_thread_pool[(size_t)work_thread_index];
 	work->send_thread_message(message, counts);
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr conn)
+void TcpServer::_on_socket_connected(int32_t work_thread_index, TcpConnectionPtr conn)
 {
 	if (m_listener.on_connected) {
 		m_listener.on_connected(this, work_thread_index, conn);
@@ -214,7 +214,7 @@ void TcpServer::_on_socket_connected(int32_t work_thread_index, ConnectionPtr co
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_socket_message(int32_t work_thread_index, ConnectionPtr conn)
+void TcpServer::_on_socket_message(int32_t work_thread_index, TcpConnectionPtr conn)
 {
 	if (m_listener.on_message) {
 		m_listener.on_message(this, work_thread_index, conn);
@@ -222,7 +222,7 @@ void TcpServer::_on_socket_message(int32_t work_thread_index, ConnectionPtr conn
 }
 
 //-------------------------------------------------------------------------------------
-void TcpServer::_on_socket_close(int32_t work_thread_index, ConnectionPtr conn)
+void TcpServer::_on_socket_close(int32_t work_thread_index, TcpConnectionPtr conn)
 {
 	if (m_listener.on_close) {
 		m_listener.on_close(this, work_thread_index, conn);

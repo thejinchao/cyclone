@@ -54,7 +54,7 @@ public:
 	{
 		assert(m_upState==kDisconnected);
 		if (m_upClient) {
-			assert(m_upClient->get_connection_state() == Connection::kDisconnected);
+			assert(m_upClient->get_connection_state() == TcpConnection::kDisconnected);
             m_upClient = nullptr;
 		}
 	}
@@ -82,7 +82,7 @@ private:
 	{
 		int32_t m_workthread_index;
 		Looper* m_looper;
-		ConnectionPtr m_downConnection;
+		TcpConnectionPtr m_downConnection;
 		DownClientState m_downState;
 		dhkey_t m_publicKey;
 		dhkey_t m_privateKey;
@@ -162,7 +162,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onDownConnected(TcpServer* /*server*/, int32_t index, ConnectionPtr conn)
+	void onDownConnected(TcpServer* /*server*/, int32_t index, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = new RelayPipe(m_encryptMode);
 
@@ -174,7 +174,7 @@ private:
 		conn->set_param(pipe);
 	}
 	//-------------------------------------------------------------------------------------
-	void onDownMessage(TcpServer* server, int32_t /*index*/, ConnectionPtr conn)
+	void onDownMessage(TcpServer* server, int32_t /*index*/, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = (RelayPipe*)(conn->get_param());
 
@@ -350,7 +350,7 @@ private:
 		}
 	}
 	//-------------------------------------------------------------------------------------
-	void onDownClose(TcpServer* /*server*/, int32_t /*index*/, ConnectionPtr conn)
+	void onDownClose(TcpServer* /*server*/, int32_t /*index*/, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = (RelayPipe*)(conn->get_param());
 
@@ -393,7 +393,7 @@ private:
 	}
 private:
 	//-------------------------------------------------------------------------------------
-	uint32_t onServerConnected(TcpClientPtr client, ConnectionPtr conn, bool success)
+	uint32_t onServerConnected(TcpClientPtr client, TcpConnectionPtr conn, bool success)
 	{
 		RelayPipe* pipe = (RelayPipe*)(client->get_param());
 		if (pipe->m_downState != kHandshaked) return 0;
@@ -437,7 +437,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onServerMessage(TcpClientPtr client, ConnectionPtr conn)
+	void onServerMessage(TcpClientPtr client, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = (RelayPipe*)(client->get_param());
 		if (pipe->m_downState != kHandshaked) return;
@@ -482,7 +482,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onServerClose(TcpClientPtr client, ConnectionPtr conn)
+	void onServerClose(TcpClientPtr client, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = (RelayPipe*)(client->get_param());
 		int32_t id = conn->get_id();
