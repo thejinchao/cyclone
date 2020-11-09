@@ -12,7 +12,7 @@ using namespace cyclone;
 using namespace std::placeholders;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_HELP };
+enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_KCP, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP },  // "-p LISTEN_PORT"
@@ -22,6 +22,7 @@ CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_THREADS, "-t",  SO_REQ_SEP }, // "-t THREAD_COUNTS"
 	{ OPT_STATISTICS, "-s",  SO_NONE },	// "-s"
 	{ OPT_VERBOSE_MODE, "-v",  SO_NONE },	// "-v"
+	{ OPT_KCP, "-k",  SO_NONE },	// "-k"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	 // "--help"
 	SO_END_OF_OPTIONS                   // END
@@ -62,6 +63,7 @@ public:
 typedef std::shared_ptr<RelaySession> RelaySessionPtr;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+template<typename ServerType, typename ConnectionType>
 class RelayServer
 {
 private:
@@ -72,7 +74,7 @@ private:
 		kHandshaked,
 		kDisconnected
 	};
-	TcpServer* m_downServer;
+	ServerType* m_downServer;
 	Address m_upAddress;
 	bool m_encryptMode;
 
@@ -82,7 +84,7 @@ private:
 	{
 		int32_t m_workthread_index;
 		Looper* m_looper;
-		TcpConnectionPtr m_downConnection;
+		ConnectionType m_downConnection;
 		DownClientState m_downState;
 		dhkey_t m_publicKey;
 		dhkey_t m_privateKey;
@@ -132,13 +134,13 @@ public:
 	{
 		m_upAddress = upAddress;
 
-		TcpServer server;
-		server.m_listener.on_master_thread_start = std::bind(&RelayServer::onMasterThreadStart, this, _1, _2);
+		ServerType server;
+		server.m_listener.on_master_thread_start = std::bind(&RelayServer::onMasterThreadStart, this, _2);
 		server.m_listener.on_work_thread_start = std::bind(&RelayServer::onWorkthreadStart, this, _2, _3);
-		server.m_listener.on_connected = std::bind(&RelayServer::onDownConnected, this, _1, _2, _3);
-		server.m_listener.on_message = std::bind(&RelayServer::onDownMessage, this, _1, _2, _3);
-		server.m_listener.on_close = std::bind(&RelayServer::onDownClose, this, _1, _2, _3);
-		server.bind(Address(local_port, false), true);
+		server.m_listener.on_connected = std::bind(&RelayServer::onDownConnected, this, _2, _3);
+		server.m_listener.on_message = std::bind(&RelayServer::onDownMessage, this, _2, _3);
+		server.m_listener.on_close = std::bind(&RelayServer::onDownClose, this, _2, _3);
+		server.bind(Address(local_port, false));
 
 		m_downServer = &server;
 
@@ -149,7 +151,7 @@ public:
 	}
 private:
 	//-------------------------------------------------------------------------------------
-	void onMasterThreadStart(TcpServer* /*server*/, Looper* looper)
+	void onMasterThreadStart(Looper* looper)
 	{
 		if (m_enable_statistics) {
 			looper->register_timer_event(kSpeedTimePeriod, nullptr, std::bind(&RelayServer::printStatisticsInfo, this));
@@ -162,7 +164,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onDownConnected(TcpServer* /*server*/, int32_t index, TcpConnectionPtr conn)
+	void onDownConnected(int32_t index, ConnectionType conn)
 	{
 		RelayPipe* pipe = new RelayPipe(m_encryptMode);
 
@@ -174,7 +176,7 @@ private:
 		conn->set_param(pipe);
 	}
 	//-------------------------------------------------------------------------------------
-	void onDownMessage(TcpServer* server, int32_t /*index*/, TcpConnectionPtr conn)
+	void onDownMessage(int32_t /*index*/, ConnectionType conn)
 	{
 		RelayPipe* pipe = (RelayPipe*)(conn->get_param());
 
@@ -187,7 +189,7 @@ private:
 
 			//must be handshake message
 			if (packetID != (uint16_t)RELAY_HANDSHAKE_ID) {
-				server->shutdown_connection(conn);
+				conn->shutdown();
 				pipe->m_downState = kWaitConnecting;
 				return;
 			}
@@ -198,7 +200,7 @@ private:
 
 			//check size
 			if (handshakePacket.get_packet_size() != sizeof(RelayHandshakeMsg)) {
-				server->shutdown_connection(conn);
+				conn->shutdown();
 				pipe->m_downState = kWaitConnecting;
 				return;
 			}
@@ -210,7 +212,7 @@ private:
 			if (m_encryptMode != bRemoteEncrypt)
 			{
 				CY_LOG(L_ERROR, "Encrypt Mode not match, relay_server:%s , relay_local: %s", m_encryptMode ? "true" : "false", bRemoteEncrypt ? "true" : "false");
-				server->shutdown_connection(conn);
+				conn->shutdown();
 				pipe->m_downState = kWaitConnecting;
 				return;
 			}
@@ -232,7 +234,7 @@ private:
 			//reply my public key
 			handshake.dh_key = pipe->m_publicKey;
 			handshakePacket.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
-			conn->send(handshakePacket.get_memory_buf(), handshakePacket.get_memory_size());
+			conn->send(handshakePacket.get_memory_buf(), (int32_t)handshakePacket.get_memory_size());
 
 			//update state
 			pipe->m_downState = kHandshaked;
@@ -343,14 +345,14 @@ private:
 
 			default:
 				CY_LOG(L_ERROR, "receive invalid packet(%d)", packetID);
-				server->shutdown_connection(conn);
+				conn->shutdown();
 				break;
 			}
 		}
 		}
 	}
 	//-------------------------------------------------------------------------------------
-	void onDownClose(TcpServer* /*server*/, int32_t /*index*/, TcpConnectionPtr conn)
+	void onDownClose(int32_t /*index*/, ConnectionType conn)
 	{
 		RelayPipe* pipe = (RelayPipe*)(conn->get_param());
 
@@ -426,7 +428,7 @@ private:
 			packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
 
 			//send to down client
-			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
+			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), (int32_t)packet.get_memory_size());
 			session->m_upState = RelaySession::kDisconnected;
 
 			//send to work thread to delete session and client
@@ -477,7 +479,7 @@ private:
 				m_down_statistics.push((int32_t)msgSize);
 			}
 			
-			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
+			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), (int32_t)packet.get_memory_size());
 		}
 	}
 
@@ -518,7 +520,7 @@ private:
 		packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
 
 		//send to down client
-		pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
+		pipe->m_downConnection->send((const char*)packet.get_memory_buf(), (int32_t)packet.get_memory_size());
 		if(session)
 			session->m_upState = RelaySession::kDisconnected;
 
@@ -549,6 +551,7 @@ static void printUsage(const char* moduleName)
 	printf("\t -uh UP_HOST\tUp Server(Target Server) IP, Default 127.0.0.1\n");
 	printf("\t -up UP_PORT\tUp Server(Target Server) Port\n");
 	printf("\t -t THREAD_COUNTS\tWork thread counts(must be 1 when relay_pipe used)\n");
+	printf("\t -k\t\tUse KCP Protocol\n");
 	printf("\t -e\t\tEncrypt Message\n");
 	printf("\t -s\t\tPrint speed statistics\n");
 	printf("\t -v\t\tVerbose Mode\n");
@@ -567,6 +570,7 @@ int main(int argc, char* argv[])
 	bool encrypt_mode = false;
 	int32_t work_thread_counts = sys_api::get_cpu_counts();
 	bool enable_statistics = false;
+	bool enable_kcp = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -595,6 +599,9 @@ int main(int argc, char* argv[])
 			else if (args.OptionId() == OPT_STATISTICS) {
 				enable_statistics = true;
 			}
+			else if (args.OptionId() == OPT_KCP) {
+				enable_kcp = true;
+			}
 		}
 		else {
 			printf("Invalid argument: %s\n", args.OptionText());
@@ -613,8 +620,15 @@ int main(int argc, char* argv[])
 	CY_LOG(L_DEBUG, "encrypt mode %s", encrypt_mode?"true":"false");
 	CY_LOG(L_DEBUG, "work thread counts %d", work_thread_counts);
 	CY_LOG(L_DEBUG, "speed statistics: %s", enable_statistics?"true":"false");
+	CY_LOG(L_DEBUG, "protocol: %s", enable_kcp ? "KCP" : "TCP");
 
-	RelayServer server(encrypt_mode, enable_statistics);
-	server.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
+	if (enable_kcp) {
+		RelayServer<UdpServer, UdpConnectionPtr> server(encrypt_mode, enable_statistics);
+		server.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
+	}
+	else {
+		RelayServer<TcpServer, TcpConnectionPtr> server(encrypt_mode, enable_statistics);
+		server.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
+	}
 	return 0;
 }

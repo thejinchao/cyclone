@@ -12,7 +12,7 @@ using namespace cyclone;
 using namespace std::placeholders;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_HELP };
+enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_KCP, OPT_HELP };
 
 CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP },  // "-p LISTEN_PORT"
@@ -22,6 +22,7 @@ CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_THREADS, "-t",  SO_REQ_SEP }, // "-t THREAD_COUNTS"
 	{ OPT_STATISTICS, "-s",  SO_NONE },	// "-s"
 	{ OPT_VERBOSE_MODE, "-v",  SO_NONE },	// "-v"
+	{ OPT_KCP, "-k",  SO_NONE },	// "-k"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	 // "--help"
 	SO_END_OF_OPTIONS                   // END
@@ -48,9 +49,10 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+template<typename ConnectionType>
 class RelayLocal
 {
-private:
+protected:
 	enum UpState {
 		kConnecting = 0,
 		kHandshaking,
@@ -65,7 +67,7 @@ private:
 
 	struct RelayPipe
 	{
-		TcpClientPtr m_upClient;
+		ConnectionType m_upConnection;
 		UpState m_upState;
 		dhkey_t m_publicKey;
 		dhkey_t m_privateKey;
@@ -74,7 +76,7 @@ private:
 		Rijndael* m_decrypt;
 		RelaySessionMap m_sessionMap;
 
-		RelayPipe(bool encryptMode) : m_upClient(nullptr), m_upState(kConnecting), m_encrypt(nullptr), m_decrypt(nullptr)
+		RelayPipe(bool encryptMode) : m_upState(kConnecting), m_encrypt(nullptr), m_decrypt(nullptr)
 		{
 			if (encryptMode)
 				DH_generate_key_pair(m_publicKey, m_privateKey);
@@ -96,7 +98,7 @@ private:
 	typedef std::vector<RelayPipe*> RelayPipeVector;
 	RelayPipeVector m_relayPipes;
 
-	enum { kSpeedTimePeriod = 5 * 1000 }; //(2 seconds)
+	enum { kSpeedTimePeriod = 5 * 1000 }; //(5 seconds)
 
 	bool m_enable_statistics;
 
@@ -127,7 +129,7 @@ public:
 		if (!server.start(work_thread_counts)) return;
 		server.join();
 	}
-private:
+protected:
 	//-------------------------------------------------------------------------------------
 	void onMasterThreadStart(TcpServer* /*server*/, Looper* looper)
 	{
@@ -137,17 +139,8 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper)
-	{
-		RelayPipe* newPipe = new  RelayPipe(m_encryptMode);
-		m_relayPipes[index] = newPipe;
+	virtual void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper) = 0;
 
-		newPipe->m_upClient = std::make_shared<TcpClient>(looper, this, index);
-		newPipe->m_upClient->m_listener.on_connected = std::bind(&RelayLocal::onUpConnected, this, _2, _3);
-		newPipe->m_upClient->m_listener.on_message = std::bind(&RelayLocal::onUpMessage, this, _1, _2);
-		newPipe->m_upClient->m_listener.on_close = std::bind(&RelayLocal::onUpClose, this, _1, _2);
-		newPipe->m_upClient->connect(m_upAddress);
-	}
 	//-------------------------------------------------------------------------------------
 	void onLocalConnected(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
@@ -165,7 +158,7 @@ private:
 
 		Packet packet;
 		packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayNewSessionMsg::ID, sizeof(newSessionMsg), (const char*)&newSessionMsg);
-		pipe->m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
+		pipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
 
 		CY_LOG(L_TRACE, "[%d]CLIENT connected, send new session msg to UP", conn->get_id());
 	}
@@ -207,7 +200,7 @@ private:
 				m_up_statistics.push((int32_t)packet.get_memory_size());
 			}
 
-			pipe->m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
+			pipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
 			CY_LOG(L_TRACE, "[%d]receive message from CLIENT(%zd/%zd), send to UP after encrypt", conn->get_id(), (size_t)msgSize, buf_round_size);
 		}
 	}
@@ -228,7 +221,7 @@ private:
 
             Packet packet;
             packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayCloseSessionMsg::ID, sizeof(closeSessionMsg), (const char*)&closeSessionMsg);
-			pipe->m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
+			pipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
 
             CY_LOG(L_TRACE, "[%d]down client closed!, send close session message to up server", conn->get_id());
         }
@@ -240,17 +233,20 @@ private:
 		auto up_statistics = m_up_statistics.sum_and_counts();
 		auto down_statistics = m_down_statistics.sum_and_counts();
 
-		CY_LOG(L_INFO, "===UP:%s Speed:%s/s DOWN:%s Speed:%s/s",
+		float up_speed = (float)(up_statistics.first * 1000 / kSpeedTimePeriod);
+		float down_speed = (float)(down_statistics.first * 1000 / kSpeedTimePeriod);
+
+		CY_LOG(L_INFO, "===UP:%s Speed:%s DOWN:%s Speed:%s",
 			string_util::size_to_string((size_t)m_up_total.load()).c_str(),
-			string_util::size_to_string((float)(up_statistics.first * 1000 / kSpeedTimePeriod)).c_str(),
+			string_util::size_to_string(up_speed).c_str(),
 			string_util::size_to_string((size_t)m_down_total.load()).c_str(),
-			string_util::size_to_string((float)(down_statistics.first * 1000 / kSpeedTimePeriod)).c_str()
+			string_util::size_to_string(down_speed).c_str()
 		);
 	}
 
-private:
+protected:
 	//-------------------------------------------------------------------------------------
-	uint32_t onUpConnected(TcpConnectionPtr conn, bool success)
+	uint32_t onUpConnected(ConnectionType conn, bool success)
 	{
 		if (success) {
 			RelayPipe* pipe = m_relayPipes[conn->get_id()];
@@ -262,9 +258,10 @@ private:
 
 			Packet packet;
 			packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
-			pipe->m_upClient->send(packet.get_memory_buf(), packet.get_memory_size());
+			conn->send(packet.get_memory_buf(), packet.get_memory_size());
 
 			//update state
+			pipe->m_upConnection = conn;
 			pipe->m_upState = kHandshaking;
 			CY_LOG(L_DEBUG, "Up Server Connected, send handshake message.");
 			return 0;
@@ -274,7 +271,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onUpMessage(TcpClientPtr client, TcpConnectionPtr conn)
+	void onUpMessage(ConnectionType conn)
 	{
 		RelayPipe* pipe = m_relayPipes[conn->get_id()];
 
@@ -287,7 +284,7 @@ private:
 
 				//must be handshake message
 				if (packetID != (uint16_t)RELAY_HANDSHAKE_ID) {
-					client->disconnect();
+					conn->shutdown();
 					pipe->m_upState = kDisConnected;
 					return;
 				}
@@ -298,7 +295,7 @@ private:
 
 				//check size
 				if (handshakePacket.get_packet_size() != sizeof(RelayHandshakeMsg)) {
-					client->disconnect();
+					conn->shutdown();
 					pipe->m_upState = kDisConnected;
 					return;
 				}
@@ -310,7 +307,7 @@ private:
 				if (m_encryptMode != bRemoteEncrypt)
 				{
 					CY_LOG(L_ERROR, "Encrypt Mode not match, relay_server:%s , relay_local: %s", bRemoteEncrypt?"true":"false", m_encryptMode ? "true" : "false");
-					client->disconnect();
+					conn->shutdown();
 					pipe->m_upState = kDisConnected;
 					return;
 				}
@@ -368,7 +365,7 @@ private:
 
 						Packet packetCloseSession;
 						packetCloseSession.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayCloseSessionMsg::ID, sizeof(closeSessionMsg), (const char*)&closeSessionMsg);
-						pipe->m_upClient->send(packetCloseSession.get_memory_buf(), packetCloseSession.get_memory_size());
+						conn->send(packetCloseSession.get_memory_buf(), (int32_t)packetCloseSession.get_memory_size());
 						break;
 					}
 
@@ -412,13 +409,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onUpClose(TcpClientPtr client, TcpConnectionPtr conn)
-	{
-		RelayPipe* pipe = m_relayPipes[conn->get_id()];
-		
-		pipe->m_upClient = nullptr;
-		pipe->m_upState = kDisConnected;
-	}
+	virtual void onUpClose(ConnectionType conn) = 0;
 
 private:
 	//-------------------------------------------------------------------------------------
@@ -443,6 +434,95 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+class TcpRelayLocal : public RelayLocal<TcpConnectionPtr>
+{
+protected:
+	struct TcpRelayPipe : public RelayPipe
+	{
+		TcpClientPtr m_upClient;
+
+		TcpRelayPipe(bool encryptMode) : RelayPipe(encryptMode), m_upClient(nullptr)
+		{
+		}
+	};
+
+public:
+	//-------------------------------------------------------------------------------------
+	virtual void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper)
+	{
+		TcpRelayPipe* newPipe = new  TcpRelayPipe(m_encryptMode);
+		m_relayPipes[index] = newPipe;
+
+		newPipe->m_upClient = std::make_shared<TcpClient>(looper, this, index);
+		newPipe->m_upClient->m_listener.on_connected = std::bind(&TcpRelayLocal::onUpConnected, this, _2, _3);
+		newPipe->m_upClient->m_listener.on_message = std::bind(&TcpRelayLocal::onUpMessage, this, _2);
+		newPipe->m_upClient->m_listener.on_close = std::bind(&TcpRelayLocal::onUpClose, this, _2);
+		newPipe->m_upClient->connect(m_upAddress);
+	}
+
+	//-------------------------------------------------------------------------------------
+	virtual void onUpClose(TcpConnectionPtr conn)
+	{
+		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+
+		pipe->m_upConnection = nullptr;
+		pipe->m_upState = kDisConnected;
+
+		((TcpRelayPipe*)pipe)->m_upClient = nullptr;
+	}
+
+public:
+	TcpRelayLocal(bool encryptMode, bool enableStatistics)
+		: RelayLocal<TcpConnectionPtr>(encryptMode, enableStatistics)
+	{
+
+	}
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////
+class KcpRelayLocal : public RelayLocal<UdpConnectionPtr>
+{
+public:
+	//-------------------------------------------------------------------------------------
+	virtual void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper)
+	{
+		RelayPipe* newPipe = new  RelayPipe(m_encryptMode);
+		m_relayPipes[index] = newPipe;
+
+		newPipe->m_upConnection = std::make_shared<UdpConnection>(looper, index);
+		newPipe->m_upConnection->set_on_message(std::bind(&KcpRelayLocal::onUpMessage, this, _1));
+		newPipe->m_upConnection->set_on_close(std::bind(&KcpRelayLocal::onUpClose, this, _1));
+		newPipe->m_upConnection->init(m_upAddress);
+		newPipe->m_upState = kHandshaking;
+
+		//send handshake message
+		RelayHandshakeMsg handshake;
+		handshake.dh_key = newPipe->m_publicKey;
+
+		Packet packet;
+		packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
+		newPipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+
+		CY_LOG(L_DEBUG, "Up Server Connected, send handshake message.");
+	}
+
+	//-------------------------------------------------------------------------------------
+	virtual void onUpClose(UdpConnectionPtr conn)
+	{
+		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+
+		pipe->m_upConnection = nullptr;
+		pipe->m_upState = kDisConnected;
+	}
+public:
+	KcpRelayLocal(bool encryptMode, bool enableStatistics)
+		: RelayLocal<UdpConnectionPtr>(encryptMode, enableStatistics)
+	{
+
+	}
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////
 static void printUsage(const char* moduleName)
 {
 	printf("===== Relay Local(Powerd by Cyclone) =====\n");
@@ -451,6 +531,7 @@ static void printUsage(const char* moduleName)
 	printf("\t -uh UP_HOST\tUp Server(Relay Server) IP, Default 127.0.0.1\n");
 	printf("\t -up UP_PORT\tUp Server(Relay Server) Port, Default 3000\n");
 	printf("\t -t THREAD_COUNTS\tWork thread counts(must be 1 when relay_pipe used)\n");
+	printf("\t -k\t\tUse KCP Protocol\n");
 	printf("\t -e\t\tEncrypt Message\n");
 	printf("\t -s\t\tPrint speed statistics\n");
 	printf("\t -v\t\tVerbose Mode\n");
@@ -469,6 +550,7 @@ int main(int argc, char* argv[])
 	bool encrypt_mode = false;
 	int32_t work_thread_counts = sys_api::get_cpu_counts();
 	bool enable_statistics = false;
+	bool enable_kcp = false;
 
 	while (args.Next()) {
 		if (args.LastError() == SO_SUCCESS) {
@@ -497,7 +579,9 @@ int main(int argc, char* argv[])
 			else if (args.OptionId() == OPT_STATISTICS) {
 				enable_statistics = true;
 			}
-
+			else if (args.OptionId() == OPT_KCP) {
+				enable_kcp = true;
+			}
 		}
 		else {
 			printf("Invalid argument: %s\n", args.OptionText());
@@ -512,8 +596,15 @@ int main(int argc, char* argv[])
 	CY_LOG(L_DEBUG, "encrypt mode %s", encrypt_mode ? "true" : "false");
 	CY_LOG(L_DEBUG, "work thread counts %d", work_thread_counts);
 	CY_LOG(L_DEBUG, "speed statistics: %s", enable_statistics ? "true" : "false");
+	CY_LOG(L_DEBUG, "protocol: %s", enable_kcp ? "KCP" : "TCP");
 
-	RelayLocal relayLocal(encrypt_mode, enable_statistics);
-	relayLocal.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
+	if (enable_kcp) {
+		KcpRelayLocal relayLocal(encrypt_mode, enable_statistics);
+		relayLocal.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
+	}
+	else {
+		TcpRelayLocal relayLocal(encrypt_mode, enable_statistics);
+		relayLocal.startAndJoin(local_port, Address(up_ip.c_str(), up_port), work_thread_counts);
+	}
 	return 0;
 }
