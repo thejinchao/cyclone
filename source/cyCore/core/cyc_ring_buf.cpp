@@ -32,8 +32,10 @@ RingBuf::~RingBuf()
 }
 
 //-------------------------------------------------------------------------------------
-void RingBuf::_auto_resize(size_t need_size)
+void RingBuf::resize(size_t need_size)
 {
+	if (capacity() >= need_size) return;
+
 	//auto inc size
 	size_t new_size = 2;
 	while (new_size < need_size) new_size *= 2;
@@ -57,7 +59,7 @@ void RingBuf::_auto_resize(size_t need_size)
 void RingBuf::memcpy_into(const void *src, size_t count)
 {
 	if (get_free_size() < count) {
-		_auto_resize(size() + count + 1);
+		resize(size() + count + 1);
 	}
 
 	char* csrc = (char*)src;

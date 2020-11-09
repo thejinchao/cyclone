@@ -64,6 +64,9 @@ public:
 		return get_free_size() == 0;
 	}
 
+	//// re-alloca memory, make sure capacity greater need_size
+	void resize(size_t need_size);
+
 	////  copy n bytes from a contiguous memory area into the ring buffer
 	void memcpy_into(const void *src, size_t count);
 
@@ -110,9 +113,6 @@ private:
 	size_t m_end;
 	size_t m_read;
 	size_t m_write;
-
-private:
-	void _auto_resize(size_t need_size);
 };
 
 }
