@@ -154,7 +154,7 @@ protected:
 			return;
 		}
 
-		CY_LOG(L_INFO, "Send ping data complete, send close message");
+		CY_LOG(L_INFO, "Send ping data complete, crc=0x%08X, send close message", m_data_crc);
 		_send_close_message();
 	}
 
