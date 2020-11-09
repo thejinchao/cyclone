@@ -23,7 +23,7 @@ public:
 	// https://www.lifewire.com/definition-of-mtu-817948
 	enum { MAX_UDP_PACKET_SIZE = 1024-1 }; // 1KB
 	//kcp proto size(don't send one kcp package larger than this value)
-	enum { MAX_KCP_SEND_SIZE = 0x7FFF }; // 32KB
+	enum { MAX_KCP_SEND_SIZE = 0xFFFF }; // 64KB
 	//max work thread counts
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	//after connection shutdown, address locked time(ms), in this time, would not accept any udp message from this address
