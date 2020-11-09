@@ -157,11 +157,6 @@ add_library(cyclone
 	${CY_UTILITY_SOURCE_FILES}
 )
 
-if (MSVC)
-target_compile_options(cyclone PRIVATE "/Fd${PROJECT_BINARY_DIR}/source/$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>/cyclone.pdb") 
-endif()
-
-
 ########
 #INSTALL
 ########
@@ -175,22 +170,10 @@ install(DIRECTORY cyCore/ cyEvent/ cyNetwork/ cyCrypt/ cyUtility/
 	PATTERN "internal" EXCLUDE)
 
 if (MSVC)
-install(TARGETS cyclone
-	DESTINATION lib/Release
-	CONFIGURATIONS Release)
-	
-install(TARGETS cyclone
-	DESTINATION lib/Debug
-	CONFIGURATIONS Debug)	
-	
-install(FILES ${PROJECT_BINARY_DIR}/source/Debug/cyclone.pdb
-	DESTINATION lib/Debug
-	CONFIGURATIONS Debug)	
 
-install(FILES ${PROJECT_BINARY_DIR}/source/Release/cyclone.pdb
-	DESTINATION lib/Release
-	CONFIGURATIONS Release)	
-
+install(FILES $<TARGET_FILE:cyclone> 
+	DESTINATION lib/$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>)
+	
 else()
 
 install(TARGETS cyclone
