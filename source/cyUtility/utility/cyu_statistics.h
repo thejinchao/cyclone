@@ -54,7 +54,7 @@ private:
 
 // PeriodValue:
 // More concerned about the performance of a variable in a certain period of time
-template<typename T, bool WithLock = true>
+template<typename T, bool WithLock = true, T ZeroValue=0>
 struct PeriodValue
 {
 public:
@@ -92,9 +92,9 @@ public:
 		}
 
 		_update(cur_time);
-		if (m_valueQueue.empty()) return std::make_pair(T(), 0);
+		if (m_valueQueue.empty()) return std::make_pair(ZeroValue, 0);
 
-		T sum = T();
+		T sum = ZeroValue;
 		int32_t counts=0;
 		m_valueQueue.walk([&sum, &counts](size_t index, const ValuePair& v) -> bool {
 			sum += v.second;
