@@ -15,7 +15,7 @@ UdpServerMasterThread::UdpServerMasterThread(UdpServer* server, OnUdpMessageRece
 	assert(m_udp_message_callback);
 
 	m_thread = new WorkThread();
-	m_read_buf = new char[UdpServer::MAX_UDP_READ_SIZE];
+	m_read_buf = new char[UdpServer::MAX_UDP_PACKET_SIZE+1];
 }
 
 //-------------------------------------------------------------------------------------
@@ -151,8 +151,11 @@ void UdpServerMasterThread::_on_read_event(Looper::event_id_t id, socket_t fd, L
 
 	//call receive from
 	sockaddr_in peer_addr;
-	int32_t udp_len = (int32_t)socket_api::recvfrom(socket.sfd, m_read_buf, UdpServer::MAX_UDP_READ_SIZE, peer_addr);
-	if (udp_len <= 0) return;
+	int32_t udp_len = (int32_t)socket_api::recvfrom(socket.sfd, m_read_buf, UdpServer::MAX_UDP_PACKET_SIZE, peer_addr);
+	if (udp_len <= 0) {
+		CY_LOG(L_ERROR, "socket_api::recvfrom error, err=%d", socket_api::get_lasterror());
+		return;
+	}
 
 	//push to work thread
 	if (m_udp_message_callback) {

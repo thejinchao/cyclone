@@ -79,7 +79,7 @@ private:
 	RingBuf m_write_buf;
 	sys_api::mutex_t m_write_buf_lock;	//for multi thread lock
 
-	char* m_udp_buf;
+	RingBuf m_udp_buf;
 
 	EventCallback m_on_message;
 	EventCallback m_on_send_complete;

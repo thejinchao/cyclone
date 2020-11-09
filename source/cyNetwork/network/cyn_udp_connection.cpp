@@ -14,7 +14,6 @@ UdpConnection::UdpConnection(Looper* looper, int32_t id)
 	, m_event_id(Looper::INVALID_EVENT_ID)
 	, m_param(nullptr)
 	, m_write_buf_lock(nullptr)
-	, m_udp_buf(nullptr)
 	, m_on_message(nullptr)
 	, m_on_send_complete(nullptr)
 	, m_on_closing(nullptr)
@@ -26,8 +25,6 @@ UdpConnection::UdpConnection(Looper* looper, int32_t id)
 {
 	//create write buf lock
 	m_write_buf_lock = sys_api::mutex_create();
-	//prepare read buf
-	m_udp_buf = new char[UdpServer::MAX_UDP_READ_SIZE];
 	//get current time
 	m_start_time = sys_api::utc_time_now();
 }
@@ -36,11 +33,6 @@ UdpConnection::UdpConnection(Looper* looper, int32_t id)
 UdpConnection::~UdpConnection()
 {
 	assert(get_state() == kDisconnected);
-
-	if (m_udp_buf) {
-		delete[] m_udp_buf;
-		m_udp_buf = nullptr;
-	}
 
 	if (m_write_buf_lock) {
 		sys_api::mutex_destroy(m_write_buf_lock);
@@ -108,6 +100,7 @@ bool UdpConnection::init(const Address& peer_address, const Address* local_addre
 
 	//set kcp no delay mode
 	ikcp_nodelay(m_kcp, 1, 10, 2, 1);
+	ikcp_setmtu(m_kcp, UdpServer::MAX_UDP_PACKET_SIZE);
 
 	//create kcp update timer
 	m_update_timer_id = m_looper->register_timer_event(KCP_TIMER_FREQ, nullptr, [this](Looper::event_id_t, void*) {
@@ -136,6 +129,8 @@ int UdpConnection::_kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *
 		//log error
 		CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
 	}
+	
+	//CY_LOG(L_DEBUG, ">>>> write to udp socket %d", nwrote);
 
 	//enable write event, wait socket ready
 	conn->m_looper->enable_write(conn->m_event_id);
@@ -147,6 +142,8 @@ void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 {
 	//input UDP data to kcp 
 	if (buf != nullptr && len > 0) {
+		//CY_LOG(L_DEBUG, "<<<< read from udp socket %d", len);
+
 		int32_t ret = ikcp_input(m_kcp, buf, len);
 		if (ret < 0) {
 			CY_LOG(L_ERROR, "call ikcp_input error, ret=%d", ret);
@@ -158,13 +155,26 @@ void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 	if (get_state()!=kConnected) return;
 
 	//try read data from kcp
-	int32_t ret = ikcp_recv(m_kcp, m_udp_buf, UdpServer::MAX_UDP_READ_SIZE);
+	int32_t kcp_size = ikcp_peeksize(m_kcp);
+	if (kcp_size <= 0) return;
+
+	//resize kcp buff
+	m_udp_buf.reset();
+	if ((int32_t)m_udp_buf.capacity() < kcp_size) {
+		m_udp_buf.resize((int32_t)kcp_size);
+	}
+
+	//call kcp receive
+	int32_t ret = ikcp_recv(m_kcp, (char*)m_udp_buf.normalize(), kcp_size);
 	if (ret > 0) {
 		//notify logic layer...
-		m_read_buf.memcpy_into(m_udp_buf, ret);
+		m_read_buf.memcpy_into(m_udp_buf.normalize(), ret);
 		if (m_on_message) {
 			m_on_message(shared_from_this());
 		}
+	}
+	else {
+		CY_LOG(L_TRACE, "ikcp_recv, ret=%d", ret);
 	}
 }
 
@@ -175,8 +185,8 @@ bool UdpConnection::send(const char* buf, int32_t len)
 	if (buf == nullptr || len <= 0) return true;
 	if (get_state() != kConnected) return false;
 
-	if (len > UdpServer::MAX_UDP_SEND_SIZE) {
-		CY_LOG(L_ERROR, "Can't send udp package large than udp mtu size %d>%d", len, UdpServer::MAX_UDP_SEND_SIZE);
+	if (len > UdpServer::MAX_KCP_SEND_SIZE) {
+		CY_LOG(L_ERROR, "Can't send kcp package large than max kcp packet size %d>%d", len, UdpServer::MAX_KCP_SEND_SIZE);
 		return false;
 	}
 
@@ -237,10 +247,11 @@ void UdpConnection::_on_socket_read(void)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
-	int32_t udp_len = (int32_t)socket_api::read(m_socket, m_udp_buf, UdpServer::MAX_UDP_READ_SIZE);
+	m_udp_buf.reset();
+	int32_t udp_len = (int32_t)socket_api::read(m_socket, m_udp_buf.normalize(), (int32_t)m_udp_buf.capacity());
 	if (udp_len <= 0) return;
 
-	_on_udp_input(m_udp_buf, udp_len);
+	_on_udp_input((const char*)m_udp_buf.normalize(), udp_len);
 }
 
 //-------------------------------------------------------------------------------------

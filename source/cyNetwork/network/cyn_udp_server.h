@@ -18,10 +18,12 @@ class UdpServerWorkThread;
 class UdpServer : noncopyable
 {
 public:
-	//udp mtu size(don't send one udp package larger than this value)
-	enum { MAX_UDP_SEND_SIZE = 1400 }; 
-	//max read size 
-	enum { MAX_UDP_READ_SIZE = 2 * 1024 }; //2KB
+	//max read/write size 
+	//related to MTU(maximum transmission unit), default MTU value is 1500
+	// https://www.lifewire.com/definition-of-mtu-817948
+	enum { MAX_UDP_PACKET_SIZE = 1024-1 }; // 1KB
+	//kcp proto size(don't send one kcp package larger than this value)
+	enum { MAX_KCP_SEND_SIZE = 0x7FFF }; // 32KB
 	//max work thread counts
 	enum { MAX_WORK_THREAD_COUNTS = 32 };
 	//after connection shutdown, address locked time(ms), in this time, would not accept any udp message from this address
