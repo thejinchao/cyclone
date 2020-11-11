@@ -72,10 +72,8 @@ void mutex_destroy(mutex_t m);
 /// lock mutex(wait other owner unlock infinity time)
 void mutex_lock(mutex_t m);
 
-#ifndef CY_SYS_MACOS
 /// lock mutex, wait other owner unlock some time (milliseconds), return false mean timeout
 bool mutex_try_lock(mutex_t m, int32_t wait_time);
-#endif
 
 /// unlock mutex
 void mutex_unlock(mutex_t m);
@@ -104,7 +102,7 @@ signal_t signal_create(void);
 //// destroy a signal
 void signal_destroy(signal_t s);
 
-//// wait a signal inifinite
+//// wait a signal infinite
 void signal_wait(signal_t s);
 
 //// wait a signal in [t] millisecond(second*1000), return true immediately if the signal is lighted, if false if timeout or other error

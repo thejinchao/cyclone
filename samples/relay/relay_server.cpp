@@ -234,7 +234,7 @@ private:
 			//reply my public key
 			handshake.dh_key = pipe->m_publicKey;
 			handshakePacket.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
-			conn->send(handshakePacket.get_memory_buf(), (int32_t)handshakePacket.get_memory_size());
+			conn->send(handshakePacket.get_memory_buf(), handshakePacket.get_memory_size());
 
 			//update state
 			pipe->m_downState = kHandshaked;
@@ -428,7 +428,7 @@ private:
 			packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
 
 			//send to down client
-			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
 			session->m_upState = RelaySession::kDisconnected;
 
 			//send to work thread to delete session and client
@@ -479,7 +479,7 @@ private:
 				m_down_statistics.push((int32_t)msgSize);
 			}
 			
-			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+			pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
 		}
 	}
 
@@ -520,7 +520,7 @@ private:
 		packet.build_from_memory(RELAY_PACKET_HEADSIZE, RelayCloseSessionMsg::ID, (uint16_t)(sizeof(RelayCloseSessionMsg)), (const char*)&msg);
 
 		//send to down client
-		pipe->m_downConnection->send((const char*)packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+		pipe->m_downConnection->send((const char*)packet.get_memory_buf(), packet.get_memory_size());
 		if(session)
 			session->m_upState = RelaySession::kDisconnected;
 

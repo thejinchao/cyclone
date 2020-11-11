@@ -128,7 +128,7 @@ public:
 
 			CY_LOG(L_INFO, "Got file info, size=%s, name:%s", string_util::size_to_string((float)this->m_fileSize).c_str(), this->m_strFileName.c_str());
 
-			ringBuf.discard(fileInfo->size);
+			ringBuf.discard((size_t)(fileInfo->size));
 			_conn->shutdown();
 		};
 
@@ -214,13 +214,13 @@ public:
 			writeSize = (int32_t)ringBuff.size();
 		}
 
-		ctx->fragmentCRC = cyclone::adler32(ctx->fragmentCRC, ringBuff.normalize(), writeSize);
+		ctx->fragmentCRC = cyclone::adler32(ctx->fragmentCRC, ringBuff.normalize(), (size_t)writeSize);
 		ctx->fileHandle.write((const char*)ringBuff.normalize(), writeSize);
 
-		ringBuff.discard(writeSize);
+		ringBuff.discard((size_t)writeSize);
 
 		ctx->receivedSize += writeSize;
-		m_downloadSpeed.push(writeSize);
+		m_downloadSpeed.push((size_t)writeSize);
 
 		if (ctx->receivedSize.load() >= ctx->fragmentSize) {
 			ctx->status = TS_Complete;
@@ -252,7 +252,7 @@ public:
 				ctx->status = TS_Error;
 			}
 			else {
-				size_t speed = ctx->fragmentSize*1000ull*1000ull / (ctx->endTime - ctx->beginTime);
+				size_t speed = (size_t)(ctx->fragmentSize*1000*1000) / (size_t)(ctx->endTime - ctx->beginTime);
 				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%s, crc=0x%08x, speed=%s/s, readBufMaxSize=%s", 
 					ctx->index, ctx->fileOffset, string_util::size_to_string((float)ctx->fragmentSize).c_str(), ctx->fragmentCRC, string_util::size_to_string(speed).c_str(),
 #if CY_ENABLE_DEBUG
@@ -334,14 +334,14 @@ public:
 		int32_t fragmentCounts = 0;
 		int32_t fragmentSize = 0;
 
-		if (m_fileSize < MIN_FRAMEMENT_SIZE*m_threadTounts) {
+		if (m_fileSize < MIN_FRAMEMENT_SIZE*(size_t)m_threadTounts) {
 			//small file
 			fragmentCounts = (int32_t)(m_fileSize / MIN_FRAMEMENT_SIZE);
 		}
 		else {
 			fragmentCounts = m_threadTounts;
 		}
-		fragmentSize = (int32_t)(m_fileSize / fragmentCounts) & (~0xF);
+		fragmentSize = (int32_t)((int32_t)m_fileSize / fragmentCounts) & (~0xF);
 
 		m_beginDownloadTime = sys_api::utc_time_now();
 
@@ -360,7 +360,7 @@ public:
 			ctx->downloadThread = sys_api::thread_create(std::bind(&FileTransferClient::_downloadThread, this, _1), ctx, threadName);
 
 			m_downloadContext.push_back(ctx);
-			fileOffset += ctx->fragmentSize;
+			fileOffset += (size_t)(ctx->fragmentSize);
 		}
 
 		int32_t completedFragmentCounts = 0;
@@ -368,8 +368,8 @@ public:
 
 			size_t totalDownloadSize = 0;
 			for (int32_t i = 0; i < fragmentCounts; i++) {
-				DownloadThreadContext* ctx = m_downloadContext[i];
-				totalDownloadSize += ctx->receivedSize.load();
+				DownloadThreadContext* ctx = m_downloadContext[(size_t)i];
+				totalDownloadSize += (size_t)(ctx->receivedSize.load());
 
 				if (ctx->downloadThread && sys_api::thread_join(ctx->downloadThread, 0)) {
 					completedFragmentCounts++;
@@ -379,7 +379,7 @@ public:
 			auto downloadSpeed = m_downloadSpeed.sum_and_counts();
 
 			CY_LOG(L_INFO, "Download speed: %s/s, Size:%s Percent:[%.2f%%]", 
-				string_util::size_to_string(downloadSpeed.first / (m_downloadSpeed.get_time_period()/1000)).c_str(),
+				string_util::size_to_string(downloadSpeed.first / ((size_t)m_downloadSpeed.get_time_period()/ (size_t)1000)).c_str(),
 				string_util::size_to_string(totalDownloadSize).c_str(),
 				(float)(totalDownloadSize*100 / m_fileSize));
 
@@ -388,7 +388,7 @@ public:
 
 		//check download thread status
 		for (int32_t i = 0; i < fragmentCounts; i++) {
-			DownloadThreadContext* ctx = m_downloadContext[i];
+			DownloadThreadContext* ctx = m_downloadContext[(size_t)i];
 			if (ctx->status != TS_Success) {
 				CY_LOG(L_INFO, "Download thread %d status error", i);
 				return false;
@@ -413,7 +413,7 @@ public:
 		char* pBuffer = (char*)CY_MALLOC(kBufSize);
 
 		for (int32_t i = 0; i < (int32_t)m_downloadContext.size(); i++) {
-			DownloadThreadContext* ctx = m_downloadContext[i];
+			DownloadThreadContext* ctx = m_downloadContext[(size_t)i];
 
 			std::ifstream inputFileHandle;
 			inputFileHandle.open(ctx->strFileName, std::ios::in | std::ios::binary);
@@ -423,8 +423,8 @@ public:
 			}
 
 			while (!inputFileHandle.eof()) {
-				size_t readSize = inputFileHandle.read(pBuffer, kBufSize).gcount();
-				outputFileHandle.write(pBuffer, readSize);
+				size_t readSize = (size_t)inputFileHandle.read(pBuffer, (std::streamsize)kBufSize).gcount();
+				outputFileHandle.write(pBuffer, (std::streamsize)readSize);
 			}
 			inputFileHandle.close();
 			//delete file

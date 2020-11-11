@@ -10,7 +10,7 @@
 using namespace cyclone;
 using namespace std::placeholders;
 
-#define MAX_DATA_SIZE		(1024*4)
+#define MAX_DATA_SIZE		(4096u)
 #define DEF_DATA_SIZE		(512)
 #define MAX_DATA_COUNTS		(0xFFFF)
 
@@ -41,7 +41,7 @@ protected:
 
 		PingPong_Head head;
 		rb.peek(0, &head, sizeof(PingPong_Head));
-		if ((int32_t)rb.size() < head.size) return;
+		if (rb.size() < head.size) return;
 
 		switch (head.id)
 		{
@@ -71,7 +71,7 @@ protected:
 	void on_server_close(void)
 	{
 		int32_t time_span = (int32_t)((m_end_time - m_begin_time) / 1000);
-		float speed = (float)(m_data_size*m_index * 1000) / (float)time_span;
+		float speed = (float)(m_data_size*(size_t)m_index * (size_t)1000) / (float)time_span;
 		CY_LOG(L_INFO, "DataSize=%d, TotalCounts=%d, Time=%d(ms), Speed=%s/s",
 			m_data_size, m_index, time_span, string_util::size_to_string(speed).c_str());
 
@@ -132,7 +132,7 @@ protected:
 		//send ping data
 		PingPong_PingData data;
 		data.id = PingPong_PingData::ID;
-		data.size = (int32_t)sizeof(PingPong_PingData) + m_data_size;
+		data.size = sizeof(PingPong_PingData) + m_data_size;
 		data.data_size = m_data_size;
 		data.index = m_index;
 
@@ -264,13 +264,13 @@ protected:
 	int32_t m_pingpong_counts;
 	uint8_t m_send_data[MAX_DATA_SIZE + 8];
 	uint32_t m_data_crc;
-	int32_t m_data_size;
+	size_t m_data_size;
 	RingBuf m_receive_data;
 	int64_t m_begin_time, m_end_time;
 	int32_t m_work_mode;
 
 public:
-	PingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
+	PingPongClient(const char* server_ip, int32_t server_port, size_t data_size, int32_t pingpong_counts, int32_t work_mode)
 		: m_server_address(server_ip, (uint16_t)server_port)
 		, m_status(PS_Connecting)
 		, m_index(0)
@@ -334,7 +334,7 @@ private:
 	TcpClientPtr m_client;
 
 public:
-	TcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
+	TcpPingPongClient(const char* server_ip, int32_t server_port, size_t data_size, int32_t pingpong_counts, int32_t work_mode)
 		: PingPongClient<TcpConnectionPtr>(server_ip, server_port, data_size, pingpong_counts, work_mode)
 	{
 
@@ -371,7 +371,7 @@ public:
 	}
 
 public:
-	KcpPingPongClient(const char* server_ip, int32_t server_port, int32_t data_size, int32_t pingpong_counts, int32_t work_mode)
+	KcpPingPongClient(const char* server_ip, int32_t server_port, size_t data_size, int32_t pingpong_counts, int32_t work_mode)
 		: PingPongClient<UdpConnectionPtr>(server_ip, server_port, data_size, pingpong_counts, work_mode)
 	{
 
@@ -400,7 +400,7 @@ int main(int argc, char* argv[])
 	std::string server_ip = "127.0.0.1";
 	uint16_t server_port = 1978;
 	bool enable_kcp = false;
-	int32_t data_size = DEF_DATA_SIZE;
+	size_t data_size = (size_t)DEF_DATA_SIZE;
 	int32_t data_counts = 500;
 	int32_t work_mode = 1;
 	bool verbose_mode = false;
@@ -431,7 +431,7 @@ int main(int argc, char* argv[])
 				}
 			}
 			else if (args.OptionId() == OPT_DATA_SIZE) {
-				data_size = (int32_t)atoi(args.OptionArg());
+				data_size = (size_t)atoi(args.OptionArg());
 				if (data_size <= 0 || data_size > MAX_DATA_SIZE) {
 					printUsage(argv[0]);
 					return 0;
@@ -460,11 +460,11 @@ int main(int argc, char* argv[])
 	CY_LOG(L_DEBUG, "DataCounts:%d", data_counts);
 
 	if (enable_kcp) {
-		KcpPingPongClient client(server_ip.c_str(), server_port, data_size, data_counts, work_mode);
+		KcpPingPongClient client(server_ip.c_str(), server_port, (size_t)data_size, data_counts, work_mode);
 		client.start_and_join();
 	}
 	else {
-		TcpPingPongClient client(server_ip.c_str(), server_port, data_size, data_counts, work_mode);
+		TcpPingPongClient client(server_ip.c_str(), server_port, (size_t)data_size, data_counts, work_mode);
 		client.start_and_join();
 	}
 

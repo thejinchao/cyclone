@@ -35,7 +35,7 @@ public:
 	/// get input stream buf (NOT thread safe, call it in work thread)
 	RingBuf& get_input_buf(void) { return m_read_buf; }
 	/// send message(thread safe), 
-	bool send(const char* buf, int32_t len);
+	bool send(const char* buf, size_t len);
 	/// shutdown the connection
 	void shutdown(void);
 	/// get looper
@@ -56,7 +56,7 @@ public:
 private:
 	friend class UdpServerWorkThread;
 	// send kcp data (work thread)
-	bool _send(const char* buf, int32_t len);
+	bool _send(const char* buf, size_t len);
 	//call by udp work thread, received udp socket message
 	void _on_udp_input(const char* buf, int32_t len);
 	//// on socket read event

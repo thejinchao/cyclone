@@ -21,6 +21,7 @@ Copyright(C) thecodeway.com
 #cmakedefine CY_HAVE_READWRITE_V 1
 #cmakedefine CY_HAVE_PIPE2 1
 #cmakedefine CY_HAVE_TIMERFD 1
+#cmakedefine CY_HAVE_TIMED_LOCK 1
 
 #cmakedefine CY_ENABLE_LOG 1
 #cmakedefine CY_ENABLE_DEBUG 1

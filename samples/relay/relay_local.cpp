@@ -124,7 +124,7 @@ public:
 		server.m_listener.on_close = std::bind(&RelayLocal::onLocalClose, this, _2, _3);
 		server.bind(Address(local_port, false), true);
 
-		m_relayPipes.resize(work_thread_counts);
+		m_relayPipes.resize((size_t)work_thread_counts);
 
 		if (!server.start(work_thread_counts)) return;
 		server.join();
@@ -144,7 +144,7 @@ protected:
 	//-------------------------------------------------------------------------------------
 	void onLocalConnected(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[index];
+		RelayPipe* pipe = m_relayPipes[(size_t)index];
 
 		if (pipe->m_upState!= kHandshaked) {
 			server->shutdown_connection(conn);
@@ -158,14 +158,14 @@ protected:
 
 		Packet packet;
 		packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayNewSessionMsg::ID, sizeof(newSessionMsg), (const char*)&newSessionMsg);
-		pipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+		pipe->m_upConnection->send(packet.get_memory_buf(), packet.get_memory_size());
 
 		CY_LOG(L_TRACE, "[%d]CLIENT connected, send new session msg to UP", conn->get_id());
 	}
 	//-------------------------------------------------------------------------------------
 	void onLocalMessage(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[index];
+		RelayPipe* pipe = m_relayPipes[(size_t)index];
 
 		if (pipe->m_upState != kHandshaked) {
 			server->shutdown_connection(conn);
@@ -200,7 +200,7 @@ protected:
 				m_up_statistics.push((int32_t)packet.get_memory_size());
 			}
 
-			pipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+			pipe->m_upConnection->send(packet.get_memory_buf(), packet.get_memory_size());
 			CY_LOG(L_TRACE, "[%d]receive message from CLIENT(%zd/%zd), send to UP after encrypt", conn->get_id(), (size_t)msgSize, buf_round_size);
 		}
 	}
@@ -208,7 +208,7 @@ protected:
 	//-------------------------------------------------------------------------------------
 	void onLocalClose(int32_t index, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[index];
+		RelayPipe* pipe = m_relayPipes[(size_t)index];
 
 		auto it = pipe->m_sessionMap.find(conn->get_id());
 		if (it == pipe->m_sessionMap.end()) return;
@@ -221,7 +221,7 @@ protected:
 
             Packet packet;
             packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayCloseSessionMsg::ID, sizeof(closeSessionMsg), (const char*)&closeSessionMsg);
-			pipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+			pipe->m_upConnection->send(packet.get_memory_buf(), packet.get_memory_size());
 
             CY_LOG(L_TRACE, "[%d]down client closed!, send close session message to up server", conn->get_id());
         }
@@ -249,7 +249,7 @@ protected:
 	uint32_t onUpConnected(ConnectionType conn, bool success)
 	{
 		if (success) {
-			RelayPipe* pipe = m_relayPipes[conn->get_id()];
+			RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 			assert(pipe->m_upState == kConnecting);
 
 			//send handshake message
@@ -273,7 +273,7 @@ protected:
 	//-------------------------------------------------------------------------------------
 	void onUpMessage(ConnectionType conn)
 	{
-		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+		RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 
 		for (;;) {
 			if (pipe->m_upState == kHandshaking) {
@@ -365,7 +365,7 @@ protected:
 
 						Packet packetCloseSession;
 						packetCloseSession.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayCloseSessionMsg::ID, sizeof(closeSessionMsg), (const char*)&closeSessionMsg);
-						conn->send(packetCloseSession.get_memory_buf(), (int32_t)packetCloseSession.get_memory_size());
+						conn->send(packetCloseSession.get_memory_buf(), packetCloseSession.get_memory_size());
 						break;
 					}
 
@@ -451,7 +451,7 @@ public:
 	virtual void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper)
 	{
 		TcpRelayPipe* newPipe = new  TcpRelayPipe(m_encryptMode);
-		m_relayPipes[index] = newPipe;
+		m_relayPipes[(size_t)index] = newPipe;
 
 		newPipe->m_upClient = std::make_shared<TcpClient>(looper, this, index);
 		newPipe->m_upClient->m_listener.on_connected = std::bind(&TcpRelayLocal::onUpConnected, this, _2, _3);
@@ -463,7 +463,7 @@ public:
 	//-------------------------------------------------------------------------------------
 	virtual void onUpClose(TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+		RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 
 		pipe->m_upConnection = nullptr;
 		pipe->m_upState = kDisConnected;
@@ -487,7 +487,7 @@ public:
 	virtual void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper)
 	{
 		RelayPipe* newPipe = new  RelayPipe(m_encryptMode);
-		m_relayPipes[index] = newPipe;
+		m_relayPipes[(size_t)index] = newPipe;
 
 		newPipe->m_upConnection = std::make_shared<UdpConnection>(looper, index);
 		newPipe->m_upConnection->set_on_message(std::bind(&KcpRelayLocal::onUpMessage, this, _1));
@@ -501,7 +501,7 @@ public:
 
 		Packet packet;
 		packet.build_from_memory((size_t)RELAY_PACKET_HEADSIZE, (uint16_t)RelayHandshakeMsg::ID, sizeof(handshake), (const char*)&handshake);
-		newPipe->m_upConnection->send(packet.get_memory_buf(), (int32_t)packet.get_memory_size());
+		newPipe->m_upConnection->send(packet.get_memory_buf(), packet.get_memory_size());
 
 		CY_LOG(L_DEBUG, "Up Server Connected, send handshake message.");
 	}
@@ -509,7 +509,7 @@ public:
 	//-------------------------------------------------------------------------------------
 	virtual void onUpClose(UdpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+		RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 
 		pipe->m_upConnection = nullptr;
 		pipe->m_upState = kDisConnected;

@@ -40,7 +40,7 @@ void onPeerMessage(UdpServer* server, int32_t thread_index, UdpConnectionPtr con
 
 	size_t len = strlen(temp);
 	for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
-	conn->send(temp, (int32_t)len + 1);
+	conn->send(temp, len + 1);
 }
 
 //-------------------------------------------------------------------------------------

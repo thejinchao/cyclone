@@ -179,14 +179,14 @@ void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 }
 
 //-------------------------------------------------------------------------------------
-bool UdpConnection::send(const char* buf, int32_t len)
+bool UdpConnection::send(const char* buf, size_t len)
 {
 	//check size
-	if (buf == nullptr || len <= 0) return true;
+	if (buf == nullptr || len == 0) return true;
 	if (get_state() != kConnected) return false;
 
 	if (len > UdpServer::MAX_KCP_SEND_SIZE) {
-		CY_LOG(L_ERROR, "Can't send kcp package large than max kcp packet size %d>%d", len, UdpServer::MAX_KCP_SEND_SIZE);
+		CY_LOG(L_ERROR, "Can't send kcp package large than max kcp packet size %zd>%d", len, UdpServer::MAX_KCP_SEND_SIZE);
 		return false;
 	}
 
@@ -199,7 +199,7 @@ bool UdpConnection::send(const char* buf, int32_t len)
 		//write to output buf
 		sys_api::auto_mutex lock(m_write_buf_lock);
 		//write to write buffer
-		m_write_buf.memcpy_into(buf, (size_t)len);
+		m_write_buf.memcpy_into(buf, len);
 		//enable write event, wait socket ready
 		m_looper->enable_write(m_event_id);
 	}
@@ -208,15 +208,15 @@ bool UdpConnection::send(const char* buf, int32_t len)
 }
 
 //-------------------------------------------------------------------------------------
-bool UdpConnection::_send(const char* buf, int32_t len)
+bool UdpConnection::_send(const char* buf, size_t len)
 {
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
-	if (buf == nullptr || len <= 0) return true;
+	if (buf == nullptr || len == 0) return true;
 
 	//nothing in write buf, send it directly
 	if (_is_writeBuf_empty())
 	{
-		int32_t kcp_ret = ikcp_send((ikcpcb*)m_kcp, buf, len);
+		int32_t kcp_ret = ikcp_send((ikcpcb*)m_kcp, buf, (int32_t)len);
 		if (kcp_ret < 0) {
 			CY_LOG(L_ERROR, "call ikcp_send failed, ret=%d", kcp_ret);
 			return false;
@@ -227,7 +227,7 @@ bool UdpConnection::_send(const char* buf, int32_t len)
 	else {
 		//write to write buffer wait next time socket is ready
 		sys_api::auto_mutex lock(m_write_buf_lock);
-		m_write_buf.memcpy_into(buf, (size_t)len);
+		m_write_buf.memcpy_into(buf, len);
 	}
 
 	//enable write event, wait socket ready

@@ -49,7 +49,7 @@ public:
 		Looper::destroy_looper(m_looper);
 	}
 
-	void send(const char* buf, int32_t len)
+	void send(const char* buf, size_t len)
 	{
 		m_connection->send(buf, len);
 	}
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 	{
 		if (line[0] == 0) continue;
 
-		theClient.send(line, (int32_t)strlen(line) + 1);
+		theClient.send(line, strlen(line) + 1);
 	}
 
 	return 0;

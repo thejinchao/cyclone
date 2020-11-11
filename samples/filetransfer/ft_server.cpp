@@ -107,7 +107,7 @@ private:
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 
-		ThreadContext& ctx = *(m_threadContext[index]);
+		ThreadContext& ctx = *(m_threadContext[(size_t)index]);
 		ctx.status = TS_Idle;
 		ctx.buffer = (char*)CY_MALLOC(ThreadContext::BUFFER_SIZE);
 		ctx.offsetBegin = ctx.offsetEnd = ctx.offsetNow = 0;
@@ -134,7 +134,7 @@ private:
 	void _onClientConnected(int32_t index, TcpConnectionPtr conn)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
-		ThreadContext& ctx = *(m_threadContext[index]);
+		ThreadContext& ctx = *(m_threadContext[(size_t)index]);
 
 		if (ctx.status != TS_Idle) {
 			conn->shutdown();
@@ -150,12 +150,12 @@ private:
 	void _onMessage_QueryFileInfo(int32_t , const FT_Head&head, TcpConnectionPtr conn)
 	{
 		RingBuf& ringBuf = conn->get_input_buf();
-		ringBuf.discard(head.size);
+		ringBuf.discard((size_t)head.size);
 
 		//send reply
 		int32_t totalSize = (int32_t)(sizeof(FT_ReplyFileInfo) + m_strFileName.length() + 1);
 
-		FT_ReplyFileInfo* reply = (FT_ReplyFileInfo*)CY_MALLOC(totalSize);
+		FT_ReplyFileInfo* reply = (FT_ReplyFileInfo*)CY_MALLOC((size_t)totalSize);
 		reply->id = FT_ReplyFileInfo::ID;
 		reply->size = totalSize;
 		reply->threadCounts = (int)m_threadContext.size();
@@ -163,18 +163,18 @@ private:
 		reply->nameLength = (int32_t)m_strFileName.length()+1;
 		memcpy(((char*)reply) + sizeof(FT_ReplyFileInfo), m_strFileName.c_str(), m_strFileName.length() + 1);
 		
-		conn->send((const char*)reply, totalSize);
+		conn->send((const char*)reply, (size_t)totalSize);
 
 		CY_FREE(reply);
 	}
 
 	void _onSendReady(int32_t index, TcpConnectionPtr conn)
 	{
-		ThreadContext& ctx = *(m_threadContext[index]);
+		ThreadContext& ctx = *(m_threadContext[(size_t)index]);
 		assert(ctx.status == TS_Sending);
 
-		ctx.fileHandle.seekg(ctx.offsetNow);
-		size_t readSize = ctx.fileHandle.read(ctx.buffer, ThreadContext::BUFFER_SIZE).gcount();
+		ctx.fileHandle.seekg((std::streamsize)ctx.offsetNow);
+		size_t readSize = (size_t)ctx.fileHandle.read(ctx.buffer, ThreadContext::BUFFER_SIZE).gcount();
 		if (ctx.offsetNow + readSize > ctx.offsetEnd) {
 			readSize = ctx.offsetEnd - ctx.offsetNow;
 		}
@@ -211,9 +211,9 @@ private:
 	{
 		RingBuf& ringBuf = conn->get_input_buf();
 		FT_RequireFileFragment* require = (FT_RequireFileFragment*)ringBuf.normalize();
-		ThreadContext& ctx = *(m_threadContext[index]);
+		ThreadContext& ctx = *(m_threadContext[(size_t)index]);
 
-		if (require->fileOffset + require->fragmentSize > m_fileSize) {
+		if (require->fileOffset + (size_t)(require->fragmentSize) > m_fileSize) {
 			CY_LOG(L_INFO, "Receive invalid fragment download request, offset=%zd, size=%d", require->fileOffset, require->size);
 			conn->shutdown();
 			return;
@@ -229,7 +229,7 @@ private:
 
 		ctx.status = TS_Sending;
 		ctx.offsetNow = ctx.offsetBegin = require->fileOffset;
-		ctx.offsetEnd = ctx.offsetBegin + require->fragmentSize;
+		ctx.offsetEnd = ctx.offsetBegin + (size_t)(require->fragmentSize);
 		ctx.fragmentCRC = INITIAL_ADLER;
 		ctx.sendSpeed = 0.f;
 
@@ -248,7 +248,7 @@ private:
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 
-		if (m_threadContext[index]->status != TS_Connected) {
+		if (m_threadContext[(size_t)index]->status != TS_Connected) {
 			conn->shutdown();
 			return;
 		}
@@ -275,7 +275,7 @@ private:
 	void _onClientClose(int32_t index, TcpConnectionPtr conn)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
-		ThreadContext& ctx = *(m_threadContext[index]);
+		ThreadContext& ctx = *(m_threadContext[(size_t)index]);
 
 		if (ctx.status == TS_Sending) {
 			ctx.fileHandle.close();
@@ -316,14 +316,14 @@ public:
 		CY_LOG(L_DEBUG, "file to be transmitted: %s(%zd)", m_strPathName.c_str(), m_fileSize);
 
 		//prepare work thread
-		m_threadContext.resize(workThreadCounts);
-		for (int32_t i = 0; i < (int32_t)m_threadContext.size(); i++) {
+		m_threadContext.resize((size_t)workThreadCounts);
+		for (size_t i = 0; i < m_threadContext.size(); i++) {
 			m_threadContext[i] = new ThreadContext;
 		}
 		return true;
 	}
 
-	void startAndJoin(int16_t listenPort) 
+	void startAndJoin(uint16_t listenPort) 
 	{
 		m_server.m_listener.on_master_thread_start = std::bind(&FileTransferServer::_onMasterThreadStart, this, _2);
 		m_server.m_listener.on_work_thread_start = std::bind(&FileTransferServer::_onWorkThreadStart, this, _2, _3);

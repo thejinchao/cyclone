@@ -1,4 +1,4 @@
-#include <cy_core.h>
+﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <gtest/gtest.h>
 
@@ -54,7 +54,7 @@ TEST(Adler32, Random)
 	const size_t test_counts = 100;
 	for (size_t i = 0; i < test_counts; i++) {
 		
-		size_t buf_size = buf_cap - rand() % 32;
+		size_t buf_size = buf_cap - (size_t)(rand() % 32);
 		//fill random data
 		for (size_t j = 0; j < buf_cap; j++) {
 			random_buf[j] = (uint8_t)(rand() & 0xFF);

@@ -10,7 +10,7 @@
 using namespace cyclone;
 using namespace std::placeholders;
 
-#define MAX_DATA_SIZE (1024*4)
+#define MAX_DATA_SIZE (4096u)
 
 enum { OPT_SERVER_PORT, OPT_KCP, OPT_VERBOSE, OPT_HELP };
 
@@ -73,7 +73,7 @@ protected:
 		{
 			PingPong_Head head;
 			rb.peek(0, &head, sizeof(PingPong_Head));
-			if ((int32_t)rb.size() < head.size) return;
+			if (rb.size() < head.size) return;
 
 			switch (head.id)
 			{
@@ -176,7 +176,7 @@ protected:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void _send_pong_data(ConnectionType conn, const char* data, int32_t size)
+	void _send_pong_data(ConnectionType conn, const char* data, size_t size)
 	{
 		PingPong_PongData pong;
 		pong.id = PingPong_PongData::ID;

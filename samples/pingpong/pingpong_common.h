@@ -4,7 +4,7 @@
 
 struct PingPong_Head
 {
-	int32_t size;
+	size_t size;
 	int32_t id;
 };
 
@@ -18,14 +18,14 @@ struct PingPong_HandShake : public PingPong_Head
 struct PingPong_PingData : public PingPong_Head
 {
 	enum { ID = 2 };
-	int32_t data_size;
+	size_t data_size;
 	int32_t index;
 };
 
 struct PingPong_PongData : public PingPong_Head
 {
 	enum { ID = 3 };
-	int32_t data_size;
+	size_t data_size;
 	int32_t index;
 };
 
