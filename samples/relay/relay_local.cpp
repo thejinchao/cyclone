@@ -122,7 +122,7 @@ public:
 		server.m_listener.on_close = std::bind(&RelayLocal::onLocalClose, this, _2, _3);
 		server.bind(Address(local_port, false), true);
 
-		m_relayPipes.resize(work_thread_counts);
+		m_relayPipes.resize((size_t)work_thread_counts);
 
 		if (!server.start(work_thread_counts)) return;
 		server.join();
@@ -140,7 +140,7 @@ private:
 	void onWorkthreadStart(TcpServer* /*server*/, int32_t index, Looper* looper)
 	{
 		RelayPipe* newPipe = new  RelayPipe(m_encryptMode);
-		m_relayPipes[index] = newPipe;
+		m_relayPipes[(size_t)index] = newPipe;
 
 		newPipe->m_upClient = std::make_shared<TcpClient>(looper, this, index);
 		newPipe->m_upClient->m_listener.on_connected = std::bind(&RelayLocal::onUpConnected, this, _2, _3);
@@ -151,7 +151,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onLocalConnected(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[index];
+		RelayPipe* pipe = m_relayPipes[(size_t)index];
 
 		if (pipe->m_upState!= kHandshaked) {
 			server->shutdown_connection(conn);
@@ -172,7 +172,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onLocalMessage(TcpServer* server, int32_t index, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[index];
+		RelayPipe* pipe = m_relayPipes[(size_t)index];
 
 		if (pipe->m_upState != kHandshaked) {
 			server->shutdown_connection(conn);
@@ -215,7 +215,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onLocalClose(int32_t index, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[index];
+		RelayPipe* pipe = m_relayPipes[(size_t)index];
 
 		auto it = pipe->m_sessionMap.find(conn->get_id());
 		if (it == pipe->m_sessionMap.end()) return;
@@ -253,7 +253,7 @@ private:
 	uint32_t onUpConnected(TcpConnectionPtr conn, bool success)
 	{
 		if (success) {
-			RelayPipe* pipe = m_relayPipes[conn->get_id()];
+			RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 			assert(pipe->m_upState == kConnecting);
 
 			//send handshake message
@@ -276,7 +276,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onUpMessage(TcpClientPtr client, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+		RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 
 		for (;;) {
 			if (pipe->m_upState == kHandshaking) {
@@ -414,7 +414,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onUpClose(TcpClientPtr client, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = m_relayPipes[conn->get_id()];
+		RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 		
 		pipe->m_upClient = nullptr;
 		pipe->m_upState = kDisConnected;

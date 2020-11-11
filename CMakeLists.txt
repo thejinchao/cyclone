@@ -74,7 +74,7 @@ check_function_exists(pthread_mutex_timedlock CY_HAVE_TIMED_LOCK)
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-deprecated")
+	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wsign-conversion")
 endif()
 
 ########

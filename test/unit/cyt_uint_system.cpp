@@ -170,12 +170,12 @@ TEST(System, Mutex)
 	EXPECT_LE(time_spend, 50);
 
 	//run several work thread to wait unlock
-	int32_t work_thread_counts = sys_api::get_cpu_counts();
+	size_t work_thread_counts = (size_t)sys_api::get_cpu_counts();
 	TestLockThread* work_thread = new TestLockThread[work_thread_counts];
 	thread_t* work_thread_id = new thread_t[work_thread_counts];
 
 	wait_time_ms = 1000;
-	for (int32_t i = 0; i < work_thread_counts; i++) {
+	for (size_t i = 0; i < work_thread_counts; i++) {
 		work_thread[i].m_mutex = m;
 		work_thread_id[i] = sys_api::thread_create(std::bind(&TestLockThread::test_lock_time_out, &(work_thread[i]), std::placeholders::_1), &wait_time_ms, nullptr);
 	}
@@ -185,7 +185,7 @@ TEST(System, Mutex)
 
 	// join all thread
 	int32_t got_counts = 0, did_not_got_counts = 0;
-	for (int32_t i = 0; i < work_thread_counts; i++) {
+	for (size_t i = 0; i < work_thread_counts; i++) {
 		sys_api::thread_join(work_thread_id[i]);
 
 		EXPECT_TRUE(work_thread[i].m_lock_status.load() == 1 || work_thread[i].m_lock_status.load() == 2);
@@ -198,14 +198,14 @@ TEST(System, Mutex)
 	}
 
 	EXPECT_EQ(got_counts, 1);
-	EXPECT_EQ(got_counts + did_not_got_counts, work_thread_counts);
+	EXPECT_EQ((size_t)(got_counts + did_not_got_counts), work_thread_counts);
 
 	//------------------------------
 	//lock in main thread
 	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), true);
 
 	std::pair<bool, int32_t> the_ball(false, 0);
-	for (int32_t i = 0; i < work_thread_counts; i++) {
+	for (size_t i = 0; i < work_thread_counts; i++) {
 		work_thread[i].m_mutex = m;
 		work_thread_id[i] = sys_api::thread_create(std::bind(&TestLockThread::test_pass_ball, &(work_thread[i]), std::placeholders::_1), &the_ball, nullptr);
 	}
@@ -216,15 +216,15 @@ TEST(System, Mutex)
 	//unlock in main thread
 	sys_api::mutex_unlock(m);
 
-	for (int32_t i = 0; i < work_thread_counts; i++) {
+	for (size_t i = 0; i < work_thread_counts; i++) {
 		sys_api::thread_join(work_thread_id[i]);
 
 		int32_t ball_number = work_thread[i].m_lock_status.load();
-		EXPECT_TRUE(ball_number >= 0 || ball_number < work_thread_counts);
+		EXPECT_TRUE(ball_number >= 0 || (size_t)ball_number < work_thread_counts);
 
 		result[ball_number] += 1;
 	}
-	for (int32_t i = 0; i < work_thread_counts; i++) {
+	for (size_t i = 0; i < work_thread_counts; i++) {
 		EXPECT_EQ(result[i], 1);
 	}
 
