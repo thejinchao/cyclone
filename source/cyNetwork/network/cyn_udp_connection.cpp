@@ -123,7 +123,7 @@ int UdpConnection::_kcp_udp_output(const char *buf, int len, IKCPCB *kcp, void *
 	assert(sys_api::thread_get_current_id() == conn->m_looper->get_thread_id());
 	if (len <= 0) return 0;
 
-	int32_t nwrote = (int32_t)socket_api::write(conn->m_socket, buf, len);
+	int32_t nwrote = (int32_t)socket_api::write(conn->m_socket, buf, (size_t)len);
 	if (nwrote <= 0)
 	{
 		//log error
@@ -160,15 +160,15 @@ void UdpConnection::_on_udp_input(const char* buf, int32_t len)
 
 	//resize kcp buff
 	m_udp_buf.reset();
-	if ((int32_t)m_udp_buf.capacity() < kcp_size) {
-		m_udp_buf.resize((int32_t)kcp_size);
+	if (m_udp_buf.capacity() < (size_t)kcp_size) {
+		m_udp_buf.resize((size_t)kcp_size);
 	}
 
 	//call kcp receive
 	int32_t ret = ikcp_recv(m_kcp, (char*)m_udp_buf.normalize(), kcp_size);
 	if (ret > 0) {
 		//notify logic layer...
-		m_read_buf.memcpy_into(m_udp_buf.normalize(), ret);
+		m_read_buf.memcpy_into(m_udp_buf.normalize(), (size_t)ret);
 		if (m_on_message) {
 			m_on_message(shared_from_this());
 		}
@@ -199,7 +199,7 @@ bool UdpConnection::send(const char* buf, int32_t len)
 		//write to output buf
 		sys_api::auto_mutex lock(m_write_buf_lock);
 		//write to write buffer
-		m_write_buf.memcpy_into(buf, len);
+		m_write_buf.memcpy_into(buf, (size_t)len);
 		//enable write event, wait socket ready
 		m_looper->enable_write(m_event_id);
 	}
@@ -227,7 +227,7 @@ bool UdpConnection::_send(const char* buf, int32_t len)
 	else {
 		//write to write buffer wait next time socket is ready
 		sys_api::auto_mutex lock(m_write_buf_lock);
-		m_write_buf.memcpy_into(buf, len);
+		m_write_buf.memcpy_into(buf, (size_t)len);
 	}
 
 	//enable write event, wait socket ready
@@ -248,7 +248,7 @@ void UdpConnection::_on_socket_read(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
 	m_udp_buf.reset();
-	int32_t udp_len = (int32_t)socket_api::read(m_socket, m_udp_buf.normalize(), (int32_t)m_udp_buf.capacity());
+	int32_t udp_len = (int32_t)socket_api::read(m_socket, m_udp_buf.normalize(), m_udp_buf.capacity());
 	if (udp_len <= 0) return;
 
 	_on_udp_input((const char*)m_udp_buf.normalize(), udp_len);
@@ -295,7 +295,7 @@ void UdpConnection::_on_socket_write(void)
 void UdpConnection::_kcp_update(void)
 {
 	//call kcp update function
-	int32_t now = (int32_t)((sys_api::utc_time_now() - m_start_time) / 1000ll);
+	uint32_t now = (uint32_t)((sys_api::utc_time_now() - m_start_time) / 1000ll);
 	ikcp_update(m_kcp, now);
 
 	if (get_state() == kDisconnecting && ikcp_waitsnd(m_kcp) <=0 ) {

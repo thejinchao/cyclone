@@ -147,7 +147,7 @@ void UdpServerMasterThread::_on_read_event(Looper::event_id_t id, socket_t fd, L
 	assert(index >= 0 && index < (int32_t)m_receive_sockets.size());
 	if (index < 0 || index >= (int32_t)m_receive_sockets.size())return;
 
-	ReceiveSocket& socket = m_receive_sockets[index];
+	ReceiveSocket& socket = m_receive_sockets[(size_t)index];
 
 	//call receive from
 	sockaddr_in peer_addr;

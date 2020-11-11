@@ -119,7 +119,7 @@ void UdpServer::stop(void)
 void UdpServer::shutdown_connection(UdpConnectionPtr conn)
 {
 	const sockaddr_in& peer_addr = conn->get_peer_addr().get_sockaddr_in();
-	int32_t thread_index = Address::hash_value(peer_addr) % m_workthread_counts;
+	size_t thread_index = (size_t)(Address::hash_value(peer_addr) % (uint32_t)m_workthread_counts);
 	
 	UdpServerWorkThread* work_thread = m_work_thread_pool[thread_index];
 
@@ -171,7 +171,7 @@ void UdpServer::_on_udp_message_received(const char* buf, int32_t len, const soc
 	if (m_running == 0) return;
 
 	//thread index
-	int32_t thread_index = Address::hash_value(peer_address) % m_workthread_counts;
+	size_t thread_index = (size_t)(Address::hash_value(peer_address) % (uint32_t)m_workthread_counts);
 
 	//send to work thread
 	UdpServerWorkThread::ReceiveUdpMessage receiveUdpMessage;
