@@ -39,7 +39,7 @@ public:
 
 	void push(const T& value) {
 		if (get_free_size() == 0) {
-			_auto_size(1);
+			_auto_size((size_t)1);
 		}
 		m_vector[m_write] = value;
 		m_write = _next(m_write);
@@ -121,7 +121,7 @@ private:
 
 			//move data if wrap condition
 			if (m_read > m_write) {
-				std::move(m_vector.begin(), m_vector.begin() + m_write, m_vector.begin() + m_end);
+				std::move(m_vector.begin(), m_vector.begin()+ (ValueVectorDifferenceType)m_write, m_vector.begin()+ (ValueVectorDifferenceType)m_end);
 				m_write += m_end;
 			}
 			m_end = new_size;
@@ -143,6 +143,7 @@ public:
 	}
 private:
 	typedef std::vector<T> ValueVector;
+	using ValueVectorDifferenceType = typename ValueVector::difference_type;
 
 	bool m_fixed;
 	ValueVector m_vector;

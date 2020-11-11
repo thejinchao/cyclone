@@ -245,6 +245,7 @@ void mutex_lock(mutex_t m)
 #endif
 }
 
+#ifndef CY_SYS_MACOS
 //-------------------------------------------------------------------------------------
 bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 {
@@ -275,6 +276,7 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 	}
 #endif
 }
+#endif
 
 //-------------------------------------------------------------------------------------
 void mutex_unlock(mutex_t m)
@@ -343,7 +345,7 @@ void signal_wait(signal_t s)
 
 //-------------------------------------------------------------------------------------
 #ifndef CY_SYS_WINDOWS
-bool _signal_unlock_wait(signal_s* sig, uint32_t ms)
+bool _signal_unlock_wait(signal_s* sig, int32_t ms)
 {
 	const uint64_t kNanoSecondsPerSecond = 1000ll * 1000ll * 1000ll;
 
@@ -357,7 +359,7 @@ bool _signal_unlock_wait(signal_s* sig, uint32_t ms)
 
 	timeval tv;
 	gettimeofday(&tv, 0);
-	uint64_t nanoseconds = ((uint64_t)tv.tv_sec) * kNanoSecondsPerSecond + ms * 1000 * 1000 + ((uint64_t)tv.tv_usec) * 1000;
+	uint64_t nanoseconds = ((uint64_t)tv.tv_sec) * kNanoSecondsPerSecond + (uint64_t)ms * (uint64_t)1000ull * (uint64_t)1000ull + ((uint64_t)tv.tv_usec) * 1000;
 
 	timespec ts;
 	ts.tv_sec = (time_t)(nanoseconds / kNanoSecondsPerSecond);
@@ -375,10 +377,10 @@ bool _signal_unlock_wait(signal_s* sig, uint32_t ms)
 #endif
 
 //-------------------------------------------------------------------------------------
-bool signal_timewait(signal_t s, uint32_t ms)
+bool signal_timewait(signal_t s, int32_t ms)
 {
 #ifdef CY_SYS_WINDOWS
-	return (WAIT_OBJECT_0 == ::WaitForSingleObject(s, ms));
+	return (WAIT_OBJECT_0 == ::WaitForSingleObject(s, (DWORD)ms));
 #else
 	signal_s* sig = (signal_s*)s;
 	if (ms == 0) {

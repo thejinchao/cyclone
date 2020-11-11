@@ -138,8 +138,8 @@ ssize_t RingBuf::search(size_t off, uint8_t data) const
 		size_t n = MIN((size_t)(m_end - read_off), search_count - nread);
 		const uint8_t* p = (uint8_t*)memchr(m_buf + read_off, (int)data, n);
 		if (p != nullptr) {
-			size_t pos = p - m_buf;
-			return pos > m_read ? (pos - m_read) : (pos + m_end - m_read);
+			size_t pos = (size_t)(std::ptrdiff_t)(p - m_buf);
+			return (pos > m_read) ? (ssize_t)(pos - m_read) : (ssize_t)(pos + m_end - m_read);
 		}
 
 		read_off += n;

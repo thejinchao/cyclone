@@ -113,7 +113,7 @@ public:
 	PeriodValue(int32_t max_counts=256, int32_t time_period_ms=1000) 
 		: m_max_counts(max_counts)
 		, m_time_period(time_period_ms)
-		, m_valueQueue(max_counts)
+		, m_valueQueue((size_t)max_counts)
 		, m_lock(nullptr)
 	{
 		if CONSTEXPR(WithLock) {
