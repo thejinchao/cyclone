@@ -1,4 +1,4 @@
-/*! @file SimpleOpt.h
+﻿/*! @file SimpleOpt.h
 
     @version 3.6
 
@@ -577,7 +577,7 @@ CSimpleOptTempl<SOCHAR>::Init(
         free(m_rgShuffleBuf);
     }
     if (m_argc > SO_STATICBUF) {
-        m_rgShuffleBuf = (SOCHAR**) malloc(sizeof(SOCHAR*) * (size_t)m_argc);
+        m_rgShuffleBuf = (SOCHAR**) malloc(sizeof(SOCHAR*) * static_cast<unsigned int>(m_argc));
         if (!m_rgShuffleBuf) {
             return false;
         }
