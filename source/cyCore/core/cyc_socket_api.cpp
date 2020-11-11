@@ -208,7 +208,12 @@ ssize_t write(socket_t s, const char* buf, size_t len)
 //-------------------------------------------------------------------------------------
 ssize_t sendto(socket_t s, const char* buf, size_t len, const struct sockaddr_in& peer_addr)
 {
-	return (ssize_t)::sendto(s, buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, (int32_t)sizeof(peer_addr));
+#ifdef CY_SYS_WINDOWS
+	ssize_t _len = ::sendto(s, buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, (int32_t)sizeof(peer_addr));
+#else
+	ssize_t _len = ::sendto(s, buf, len, 0, (struct sockaddr*)&peer_addr, (socklen_t)sizeof(peer_addr));
+#endif
+	return _len;
 }
 
 //-------------------------------------------------------------------------------------
@@ -227,7 +232,13 @@ ssize_t read(socket_t s, void *buf, size_t len)
 ssize_t recvfrom(socket_t s, void* buf, size_t len, struct sockaddr_in& peer_addr)
 {
 	socklen_t addr_len = sizeof(peer_addr);
-	return (ssize_t)::recvfrom(s, (char *)buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, &addr_len);
+
+#ifdef CY_SYS_WINDOWS
+	ssize_t _len = ::recvfrom(s, (char *)buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, &addr_len);
+#else
+	ssize_t _len = ::recvfrom(s, (char *)buf, len, 0, (struct sockaddr*)&peer_addr, &addr_len);
+#endif
+	return _len;
 }
 
 //-------------------------------------------------------------------------------------

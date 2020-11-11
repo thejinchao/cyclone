@@ -69,11 +69,13 @@ mutex_t mutex_create(void);
 /// destroy a mutex
 void mutex_destroy(mutex_t m);
 
-/// lock mutex(wait other owner unlock inifity time)
+/// lock mutex(wait other owner unlock infinity time)
 void mutex_lock(mutex_t m);
 
+#ifndef CY_SYS_MACOS
 /// lock mutex, wait other owner unlock some time (milliseconds), return false mean timeout
 bool mutex_try_lock(mutex_t m, int32_t wait_time);
+#endif
 
 /// unlock mutex
 void mutex_unlock(mutex_t m);
@@ -87,7 +89,7 @@ struct auto_mutex
 };
 
 //----------------------
-// signal/semaphone functions
+// signal/semaphore functions
 //----------------------
 
 #ifdef CY_SYS_WINDOWS
@@ -106,7 +108,7 @@ void signal_destroy(signal_t s);
 void signal_wait(signal_t s);
 
 //// wait a signal in [t] millisecond(second*1000), return true immediately if the signal is lighted, if false if timeout or other error
-bool signal_timewait(signal_t s, uint32_t ms);
+bool signal_timewait(signal_t s, int32_t ms);
 
 //// light the signal
 void signal_notify(signal_t s);
