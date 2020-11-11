@@ -33,6 +33,9 @@ set(CY_SOURCE_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyUtility)
 ########
 #check include file
 ########
+cmake_policy(SET CMP0075 NEW)
+set(CMAKE_REQUIRED_LIBRARIES pthread)
+
 include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
 check_include_file(unistd.h 		CY_HAVE_UNISTD_H)
@@ -63,6 +66,7 @@ check_function_exists(readv CY_HAVE_READWRITE_V)
 check_function_exists(pipe2 CY_HAVE_PIPE2)
 check_function_exists(kqueue CY_HAVE_KQUEUE)
 check_function_exists(timerfd_create CY_HAVE_TIMERFD)
+check_function_exists(pthread_mutex_timedlock CY_HAVE_TIMED_LOCK)
 
 ########
 #compiler flag

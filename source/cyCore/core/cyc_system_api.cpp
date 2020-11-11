@@ -245,7 +245,6 @@ void mutex_lock(mutex_t m)
 #endif
 }
 
-#ifndef CY_SYS_MACOS
 //-------------------------------------------------------------------------------------
 bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 {
@@ -260,6 +259,7 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 	}
 	else
 	{
+	#ifdef CY_HAVE_TIMED_LOCK
 		struct timespec timestamp;
 		clock_gettime(CLOCK_REALTIME, &timestamp);
 		timestamp.tv_sec += wait_time_ms / 1000;
@@ -273,10 +273,20 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 		}
 
 		return 0 == pthread_mutex_timedlock(&(mutex->h), &timestamp);
+	#else
+		int64_t time_out = utc_time_now() + wait_time_ms*1000ll;
+		while (pthread_mutex_trylock(&(mutex->h)) != 0)
+		{
+			if (utc_time_now() >= time_out)
+				return false;
+
+			thread_yield();
+		}
+		return true;
+	#endif
 	}
 #endif
 }
-#endif
 
 //-------------------------------------------------------------------------------------
 void mutex_unlock(mutex_t m)
