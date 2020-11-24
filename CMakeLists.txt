@@ -18,7 +18,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
 	set(CY_SYS_ANDROID TRUE)
 else()
-    message(FATAL_ERROR "Unknown target system \"${CMAKE_SYSTEM_NAME}\".")
+	message(FATAL_ERROR "Unknown target system \"${CMAKE_SYSTEM_NAME}\".")
 endif()
 
 ########
@@ -33,7 +33,9 @@ set(CY_SOURCE_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyUtility)
 ########
 #check include file
 ########
-cmake_policy(SET CMP0075 NEW)
+if(POLICY CMP0075)
+	cmake_policy(SET CMP0075 NEW)
+endif()
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 
 include(CheckIncludeFile)
@@ -68,7 +70,7 @@ check_function_exists(pthread_mutex_timedlock CY_HAVE_TIMED_LOCK)
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wsign-conversion")
+	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-sign-conversion")
 endif()
 
 ########
@@ -87,23 +89,23 @@ endif()
 #find jemalloc library
 ########
 find_path(JEMALLOC_SDK_ROOT
-    NAMES include/jemalloc/jemalloc.h
-    HINTS $ENV{JEMALLOC_SDK_ROOT}
+	NAMES include/jemalloc/jemalloc.h
+	HINTS $ENV{JEMALLOC_SDK_ROOT}
 )
 find_library(JEMALLOC_LIBRARIES
-    NAMES jemalloc_pic
-    HINTS ${JEMALLOC_SDK_ROOT}/lib
+	NAMES jemalloc_pic
+	HINTS ${JEMALLOC_SDK_ROOT}/lib
 )
 find_path(JEMALLOC_INCLUDE_DIR
-    NAMES jemalloc/jemalloc.h
-    HINTS ${JEMALLOC_SDK_ROOT}/include
+	NAMES jemalloc/jemalloc.h
+	HINTS ${JEMALLOC_SDK_ROOT}/include
 )
 
 if(JEMALLOC_SDK_ROOT AND JEMALLOC_LIBRARIES)
-  set(CY_HAVE_JEMALLOC_LIBRARIES TRUE)
+	set(CY_HAVE_JEMALLOC_LIBRARIES TRUE)
 else()
-  set(CY_HAVE_JEMALLOC_LIBRARIES FALSE)
-  set(JEMALLOC_LIBRARIES "")
+	set(CY_HAVE_JEMALLOC_LIBRARIES FALSE)
+	set(JEMALLOC_LIBRARIES "")
 endif()
 
 mark_as_advanced(
@@ -129,9 +131,9 @@ find_package(GTest)
 #pthread library
 ########
 if(CY_SYS_ANDROID)
-    set(PTHREAD_LIBRARIES "")
+	set(PTHREAD_LIBRARIES "")
 else()
-    set(PTHREAD_LIBRARIES "pthread")
+	set(PTHREAD_LIBRARIES "pthread")
 endif()
 
 ########
@@ -162,6 +164,6 @@ add_subdirectory(samples)
 #test dictionary
 ########
 if(GTEST_FOUND)
-    enable_testing()
-    add_subdirectory(test)
+	enable_testing()
+	add_subdirectory(test)
 endif()
