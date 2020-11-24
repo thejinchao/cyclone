@@ -9,10 +9,6 @@ Copyright(C) thecodeway.com
 #include <sys/uio.h>
 #endif
 
-#ifndef MIN
-#define MIN(x, y)	((x)<(y)?(x):(y))
-#endif
-
 namespace cyclone
 {
 
@@ -67,7 +63,7 @@ void RingBuf::memcpy_into(const void *src, size_t count)
 	//write data
 	size_t nwritten = 0;
 	while (nwritten != count) {
-		size_t n = (size_t)MIN((size_t)(m_end - m_write), count - nwritten);
+		size_t n = (size_t)std::min((size_t)(m_end - m_write), count - nwritten);
 		memcpy(m_buf+m_write, csrc + nwritten, n);
 		m_write += n;
 		nwritten += n;
@@ -87,7 +83,7 @@ size_t RingBuf::memcpy_out(void *dst, size_t count)
 	char* cdst = (char*)dst;
 	size_t nread = 0;
 	while (nread != count) {
-		size_t n = MIN((size_t)(m_end - m_read), count - nread);
+		size_t n = std::min((size_t)(m_end - m_read), count - nread);
 		memcpy(cdst + nread, m_buf + m_read, n);
 		m_read += n;
 		nread += n;
@@ -110,7 +106,7 @@ size_t RingBuf::moveto(RingBuf& dst, size_t count)
 
 	size_t nread = 0;
 	while (nread != count) {
-		size_t n = MIN((size_t)(m_end - m_read), count - nread);
+		size_t n = std::min((size_t)(m_end - m_read), count - nread);
 		dst.memcpy_into(m_buf + m_read, n);
 		m_read += n;
 		nread += n;
@@ -135,7 +131,7 @@ ssize_t RingBuf::search(size_t off, uint8_t data) const
 
 	size_t nread = 0;
 	while (nread != search_count) {
-		size_t n = MIN((size_t)(m_end - read_off), search_count - nread);
+		size_t n = std::min((size_t)(m_end - read_off), search_count - nread);
 		const uint8_t* p = (uint8_t*)memchr(m_buf + read_off, (int)data, n);
 		if (p != nullptr) {
 			size_t pos = (size_t)(std::ptrdiff_t)(p - m_buf);
@@ -165,7 +161,7 @@ size_t RingBuf::peek(size_t off, void* dst, size_t count) const
 
 	size_t nread = 0;
 	while (nread != count) {
-		size_t n = MIN((size_t)(m_end - read_off), count - nread);
+		size_t n = std::min((size_t)(m_end - read_off), count - nread);
 		memcpy(cdst + nread, m_buf + read_off, n);
 		read_off += n;
 		nread += n;
@@ -206,7 +202,7 @@ ssize_t RingBuf::read_socket(socket_t fd, bool extra_buf)
 	//in windows call read three times maxmium
 	ssize_t nwritten = 0;
 	while (nwritten != (ssize_t)count)	{
-		ssize_t n = (ssize_t)MIN((size_t)(m_end - m_write), count - nwritten);
+		ssize_t n = (ssize_t)std::min((ssize_t)(m_end - m_write), (ssize_t)(count - nwritten));
 		ssize_t len = socket_api::read(fd, m_buf + m_write, (ssize_t)n);
 		if (len == 0) return 0; //EOF
 		if (len < 0) return socket_api::is_lasterror_WOULDBLOCK() ? nwritten : len;
@@ -239,7 +235,7 @@ ssize_t RingBuf::read_socket(socket_t fd, bool extra_buf)
 	size_t nwritten = 0;
 	size_t write_off = m_write;
 	while (nwritten != count)	{
-		size_t n = MIN((size_t)(m_end - write_off), count - nwritten);
+		size_t n = std::min((size_t)(m_end - write_off), count - nwritten);
 		vec[vec_counts].iov_base = m_buf + write_off;
 		vec[vec_counts].iov_len = n;
 		vec_counts++;
@@ -263,10 +259,10 @@ ssize_t RingBuf::read_socket(socket_t fd, bool extra_buf)
 	if (read_counts <= 0) return read_counts;	//error
 
 	//adjust point
-	count = MIN(get_free_size(), (size_t)read_counts);
+	count = std::min(get_free_size(), (size_t)read_counts);
 	nwritten = 0;
 	while (nwritten != count)	{
-		size_t n = MIN((size_t)(m_end - m_write), count - nwritten);
+		size_t n = std::min((size_t)(m_end - m_write), count - nwritten);
 
 		nwritten += n;
 		m_write += n;
@@ -295,7 +291,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 
 	size_t nsended = 0;
 	while (nsended != count) {
-		size_t n = MIN((size_t)(m_end - m_read), count - nsended);
+		size_t n = std::min((size_t)(m_end - m_read), count - nsended);
 
 		ssize_t len = socket_api::write(fd, (const char*)m_buf + m_read, (ssize_t)n);
 		if (len == 0) break; //nothing was written
@@ -329,7 +325,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 	size_t nsended = 0;
 	size_t read_off = m_read;
 	while (nsended != count) {
-		size_t n = MIN((size_t)(m_end - read_off), count - nsended);
+		size_t n = std::min((size_t)(m_end - read_off), count - nsended);
 
 		vec[vec_counts].iov_base = m_buf + read_off;
 		vec[vec_counts].iov_len = n;
@@ -349,7 +345,7 @@ ssize_t RingBuf::write_socket(socket_t fd)
 	//adjust point
 	nsended = 0;
 	while (nsended != (size_t)write_counts) {
-		size_t n = MIN((size_t)(m_end - m_read), (size_t)write_counts - nsended);
+		size_t n = std::min((size_t)(m_end - m_read), (size_t)write_counts - nsended);
 
 		m_read += n;
 		nsended += n;
@@ -379,7 +375,7 @@ uint32_t RingBuf::checksum(size_t off, size_t count) const
 
 	size_t nread = 0;
 	while (nread != count) {
-		size_t n = MIN((size_t)(m_end - read_off), count - nread);
+		size_t n = std::min((size_t)(m_end - read_off), count - nread);
 		adler = adler32(adler, m_buf + read_off, n);
 		read_off += n;
 		nread += n;
@@ -404,7 +400,7 @@ uint8_t* RingBuf::normalize(void)
 	size_t second_block = m_end - m_read;
 
 	//alloc a temp block memory
-	size_t temp_block = MIN(first_block, second_block);
+	size_t temp_block = std::min(first_block, second_block);
 	char* p = (temp_block <= kDefaultCapacity) ? default_temp_block : (char*)CY_MALLOC(temp_block);
 
 	//which block is the smaller block?
