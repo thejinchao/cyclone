@@ -200,7 +200,7 @@ public:
 		}
 
 		ctx->status = TS_Receiving;
-		ctx->beginTime = sys_api::utc_time_now();
+		ctx->beginTime = sys_api::performance_time_now();
 		return false;
 	}
 
@@ -240,7 +240,7 @@ public:
 
 		FT_ReplyFileFragment_End fileEnd;
 		ringBuff.memcpy_out(&fileEnd, sizeof(FT_ReplyFileFragment_End));
-		ctx->endTime = sys_api::utc_time_now();
+		ctx->endTime = sys_api::performance_time_now();
 
 		if (fileEnd.id != FT_ReplyFileFragment_End::ID) {
 			CY_LOG(L_ERROR, "Error! Not expect message, should be 'FT_ReplyFileFragment_End'!");
@@ -343,7 +343,7 @@ public:
 		}
 		fragmentSize = (int32_t)((int32_t)m_fileSize / fragmentCounts) & (~0xF);
 
-		m_beginDownloadTime = sys_api::utc_time_now();
+		m_beginDownloadTime = sys_api::performance_time_now();
 
 		size_t fileOffset = 0;
 		for (int32_t i = 0; i < fragmentCounts; i++) {
@@ -395,7 +395,7 @@ public:
 			}
 		}
 
-		m_endDownloadTime = sys_api::utc_time_now();
+		m_endDownloadTime = sys_api::performance_time_now();
 
 		return true;
 	}

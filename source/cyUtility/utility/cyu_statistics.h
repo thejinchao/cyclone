@@ -72,26 +72,26 @@ public:
 		sys_api::mutex_t _lock;
 	};
 public:
-	bool push(const T& value, int64_t cur_time=0)
+	bool push(const T& value, int64_t cur_performance_time=0)
 	{
 		AutoLock lock(m_lock);
 
-		if (cur_time == 0) {
-			cur_time = sys_api::utc_time_now() / 1000ll;
+		if (cur_performance_time == 0) {
+			cur_performance_time = sys_api::performance_time_now() / 1000ll;
 		}
-		m_valueQueue.push(std::make_pair(cur_time, value));
+		m_valueQueue.push(std::make_pair(cur_performance_time, value));
 		return (m_valueQueue.get_free_size() == 0);
 	}
 
-	std::pair<T, int32_t> sum_and_counts(int64_t cur_time = 0)
+	std::pair<T, int32_t> sum_and_counts(int64_t cur_performance_time = 0)
 	{
 		AutoLock lock(m_lock);
 
-		if (cur_time == 0) {
-			cur_time = sys_api::utc_time_now() / 1000ll;
+		if (cur_performance_time == 0) {
+			cur_performance_time = sys_api::performance_time_now() / 1000ll;
 		}
 
-		_update(cur_time);
+		_update(cur_performance_time);
 		if (m_valueQueue.empty()) return std::make_pair(ZeroValue, 0);
 
 		T sum = ZeroValue;
