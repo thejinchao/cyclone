@@ -20,6 +20,7 @@ Copyright(C) thecodeway.com
 
 #include <time.h>
 #include <chrono>
+#include <mutex>
 
 namespace cyclone
 {
@@ -274,10 +275,10 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 
 		return 0 == pthread_mutex_timedlock(&(mutex->h), &timestamp);
 	#else
-		int64_t time_out = utc_time_now() + wait_time_ms*1000ll;
+		int64_t time_out = performance_time_now() + wait_time_ms*1000ll;
 		while (pthread_mutex_trylock(&(mutex->h)) != 0)
 		{
-			if (utc_time_now() >= time_out)
+			if (performance_time_now() >= time_out)
 				return false;
 
 			thread_yield();
@@ -458,6 +459,65 @@ void local_time_now(char* time_dest, size_t max_size, const char* format)
 	localtime_r(&local_time, &tm_now);
 #endif
 	strftime(time_dest, max_size, format, &tm_now);
+}
+
+//-------------------------------------------------------------------------------------
+int64_t performance_time_now(void)
+{
+	const int64_t kMicroSecondsPerSecond = 1000ll * 1000ll;
+#ifdef CY_SYS_WINDOWS
+
+	static std::once_flag initialzed;
+	static LARGE_INTEGER performanceFrequency = { 0 };
+	static LARGE_INTEGER beginOffset = { 0 };
+
+	std::call_once(initialzed, [&]() {
+		// On systems that run Windows XP or later, the function will always succeed and will thus never return zero.
+		BOOL getFrequence = QueryPerformanceFrequency(&performanceFrequency);
+		assert(getFrequence);
+		if (!getFrequence) 	return;
+
+		// Get offset time
+		QueryPerformanceCounter(&beginOffset);
+	});
+
+	if (performanceFrequency.QuadPart == 0) return 0;
+
+	LARGE_INTEGER now;
+	QueryPerformanceCounter(&now);
+
+	now.QuadPart -= beginOffset.QuadPart;
+	return now.QuadPart * kMicroSecondsPerSecond / performanceFrequency.QuadPart;
+#else
+	const int64_t kNanoSecondsPerSecond = 1000ll * 1000ll * 1000ll;
+	const int64_t kNanoSecondsPerMicroSecond = 1000ll;
+
+	static std::once_flag initialzed;
+	static timespec beginOffset = { 0, 0 };
+
+	std::call_once(initialzed, [&]() {
+		if (clock_gettime(CLOCK_MONOTONIC, &beginOffset)) {
+			return;
+		}
+	});
+	if (beginOffset.tv_sec == 0 && beginOffset.tv_nsec==0) return 0;
+
+	struct timespec tsNow = { 0, 0 };
+	if (clock_gettime(CLOCK_MONOTONIC, &tsNow)) {
+		return 0;
+	}
+
+	struct timespec tsDiff = { 0, 0 };
+	if (tsNow.tv_nsec < beginOffset.tv_nsec) {
+		tsDiff.tv_sec = tsNow.tv_sec - beginOffset.tv_sec - 1;
+		tsDiff.tv_nsec = kNanoSecondsPerSecond + tsNow.tv_nsec - beginOffset.tv_nsec;
+	}
+	else {
+		tsDiff.tv_sec = tsNow.tv_sec - beginOffset.tv_sec;
+		tsDiff.tv_nsec = tsNow.tv_nsec - beginOffset.tv_nsec;
+	}
+	return tsDiff.tv_sec*kMicroSecondsPerSecond + tsDiff.tv_nsec / kNanoSecondsPerMicroSecond;
+#endif
 }
 
 //-------------------------------------------------------------------------------------
