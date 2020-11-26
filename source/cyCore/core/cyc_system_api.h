@@ -115,11 +115,14 @@ void signal_notify(signal_t s);
 // time functions
 //----------------------
 
-//// get UTC time in microseconds(second*1000*1000) from Epoch
+//// get UTC time in microseconds(second*1000*1000) from Epoch(00:00:00 January 1, 1970)
 int64_t utc_time_now(void);
 
 /// get local time in format string(strftime)
 void local_time_now(char* time_dest, size_t max_size, const char* format);
+
+/// get high performance time, return microseconds(second*1000*1000) from the first call to this function
+int64_t performance_time_now(void);
 
 //----------------------
 // utility functions

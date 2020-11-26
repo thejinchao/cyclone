@@ -111,9 +111,9 @@ TEST(System, Mutex)
 	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), false);
 
 	//try lock in main thread with time out
-	int64_t begin_time = sys_api::utc_time_now();
+	int64_t begin_time = sys_api::performance_time_now();
 	EXPECT_EQ(sys_api::mutex_try_lock(m, 100), false);
-	int64_t end_time = sys_api::utc_time_now();
+	int64_t end_time = sys_api::performance_time_now();
 	int32_t time_spend = (int32_t)(end_time - begin_time) / 1000;
 
 	EXPECT_GE(time_spend, 100);
@@ -161,9 +161,9 @@ TEST(System, Mutex)
 
 	//-------------------------------
 	//lock in main thread 
-	begin_time = sys_api::utc_time_now();
+	begin_time = sys_api::performance_time_now();
 	EXPECT_EQ(sys_api::mutex_try_lock(m, 100), true);
-	end_time = sys_api::utc_time_now();
+	end_time = sys_api::performance_time_now();
 	time_spend = (int32_t)(end_time - begin_time) / 1000;
 
 	EXPECT_GE(time_spend, 0);
