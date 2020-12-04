@@ -530,9 +530,9 @@ public:
 		: m_encryptMode(encryptMode)
 		, m_enable_statistics(enableStatistics)
 		, m_up_total(0)
-		, m_up_statistics(1024, kSpeedTimePeriod)
+		, m_up_statistics(kSpeedTimePeriod)
 		, m_down_total(0)
-		, m_down_statistics(1024, kSpeedTimePeriod)
+		, m_down_statistics(kSpeedTimePeriod)
 	{
 	}
 	~RelayServer() 

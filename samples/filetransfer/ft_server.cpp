@@ -33,6 +33,7 @@ static void printUsage(const char* moduleName)
 	printf("\t -f FILE_PATH\tFile path name to be transmitted\n");
 	printf("\t -t THREAD_COUNTS\tWork thread counts(default is cpu core counts)\n");
 	printf("\t --help -?\tShow this help\n");
+	printf("TIPS: generate random file\n\tdd if=/dev/urandom of=test.file count=10240 bs=1024\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,17 +76,16 @@ private:
 	atomic_int32_t m_workingCounts;
 	std::vector<ThreadContext*> m_threadContext;
 
+	enum { SEND_STATISTICS_TIME=5 }; //5 seconds
+
 private:
 	void _onMasterThreadStart(Looper* looper)
 	{
-#if CY_ENABLE_DEBUG
 		looper->register_timer_event(1000, nullptr, std::bind(&FileTransferServer::_onMasterThreadTimer, this));
-#endif
 	}
 
 	void _onMasterThreadTimer()
 	{
-#if CY_ENABLE_DEBUG
 		if (m_workingCounts.load()==0) return;
 
 		std::string speedStatus;
@@ -100,7 +100,6 @@ private:
 		}
 
 		CY_LOG(L_INFO, "SendSpeed: %s", speedStatus.c_str());
-#endif
 	}
 
 	void _onWorkThreadStart(int32_t index, Looper* looper)
@@ -114,21 +113,18 @@ private:
 		ctx.fragmentCRC = INITIAL_ADLER;
 		ctx.sendSpeed = 0.f;
 
-#if CY_ENABLE_DEBUG
 		looper->register_timer_event(1000, nullptr, std::bind(&FileTransferServer::_onWorkThreadTimer, this, index));
-#endif
 	}
 
 	void _onWorkThreadTimer(int32_t index)
 	{
-#if CY_ENABLE_DEBUG
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 		ThreadContext& ctx = *(m_threadContext[index]);
 
 		if (ctx.status == TS_Sending && ctx.conn) {
-			ctx.sendSpeed = ctx.conn->get_write_speed();
+			const auto& writeStatistics = ctx.conn->get_write_statistics();
+			ctx.sendSpeed = (float)writeStatistics.first / (float)SEND_STATISTICS_TIME;
 		}
-#endif
 	}
 
 	void _onClientConnected(int32_t index, TcpConnectionPtr conn)
@@ -143,6 +139,9 @@ private:
 		
 		ctx.status = TS_Connected;
 		ctx.conn = conn;
+
+		//enable statistics
+		ctx.conn->start_write_statistics(SEND_STATISTICS_TIME*1000);
 
 		this->m_workingCounts += 1;
 	}
@@ -190,11 +189,7 @@ private:
 			conn->set_on_send_complete(nullptr);
 
 			CY_LOG(L_INFO, "Send fragment completed, crc=0x%08x, sendBufMaxSize=%s", ctx.fragmentCRC, 
-#if CY_ENABLE_DEBUG
 				string_util::size_to_string(conn->get_writebuf_max_size()).c_str()
-#else
-				"na"
-#endif
 			);
 
 			//send last message

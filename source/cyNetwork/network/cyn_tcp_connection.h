@@ -119,23 +119,25 @@ private:
 	//// is write buf empty(thread safe)
 	bool _is_writeBuf_empty(void) const;
 
-
-#if CY_ENABLE_DEBUG
 public:
+	// record the max size of read buf and write buf
 	size_t get_readebuf_max_size(void) const { return m_readbuf_minmax_size.max(); }
 	size_t get_writebuf_max_size(void) const { return m_writebuf_minmax_size.max(); }
 
-	// trans speed last 5 seconds (bytes/s)
-	enum { SPEED_PERIOD_TIME = 5 };
+	// record the size and counts of packet received and sent with given times(millisecond)
+	// not thread safe, must call in work thread, and can only be called once
+	void start_read_statistics(int32_t period_time);
+	void start_write_statistics(int32_t period_time);
 
-	float get_read_speed(void);
-	float get_write_speed(void);
+	// get read and write statistics data(total size, and packet counts in given time)
+	std::pair<size_t, int32_t> get_read_statistics(void) const;
+	std::pair<size_t, int32_t> get_write_statistics(void) const;
+
 private:
 	MinMaxValue <size_t> m_readbuf_minmax_size;
 	MinMaxValue <size_t> m_writebuf_minmax_size;
-	PeriodValue <size_t, true> m_read_speed;
-	PeriodValue <size_t, true> m_write_speed;
-#endif
+	PeriodValue <size_t, true>* m_read_statistics;
+	PeriodValue <size_t, true>* m_write_statistics;
 
 public:
 	TcpConnection(int32_t id, socket_t sfd, Looper* looper, Owner* owner);
