@@ -282,7 +282,6 @@ void TcpConnection::_on_socket_close(void)
 	m_state = kDisconnected;
 
 	//delete looper event
-	m_looper->disable_all(m_event_id);
 	m_looper->delete_event(m_event_id);
 	m_event_id = Looper::INVALID_EVENT_ID;
 	

@@ -161,7 +161,6 @@ void TcpServerMasterThread::_on_thread_message(Packet* message)
 			auto& event_id = std::get<1>(listen_socket);
 
 			if (event_id != Looper::INVALID_EVENT_ID) {
-				looper->disable_all(event_id);
 				looper->delete_event(event_id);
 				event_id = Looper::INVALID_EVENT_ID;
 			}
@@ -187,7 +186,6 @@ void TcpServerMasterThread::_on_thread_message(Packet* message)
 
 		//disable event
 		if (event_id != Looper::INVALID_EVENT_ID) {
-			looper->disable_all(event_id);
 			looper->delete_event(event_id);
 			event_id = Looper::INVALID_EVENT_ID;
 		}

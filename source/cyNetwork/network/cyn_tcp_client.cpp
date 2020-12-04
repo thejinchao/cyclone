@@ -11,7 +11,6 @@ namespace cyclone
 
 #define RELEASE_EVENT(looper, id) \
 	if (id != Looper::INVALID_EVENT_ID) { \
-		looper->disable_all(id); \
 		looper->delete_event(id); \
 		id = Looper::INVALID_EVENT_ID; \
 	}
