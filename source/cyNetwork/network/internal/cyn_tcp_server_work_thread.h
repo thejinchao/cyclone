@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
-#define _CYCLONE_NETWORK_SERVER_WORK_THREAD_H_
+#pragma once
 
 #include "../cyn_tcp_connection.h"
 
@@ -67,6 +66,3 @@ public:
 };
 
 }
-
-#endif
-

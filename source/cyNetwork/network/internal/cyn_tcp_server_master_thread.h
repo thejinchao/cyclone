@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_NETWORK_SERVER_MASTER_THREAD_H_
-#define _CYCLONE_NETWORK_SERVER_MASTER_THREAD_H_
+#pragma once
 
 #include <cy_core.h>
 #include <cy_event.h>
@@ -74,5 +73,3 @@ public:
 };
 
 }
-
-#endif

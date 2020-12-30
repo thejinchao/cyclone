@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CORE_SOCKET_API_H_
-#define _CYCLONE_CORE_SOCKET_API_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -104,5 +103,3 @@ bool check_connect(const struct sockaddr_in& addr, int timeout_ms);
 
 }
 }
-
-#endif

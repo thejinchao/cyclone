@@ -1,8 +1,7 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CRYPT_ADLER_H_
-#define _CYCLONE_CRYPT_ADLER_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -32,6 +31,3 @@ namespace cyclone
 uint32_t adler32(uint32_t adler, const uint8_t* buf, size_t len);
 
 }
-
-#endif
-

@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_NETWORK_TCP_CLIENT_H_
-#define _CYCLONE_NETWORK_TCP_CLIENT_H_
+#pragma once
 
 #include <cy_core.h>
 #include "cyn_tcp_connection.h"
@@ -72,5 +71,3 @@ public:
 };
 
 }
-#endif
-

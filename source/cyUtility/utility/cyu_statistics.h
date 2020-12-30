@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_UTILITY_STATISTICS_H_
-#define _CYCLONE_UTILITY_STATISTICS_H_
+#pragma once
 
 #include <cyclone_config.h>
 #include <cy_core.h>
@@ -180,6 +179,3 @@ private:
 };
 
 }
-
-#endif
-

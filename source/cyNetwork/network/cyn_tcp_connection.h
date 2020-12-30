@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_NETWORK_CONNECTION_H_
-#define _CYCLONE_NETWORK_CONNECTION_H_
+#pragma once
 
 #include <cyclone_config.h>
 #include <network/cyn_address.h>
@@ -145,6 +144,3 @@ public:
 };
 
 }
-
-#endif
-

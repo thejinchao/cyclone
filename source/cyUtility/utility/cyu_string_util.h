@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_UTILITY_STRING_UTIL_H_
-#define _CYCLONE_UTILITY_STRING_UTIL_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -17,5 +16,3 @@ std::string size_to_string(size_t s);
 
 }
 }
-
-#endif

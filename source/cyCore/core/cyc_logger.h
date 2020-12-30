@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CORE_LOGGER_H_
-#define _CYCLONE_CORE_LOGGER_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -48,6 +47,4 @@ void set_log_threshold(LOG_LEVEL level);
 #define CY_LOG cyclone::disk_log
 #else
 #define CY_LOG (void)
-#endif
-
 #endif

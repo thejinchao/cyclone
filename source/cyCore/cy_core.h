@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CORE_H_
-#define _CYCLONE_CORE_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -12,5 +11,3 @@ Copyright(C) thecodeway.com
 #include <core/cyc_ring_buf.h>
 #include <core/cyc_atomic.h>
 #include <core/cyc_lf_queue.h>
-
-#endif

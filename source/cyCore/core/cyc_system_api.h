@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CORE_THREAD_API_H_
-#define _CYCLONE_CORE_THREAD_API_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -131,4 +130,3 @@ int32_t get_cpu_counts(void);
 
 }
 }
-#endif
