@@ -37,14 +37,18 @@ Build on the windows host machine, make sure the flowing envionment variables ha
 ```
 git clone https://github.com/thejinchao/cyclone
 mkdir _build && cd _build
-%ANDROID_SDK_ROOT%/cmake/3.6.3155560/bin/cmake.exe -G "Android Gradle - Ninja" -DANDROID_ABI=armeabi-v7a -DANDROID_NDK=%ANDROID_NDK_ROOT% -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT%/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=23 -DCMAKE_MAKE_PROGRAM=%ANDROID_SDK_ROOT%/cmake/3.6.3155560/bin/ninja.exe ../cyclone
-%ANDROID_SDK_ROOT%/cmake/3.6.3155560/bin/ninja.exe
+%ANDROID_SDK_ROOT%/cmake/3.10.2.4988404/bin/cmake.exe -G "Ninja" -DANDROID_ABI=armeabi-v7a ^
+ -DANDROID_NDK=%ANDROID_NDK_ROOT% -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT%/build/cmake/android.toolchain.cmake ^
+ -DANDROID_NATIVE_API_LEVEL=28 -DCMAKE_MAKE_PROGRAM=%ANDROID_SDK_ROOT%/cmake/3.10.2.4988404/bin/ninja.exe ^
+ ../cyclone
+
+%ANDROID_SDK_ROOT%/cmake/3.10.2.4988404/bin/ninja.exe
 ```
 To run unit test, an android device with root authority is required.
 ```
-adb push test/unit/cyt_unit /data/local
-adb shell chmod +x /data/local/cyt_unit
-adb shell /data/local/cyt_unit
+adb push test/unit/cyt_unit /data/local/tmp/
+adb shell chmod +x /data/local/tmp/cyt_unit
+adb shell /data/local/tmp/cyt_unit
 ```
 # Samples
 - **echo** a typical client/server program
