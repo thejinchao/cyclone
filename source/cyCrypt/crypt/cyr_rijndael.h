@@ -1,8 +1,7 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CRYPT_RIJNDAEL_H_
-#define _CYCLONE_CRYPT_RIJNDAEL_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -54,5 +53,3 @@ private:
 };
 
 }
-
-#endif

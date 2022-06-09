@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_EVENT_WORK_THREAD_H_
-#define _CYCLONE_EVENT_WORK_THREAD_H_
+#pragma once
 
 namespace cyclone
 {
@@ -76,5 +75,3 @@ public:
 };
 
 }
-
-#endif

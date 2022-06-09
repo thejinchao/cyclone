@@ -145,9 +145,17 @@ void Looper::delete_event(event_id_t id)
 	sys_api::auto_mutex lock(m_lock);
 	assert((size_t)id < m_channelBuffer.size());
 
-	//unpool it 
+	//disable it first
 	channel_s& channel = m_channelBuffer[id];
-	assert(channel.event == kNone && channel.active == false); //should be disabled already
+
+	if (channel.event & kRead)
+		_update_channel_remove_event(channel, kRead);
+
+	if (channel.event & kWrite)
+		_update_channel_remove_event(channel, kWrite);
+
+	//should be disabled now
+	assert(channel.event == kNone && channel.active == false); 
 
 	//if timer event
 	if (channel.timer) {
@@ -300,7 +308,6 @@ void Looper::loop(void)
 	}
 
 	//it's the time to shutdown everything...
-	disable_all(inner_event_id);
 	delete_event(inner_event_id);
 	m_inner_pipe = nullptr;
 }

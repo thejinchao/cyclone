@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CORE_ATOMIC_H_
-#define _CYCLONE_CORE_ATOMIC_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -47,4 +46,3 @@ inline bool atomic_smaller_exchange(std::atomic<T>& obj, T comparison, T desired
 }
 
 }
-#endif

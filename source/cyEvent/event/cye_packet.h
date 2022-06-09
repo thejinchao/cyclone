@@ -1,9 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-
-#ifndef _CYCLONE_EVENT_PACKET_H_
-#define _CYCLONE_EVENT_PACKET_H_
+#pragma once
 
 /*
                        Low                        High                          
@@ -90,4 +88,3 @@ public:
 
 }
 
-#endif

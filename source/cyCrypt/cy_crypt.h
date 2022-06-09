@@ -1,8 +1,7 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CRYPT_H_
-#define _CYCLONE_CRYPT_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -10,5 +9,3 @@ Copyright(C) thecodeway.com
 #include <crypt/cyr_dhexchange.h>
 #include <crypt/cyr_xorshift128.h>
 #include <crypt/cyr_rijndael.h>
-
-#endif

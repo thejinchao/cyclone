@@ -1,8 +1,7 @@
 /*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_EVENT_LOOPER_KQUEUE_H_
-#define _CYCLONE_EVENT_LOOPER_KQUEUE_H_
+#pragma once
 
 #include <cy_core.h>
 #include <event/cye_looper.h>
@@ -48,7 +47,5 @@ public:
 };
 
 }
-
-#endif
 
 #endif

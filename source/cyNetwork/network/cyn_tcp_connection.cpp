@@ -24,12 +24,10 @@ TcpConnection::TcpConnection(int32_t id, socket_t sfd, Looper* looper, Owner* ow
 	, m_on_message(nullptr)
 	, m_on_send_complete(nullptr)
 	, m_on_close(nullptr)
-#if CY_ENABLE_DEBUG
 	, m_readbuf_minmax_size(kDefaultReadBufSize)
 	, m_writebuf_minmax_size(kDefaultWriteBufSize)
-	, m_read_speed(256, SPEED_PERIOD_TIME*1000)
-	, m_write_speed(256, SPEED_PERIOD_TIME*1000)
-#endif
+	, m_read_statistics(nullptr)
+	, m_write_statistics(nullptr)
 {
 	//set socket to non-block and close-onexec
 	socket_api::set_nonblock(sfd, true);
@@ -63,6 +61,16 @@ TcpConnection::TcpConnection(int32_t id, socket_t sfd, Looper* looper, Owner* ow
 //-------------------------------------------------------------------------------------
 TcpConnection::~TcpConnection()
 {
+	if (m_write_statistics) {
+		delete m_write_statistics;
+		m_write_statistics = nullptr;
+	}
+
+	if (m_read_statistics) {
+		delete m_read_statistics;
+		m_read_statistics = nullptr;
+	}
+
 	assert(get_state()==kDisconnected);
 	assert(m_socket == INVALID_SOCKET);
 	assert(m_event_id == Looper::INVALID_EVENT_ID);
@@ -134,9 +142,9 @@ void TcpConnection::_send(const char* buf, size_t len)
 		nwrote = socket_api::write(m_socket, buf, len);
 		if (nwrote >= 0)
 		{
-#if CY_ENABLE_DEBUG
-			m_write_speed.push(nwrote);
-#endif
+			if (m_write_statistics) {
+				m_write_statistics->push(nwrote);
+			}
 			remaining = len - (size_t)nwrote;
 		}
 		else
@@ -201,14 +209,12 @@ void TcpConnection::_on_socket_read(void)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 
 	ssize_t len = m_read_buf.read_socket(m_socket);
-#if CY_ENABLE_DEBUG
 	m_readbuf_minmax_size.update(m_read_buf.size());
-#endif
 	if (len > 0)
 	{
-#if CY_ENABLE_DEBUG
-		m_read_speed.push(len);
-#endif
+		if (m_read_statistics) {
+			m_read_statistics->push(len);
+		}
 		//notify logic layer...
 		if (m_on_message) {
 			m_on_message(shared_from_this());
@@ -236,18 +242,16 @@ void TcpConnection::_on_socket_write(void)
 
 	{
 		sys_api::auto_mutex lock(m_write_buf_lock);
-#if CY_ENABLE_DEBUG
 		m_writebuf_minmax_size.update(m_write_buf.size());
-#endif
 		if (!m_write_buf.empty()) {
 			ssize_t len = m_write_buf.write_socket(m_socket);
 			if (len <= 0) {
 				//log error
 				CY_LOG(L_ERROR, "write socket error, err=%d", socket_api::get_lasterror());
 			}
-#if CY_ENABLE_DEBUG
-			m_write_speed.push(len);
-#endif
+			if (m_write_statistics) {
+				m_write_statistics->push(len);
+			}
 		}
 
 		//still remain some data, wait next socket write time
@@ -282,7 +286,6 @@ void TcpConnection::_on_socket_close(void)
 	m_state = kDisconnected;
 
 	//delete looper event
-	m_looper->disable_all(m_event_id);
 	m_looper->delete_event(m_event_id);
 	m_event_id = Looper::INVALID_EVENT_ID;
 	
@@ -324,18 +327,41 @@ void TcpConnection::set_param(void* param)
 	m_param = param;
 }
 
-#if CY_ENABLE_DEBUG
 //-------------------------------------------------------------------------------------
-float TcpConnection::get_read_speed(void)
+void TcpConnection::start_read_statistics(int32_t period_time)
 {
-	return (float)m_read_speed.sum_and_counts().first / ((float)m_read_speed.get_time_period() / 1000.f);
+	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
+
+	//already start
+	if (m_read_statistics) return;
+	m_read_statistics = new PeriodValue <size_t, true>(period_time);
 }
 
 //-------------------------------------------------------------------------------------
-float TcpConnection::get_write_speed(void)
+void TcpConnection::start_write_statistics(int32_t period_time)
 {
-	return (float)m_write_speed.sum_and_counts().first / ((float)m_read_speed.get_time_period() / 1000.f);
+	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
+
+	//already start
+	if (m_write_statistics) return;
+	m_write_statistics = new PeriodValue <size_t, true>(period_time);
 }
-#endif
+
+//-------------------------------------------------------------------------------------
+std::pair<size_t, int32_t> TcpConnection::get_read_statistics(void) const
+{
+	if (!m_read_statistics) return std::pair<size_t, int32_t>{0, 0};
+
+	return m_read_statistics->sum_and_counts();
+}
+
+//-------------------------------------------------------------------------------------
+std::pair<size_t, int32_t> TcpConnection::get_write_statistics(void) const
+{
+	if (!m_write_statistics) return std::pair<size_t, int32_t>{0, 0};
+
+	return m_write_statistics->sum_and_counts();
+}
+
 
 }

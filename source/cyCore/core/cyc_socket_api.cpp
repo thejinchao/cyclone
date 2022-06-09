@@ -259,7 +259,7 @@ bool shutdown(socket_t s)
 //-------------------------------------------------------------------------------------
 bool setsockopt(socket_t s, int level, int optname, const void *optval, size_t optlen)
 {
-	if (SOCKET_ERROR == ::setsockopt(s, level, optname, (const char*)optval, (socklen_t)optlen))
+	if (0 != ::setsockopt(s, level, optname, (const char*)optval, (socklen_t)optlen))
 	{
 		CY_LOG(L_ERROR, "socket_api::setsockopt, level=%d, optname=%d, err=%d", get_lasterror());
 		return false;

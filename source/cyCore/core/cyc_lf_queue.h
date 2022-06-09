@@ -1,12 +1,9 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-
-#ifndef _CYCLONE_CORE_LOCK_FREE_QUEUE_H_
-#define _CYCLONE_CORE_LOCK_FREE_QUEUE_H_
+#pragma once
 
 #include <cyclone_config.h>
-
 #include "cyc_atomic.h"
 
 namespace cyclone
@@ -145,5 +142,3 @@ bool LockFreeQueue<ELEM_T, Q_SIZE>::pop(ELEM_T &a_data)
 }
 
 }
-
-#endif

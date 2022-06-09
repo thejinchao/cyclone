@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_NETWORK_ADDRESS_H_
-#define _CYCLONE_NETWORK_ADDRESS_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -71,6 +70,3 @@ namespace std {
 		}
 	};
 }
-
-#endif
-

@@ -1,8 +1,7 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CRYPT_DH_EXCHANGE_H_
-#define _CYCLONE_CRYPT_DH_EXCHANGE_H_
+#pragma once
 
 namespace cyclone
 {
@@ -25,5 +24,3 @@ void DH_generate_key_secret(dhkey_t& secret_key, const dhkey_t& my_private, cons
 
 
 }
-
-#endif

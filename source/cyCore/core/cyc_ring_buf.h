@@ -1,9 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-
-#ifndef _CYCLONE_CORE_RING_BUF_H_
-#define _CYCLONE_CORE_RING_BUF_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -116,4 +114,3 @@ private:
 };
 
 }
-#endif

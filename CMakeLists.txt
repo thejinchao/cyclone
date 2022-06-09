@@ -137,11 +137,6 @@ else()
 endif()
 
 ########
-#is debug function enable
-########
-OPTION(CY_ENABLE_DEBUG "Enable Debug Function" FALSE)
-
-########
 #is log enable
 ########
 set(CY_ENABLE_LOG TRUE)

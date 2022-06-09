@@ -74,9 +74,11 @@ public:
 	};
 	std::vector< DownloadThreadContext* > m_downloadContext;
 
+	enum { DOWNLOAD_STATISTICS_TIME = 1 }; //1 seconds
+
 public:
 	FileTransferClient() :
-		m_downloadSpeed(0xFFFF, 1000)
+		m_downloadSpeed(DOWNLOAD_STATISTICS_TIME*1000)
 	{
 
 	}
@@ -255,11 +257,7 @@ public:
 				size_t speed = (size_t)(ctx->fragmentSize*1000*1000) / (size_t)(ctx->endTime - ctx->beginTime);
 				CY_LOG(L_INFO, "Download thread[%d] success, offset=%zd, fragment_size=%s, crc=0x%08x, speed=%s/s, readBufMaxSize=%s", 
 					ctx->index, ctx->fileOffset, string_util::size_to_string((float)ctx->fragmentSize).c_str(), ctx->fragmentCRC, string_util::size_to_string(speed).c_str(),
-#if CY_ENABLE_DEBUG
 					string_util::size_to_string(conn->get_readebuf_max_size()).c_str()
-#else
-					"NA"
-#endif
 					);
 				ctx->status = TS_Success;
 			}

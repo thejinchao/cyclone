@@ -1,8 +1,7 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_UTILITY_STATISTICS_H_
-#define _CYCLONE_UTILITY_STATISTICS_H_
+#pragma once
 
 #include <cyclone_config.h>
 #include <cy_core.h>
@@ -53,7 +52,7 @@ private:
 };
 
 // PeriodValue:
-// More concerned about the performance of a variable in a certain period of time
+// More concerned about the performance of a variable in a certain period of time(in millisecond)
 template<typename T, bool WithLock = true, T ZeroValue=0>
 struct PeriodValue
 {
@@ -72,18 +71,31 @@ public:
 		sys_api::mutex_t _lock;
 	};
 public:
-	bool push(const T& value, int64_t cur_performance_time=0)
+	void push(const T& value, int64_t cur_performance_time=0)
 	{
 		AutoLock lock(m_lock);
 
 		if (cur_performance_time == 0) {
 			cur_performance_time = sys_api::performance_time_now() / 1000ll;
 		}
+
 		m_valueQueue.push(std::make_pair(cur_performance_time, value));
-		return (m_valueQueue.get_free_size() == 0);
+
+		//is value queue full?
+		if (m_valueQueue.get_free_size() == 0) {
+			//pop the front value if expired
+			if (cur_performance_time - m_valueQueue.front().first > m_time_period) {
+				m_valueQueue.pop();
+			}
+		}
 	}
 
-	std::pair<T, int32_t> sum_and_counts(int64_t cur_performance_time = 0)
+	size_t total_counts(void) const
+	{
+		return m_valueQueue.size();
+	}
+
+	std::pair<T, int32_t> sum_and_counts(int64_t cur_performance_time = 0) const
 	{
 		AutoLock lock(m_lock);
 
@@ -110,10 +122,9 @@ public:
 	}
 
 public:
-	PeriodValue(int32_t max_counts=256, int32_t time_period_ms=1000) 
-		: m_max_counts(max_counts)
-		, m_time_period(time_period_ms)
-		, m_valueQueue((size_t)max_counts)
+	PeriodValue(int32_t time_period_ms=1000) 
+		: m_time_period(time_period_ms)
+		, m_valueQueue(0) //not fixed size
 		, m_lock(nullptr)
 	{
 		if CONSTEXPR(WithLock) {
@@ -129,7 +140,7 @@ public:
 	}
 
 private:
-	void _update(int64_t cur_time)
+	void _update(int64_t cur_time) const
 	{
 		if (m_valueQueue.empty()) return;
 		int64_t expire = cur_time - m_time_period;
@@ -157,17 +168,14 @@ private:
 		m_valueQueue.pop(left_bounder + 1);
 	}
 
-private:
+public:
 	typedef std::pair<int64_t, T> ValuePair;
 	typedef RingQueue<ValuePair> ValueQueue;
 
-	int32_t m_max_counts;
-	int32_t m_time_period;
-	ValueQueue m_valueQueue;
+private:
+	int32_t m_time_period; //millisecond
+	mutable ValueQueue m_valueQueue;
 	sys_api::mutex_t m_lock;
 };
 
 }
-
-#endif
-

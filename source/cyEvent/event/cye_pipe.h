@@ -1,8 +1,7 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_EVENT_PIPE_H_
-#define _CYCLONE_EVENT_PIPE_H_
+#pragma once
 
 #include <cyclone_config.h>
 
@@ -32,5 +31,3 @@ public:
 };
 
 }
-
-#endif

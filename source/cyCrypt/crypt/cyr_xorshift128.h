@@ -1,8 +1,7 @@
-/*
+﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CRYPT_XORSHIFT128_H_
-#define _CYCLONE_CRYPT_XORSHIFT128_H_
+#pragma once
 
 namespace cyclone
 {
@@ -29,5 +28,3 @@ struct XorShift128 {
 void xorshift128(uint8_t* buf, size_t byte_length, XorShift128& seed);
 
 }
-
-#endif
