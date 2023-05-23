@@ -50,6 +50,8 @@ public:
 		return (m_address.sin_addr.s_addr < other.m_address.sin_addr.s_addr) || (m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr && m_address.sin_port < other.m_address.sin_port);
 	}
 
+	Address& operator=(const Address& other);
+
 public:
 	static uint32_t hash_value(const sockaddr_in& addr);
 

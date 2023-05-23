@@ -45,6 +45,14 @@ Address::Address(const Address& other)
 }
 
 //-------------------------------------------------------------------------------------
+Address& Address::operator=(const Address& other)
+{
+	memcpy(&m_address, &(other.m_address), sizeof(m_address));
+	memcpy(&m_ip_string, other.m_ip_string, IP_ADDRESS_LEN);
+	return *this;
+}
+
+//-------------------------------------------------------------------------------------
 Address::Address(bool peer, socket_t sfd)
 {
 	if (peer)
