@@ -56,7 +56,7 @@ public:
 	}
 
 	const T& get(size_t index) const {
-		assert(index>=0 && index<size());
+		assert(index<size());
 
 		return m_vector[_next(m_read, index)];
 	}
