@@ -74,6 +74,7 @@ Copyright(C) thecodeway.com
 #include <thread>
 #include <atomic>
 #include <algorithm>
+#include <memory>
 
 #ifdef CY_SYS_WINDOWS
 	#define FD_SETSIZE (1024)
