@@ -23,7 +23,6 @@ target_link_libraries(chat-server
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 target_link_libraries(chat-client
@@ -31,20 +30,17 @@ target_link_libraries(chat-client
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 else()
 
 target_link_libraries(chat-server
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 
 target_link_libraries(chat-client
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 

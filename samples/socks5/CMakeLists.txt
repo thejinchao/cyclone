@@ -25,14 +25,12 @@ target_link_libraries(socks5
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 else()
 
 target_link_libraries(socks5
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 

@@ -35,7 +35,6 @@ target_link_libraries(relay_local
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 target_link_libraries(relay_server
@@ -43,7 +42,6 @@ target_link_libraries(relay_server
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 target_link_libraries(relay_pipe
@@ -51,25 +49,21 @@ target_link_libraries(relay_pipe
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 else()
 
 target_link_libraries(relay_local
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 
 target_link_libraries(relay_server
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 
 target_link_libraries(relay_pipe
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 endif()

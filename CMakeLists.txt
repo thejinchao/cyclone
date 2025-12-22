@@ -33,9 +33,6 @@ set(CY_SOURCE_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyUtility)
 ########
 #check include file
 ########
-if(POLICY CMP0075)
-	cmake_policy(SET CMP0075 NEW)
-endif()
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 
 include(CheckIncludeFile)
@@ -83,40 +80,6 @@ unset(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM)
 unset(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY)
 unset(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE)
 unset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
-endif()
-
-########
-#find jemalloc library
-########
-find_path(JEMALLOC_SDK_ROOT
-	NAMES include/jemalloc/jemalloc.h
-	HINTS $ENV{JEMALLOC_SDK_ROOT}
-)
-find_library(JEMALLOC_LIBRARIES
-	NAMES jemalloc_pic
-	HINTS ${JEMALLOC_SDK_ROOT}/lib
-)
-find_path(JEMALLOC_INCLUDE_DIR
-	NAMES jemalloc/jemalloc.h
-	HINTS ${JEMALLOC_SDK_ROOT}/include
-)
-
-if(JEMALLOC_SDK_ROOT AND JEMALLOC_LIBRARIES)
-	set(CY_HAVE_JEMALLOC_LIBRARIES TRUE)
-else()
-	set(CY_HAVE_JEMALLOC_LIBRARIES FALSE)
-	set(JEMALLOC_LIBRARIES "")
-endif()
-
-mark_as_advanced(
-	JEMALLOC_LIBRARIES
-	JEMALLOC_INCLUDE_DIR
-)
-
-if(CY_HAVE_JEMALLOC_LIBRARIES)
-include_directories(
-	${JEMALLOC_INCLUDE_DIR}
-)
 endif()
 
 ########

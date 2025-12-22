@@ -20,14 +20,12 @@ target_link_libraries(timer
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 else()
 
 target_link_libraries(timer
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 

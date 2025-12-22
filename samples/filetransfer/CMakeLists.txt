@@ -29,7 +29,6 @@ target_link_libraries(ft-server
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 target_link_libraries(ft-client
@@ -37,20 +36,17 @@ target_link_libraries(ft-client
 	ws2_32.lib
 	shlwapi.lib
 	winmm.lib
-	${JEMALLOC_LIBRARIES}
 )
 
 else()
 
 target_link_libraries(ft-server
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 
 target_link_libraries(ft-client
 	cyclone
-	${JEMALLOC_LIBRARIES}
 	${PTHREAD_LIBRARIES}
 )
 
