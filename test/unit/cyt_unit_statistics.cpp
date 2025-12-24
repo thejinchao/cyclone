@@ -2,41 +2,40 @@
 #include <cy_crypt.h>
 #include <cy_event.h>
 #include <utility/cyu_statistics.h>
-
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 //-------------------------------------------------------------------------------------
-TEST(Statistics, MinMaxValue)
+TEST_CASE("MinMaxValue test for Signal", "[Statistics]")
 {
 	typedef MinMaxValue<int32_t> IntMinMaxValue;
 
 	{
 		IntMinMaxValue v;
-		EXPECT_EQ(v.min(), std::numeric_limits<int32_t>::max());
-		EXPECT_EQ(v.max(), std::numeric_limits<int32_t>::min());
+		REQUIRE_EQ(v.min(), std::numeric_limits<int32_t>::max());
+		REQUIRE_EQ(v.max(), std::numeric_limits<int32_t>::min());
 	}
 
 	{
 		IntMinMaxValue v(123);
-		EXPECT_EQ(v.min(), 123);
-		EXPECT_EQ(v.max(), 123);
+		REQUIRE_EQ(v.min(), 123);
+		REQUIRE_EQ(v.max(), 123);
 	}
 
 	{
 		IntMinMaxValue v;
 		v.update(123);
-		EXPECT_EQ(v.min(), 123);
-		EXPECT_EQ(v.max(), 123);
+		REQUIRE_EQ(v.min(), 123);
+		REQUIRE_EQ(v.max(), 123);
 	}
 
 	{
 		IntMinMaxValue v;
 		v.update(1);
 		v.update(2);
-		EXPECT_EQ(v.min(), 1);
-		EXPECT_EQ(v.max(), 2);
+		REQUIRE_EQ(v.min(), 1);
+		REQUIRE_EQ(v.max(), 2);
 	}
 
 	{
@@ -53,8 +52,8 @@ TEST(Statistics, MinMaxValue)
 			v.update(randomValue);
 		}
 
-		EXPECT_EQ(v.max(), _max);
-		EXPECT_EQ(v.min(), _min);
+		REQUIRE_EQ(v.max(), _max);
+		REQUIRE_EQ(v.min(), _min);
 	}
 
 	//multi thread
@@ -104,21 +103,21 @@ TEST(Statistics, MinMaxValue)
 			if (test_threads[i]->_min < _min) _min = test_threads[i]->_min;
 		}
 
-		EXPECT_EQ(v.max(), _max);
-		EXPECT_EQ(v.min(), _min);
+		REQUIRE_EQ(v.max(), _max);
+		REQUIRE_EQ(v.min(), _min);
 	}
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Statistics, PeriodValue)
+TEST_CASE("PeriodValue test for Signal", "[Statistics]")
 {
 	typedef PeriodValue<int32_t, true> IntPeriodValue;
 
 	{
 		IntPeriodValue v;
 
-		EXPECT_EQ(v.total_counts(), 0);
-		EXPECT_EQ(v.sum_and_counts(), std::make_pair(0, 0));
+		REQUIRE_EQ(v.total_counts(), 0);
+		REQUIRE_EQ(v.sum_and_counts(), std::make_pair(0, 0));
 	}
 
 	{
@@ -130,8 +129,8 @@ TEST(Statistics, PeriodValue)
 		}
 
 		//all
-		EXPECT_EQ(v.total_counts(), 32);
-		EXPECT_EQ(v.sum_and_counts(3300), std::make_pair(496, 32)); // 496 = (0+31)*32/2
+		REQUIRE_EQ(v.total_counts(), 32);
+		REQUIRE_EQ(v.sum_and_counts(3300), std::make_pair(496, 32)); // 496 = (0+31)*32/2
 	}
 
 	{
@@ -142,18 +141,18 @@ TEST(Statistics, PeriodValue)
 			v.push(i, (int64_t)(i + 1) * 100ll);
 		}
 
-		EXPECT_EQ(v.total_counts(), IntPeriodValue::ValueQueue::kDefaultCapacity-1);
+		REQUIRE_EQ(v.total_counts(), IntPeriodValue::ValueQueue::kDefaultCapacity-1);
 
 		//30-3100, 31-3200, ..., 39-4000
-		EXPECT_EQ(v.sum_and_counts(4100), std::make_pair(345, 10)); //345 = (30 + 39) * 10 / 2
-		EXPECT_EQ(v.total_counts(), 10);
+		REQUIRE_EQ(v.sum_and_counts(4100), std::make_pair(345, 10)); //345 = (30 + 39) * 10 / 2
+		REQUIRE_EQ(v.total_counts(), 10);
 
 		//39-4000
-		EXPECT_EQ(v.sum_and_counts(5000), std::make_pair(39, 1));
-		EXPECT_EQ(v.total_counts(), 1);
+		REQUIRE_EQ(v.sum_and_counts(5000), std::make_pair(39, 1));
+		REQUIRE_EQ(v.total_counts(), 1);
 
 		//all expired
-		EXPECT_EQ(v.sum_and_counts(5001), std::make_pair(0, 0));
-		EXPECT_EQ(v.total_counts(), 0);
+		REQUIRE_EQ(v.sum_and_counts(5001), std::make_pair(0, 0));
+		REQUIRE_EQ(v.total_counts(), 0);
 	}
 }

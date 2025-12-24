@@ -3,29 +3,29 @@
 #include <cy_event.h>
 #include <utility/cyu_ring_queue.h>
 
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 //-------------------------------------------------------------------------------------
 #define CHECK_RINQUEUE_EMPTY(rq, c) \
-	EXPECT_EQ(0ul, rq.size()); \
-	EXPECT_EQ((size_t)(c), rq.capacity()); \
-	EXPECT_EQ((size_t)(c), rq.get_free_size()); \
-	EXPECT_TRUE(rq.empty()); 
+	REQUIRE_EQ(0ul, rq.size()); \
+	REQUIRE_EQ((size_t)(c), rq.capacity()); \
+	REQUIRE_EQ((size_t)(c), rq.get_free_size()); \
+	REQUIRE_TRUE(rq.empty()); 
 
 //-------------------------------------------------------------------------------------
 #define CHECK_RINGQUEUE_SIZE(rq, s, c) \
-	EXPECT_EQ((size_t)(s), rq.size()); \
-	EXPECT_EQ((size_t)(c), rq.capacity()); \
-	EXPECT_EQ((size_t)((c) - (s)), rq.get_free_size()); \
+	REQUIRE_EQ((size_t)(s), rq.size()); \
+	REQUIRE_EQ((size_t)(c), rq.capacity()); \
+	REQUIRE_EQ((size_t)((c) - (s)), rq.get_free_size()); \
 	if ((s) == 0) \
-		EXPECT_TRUE(rq.empty()); \
+		REQUIRE_TRUE(rq.empty()); \
 	else \
-		EXPECT_FALSE(rq.empty()); \
+		REQUIRE_FALSE(rq.empty()); \
 
 //-------------------------------------------------------------------------------------
-TEST(RingQueue, FixedCapcity)
+TEST_CASE("FixedCapcity test for RingQueue", "[RingQueue]")
 {
 	const size_t TestSize = 31;
 	typedef RingQueue<int32_t> IntRingQueue;
@@ -51,7 +51,7 @@ TEST(RingQueue, FixedCapcity)
 		rq.push(1);
 		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
 
-		EXPECT_EQ(rq.front(), 1);
+		REQUIRE_EQ(rq.front(), 1);
 
 		rq.reset();
 		CHECK_RINQUEUE_EMPTY(rq, TestSize);
@@ -63,7 +63,7 @@ TEST(RingQueue, FixedCapcity)
 		rq.push(1);
 		rq.push(2);
 
-		EXPECT_EQ(rq.front(), 1);
+		REQUIRE_EQ(rq.front(), 1);
 		CHECK_RINGQUEUE_SIZE(rq, 2, TestSize);
 	}
 
@@ -74,7 +74,7 @@ TEST(RingQueue, FixedCapcity)
 			rq.push(i);
 		}
 		CHECK_RINGQUEUE_SIZE(rq, TestSize, TestSize);
-		EXPECT_EQ(rq.front(), 0);
+		REQUIRE_EQ(rq.front(), 0);
 
 		rq.reset();
 		CHECK_RINQUEUE_EMPTY(rq, TestSize);
@@ -87,13 +87,13 @@ TEST(RingQueue, FixedCapcity)
 			rq.push(i);
 		}
 		CHECK_RINGQUEUE_SIZE(rq, TestSize, TestSize);
-		EXPECT_EQ(rq.front(), 0);
+		REQUIRE_EQ(rq.front(), 0);
 
 		std::vector<int32_t> v1(TestSize);
 		for (size_t i = 0; i < TestSize; i++) v1[i] = rand();
 
 		for (int32_t i = 0; i < (int32_t)TestSize; i++) {
-			EXPECT_EQ(rq.front(), i);
+			REQUIRE_EQ(rq.front(), i);
 			rq.push(v1[(size_t)i]);
 			CHECK_RINGQUEUE_SIZE(rq, TestSize, TestSize);
 		}
@@ -104,11 +104,11 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), TestSize);
+		REQUIRE_EQ(result.size(), TestSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, v1[i]);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, v1[i]);
 		}
 
 		rq.reset();
@@ -124,13 +124,13 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_TRUE(result.empty());
+		REQUIRE_TRUE(result.empty());
 
 		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_TRUE(result.empty());
+		REQUIRE_TRUE(result.empty());
 	}
 
 	//push one element and get
@@ -142,7 +142,7 @@ TEST(RingQueue, FixedCapcity)
 		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
 
 		int32_t v2 = rq.front();
-		EXPECT_EQ(v1, v2);
+		REQUIRE_EQ(v1, v2);
 		CHECK_RINGQUEUE_SIZE(rq, 1, TestSize);
 
 		std::vector<std::pair<size_t, int32_t>> v3;
@@ -150,18 +150,18 @@ TEST(RingQueue, FixedCapcity)
 			v3.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(v3.size(), (size_t)1);
-		EXPECT_EQ(v3[0].first, (size_t)0);
-		EXPECT_EQ(v3[0].second, v1);
+		REQUIRE_EQ(v3.size(), (size_t)1);
+		REQUIRE_EQ(v3[0].first, (size_t)0);
+		REQUIRE_EQ(v3[0].second, v1);
 
 		v3.clear();
 		rq.walk_reserve([&v3](size_t index, const int32_t& v) ->bool {
 			v3.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(v3.size(), (size_t)1);
-		EXPECT_EQ(v3[0].first, (size_t)0);
-		EXPECT_EQ(v3[0].second, v1);
+		REQUIRE_EQ(v3.size(), (size_t)1);
+		REQUIRE_EQ(v3[0].first, (size_t)0);
+		REQUIRE_EQ(v3[0].second, v1);
 	}
 
 	//push some element and get
@@ -177,7 +177,7 @@ TEST(RingQueue, FixedCapcity)
 			rq.push(v1[i]);
 		}
 		CHECK_RINGQUEUE_SIZE(rq, FillSize, TestSize);
-		EXPECT_EQ(rq.front(), v1[0]);
+		REQUIRE_EQ(rq.front(), v1[0]);
 
 		//get
 		std::vector<std::pair<size_t, int32_t>> result;
@@ -185,11 +185,11 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize);
+		REQUIRE_EQ(result.size(), FillSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, v1[i]);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, v1[i]);
 		}
 
 		//get reserve
@@ -198,11 +198,11 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize);
+		REQUIRE_EQ(result.size(), FillSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, result.size()-1-i);
-			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+			REQUIRE_EQ(result[i].first, result.size()-1-i);
+			REQUIRE_EQ(result[i].second, v1[result.size() - 1 - i]);
 		}
 	}
 
@@ -220,13 +220,13 @@ TEST(RingQueue, FixedCapcity)
 		}
 		//push
 		for (size_t i = 0; i < FillSize; i++) {
-			EXPECT_EQ(rq.front(), 0);
+			REQUIRE_EQ(rq.front(), 0);
 
 			rq.push(v1[i]);
 			rq.pop();
 		}
 		for (size_t i = 0; i < FillSize; i++) {
-			EXPECT_EQ(rq.front(), v1[0]);
+			REQUIRE_EQ(rq.front(), v1[0]);
 
 			rq.push(v1[i+FillSize]);
 		}
@@ -239,11 +239,11 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize*2);
+		REQUIRE_EQ(result.size(), FillSize*2);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, v1[i]);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, v1[i]);
 		}
 
 		//get reserve
@@ -252,11 +252,11 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 2);
+		REQUIRE_EQ(result.size(), FillSize * 2);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, result.size()-1-i);
-			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+			REQUIRE_EQ(result[i].first, result.size()-1-i);
+			REQUIRE_EQ(result[i].second, v1[result.size() - 1 - i]);
 		}
 	}
 
@@ -284,7 +284,7 @@ TEST(RingQueue, FixedCapcity)
 		//pop
 		const size_t PopSize = TestSize - FillSize + 2;
 		for (size_t i = 0; i < PopSize; i++) {
-			EXPECT_EQ(rq.front(), v1[i]);
+			REQUIRE_EQ(rq.front(), v1[i]);
 			rq.pop();
 		}
 
@@ -296,11 +296,11 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 2-PopSize);
+		REQUIRE_EQ(result.size(), FillSize * 2-PopSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, v1[i+PopSize]);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, v1[i+PopSize]);
 		}
 
 		//get reserve
@@ -309,17 +309,17 @@ TEST(RingQueue, FixedCapcity)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 2-PopSize);
+		REQUIRE_EQ(result.size(), FillSize * 2-PopSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, result.size() - 1 - i);
-			EXPECT_EQ(result[i].second, v1[FillSize*2 - 1 - i]);
+			REQUIRE_EQ(result[i].first, result.size() - 1 - i);
+			REQUIRE_EQ(result[i].second, v1[FillSize*2 - 1 - i]);
 		}
 	}
 }
 
 //-------------------------------------------------------------------------------------
-TEST(RingQueue, AutoResize)
+TEST_CASE("AutoResize test for RingQueue", "[RingQueue]")
 {
 	typedef RingQueue<int32_t> IntRingQueue;
 
@@ -335,7 +335,7 @@ TEST(RingQueue, AutoResize)
 		rq.push(1);
 		CHECK_RINGQUEUE_SIZE(rq, 1, IntRingQueue::kDefaultCapacity);
 
-		EXPECT_EQ(rq.front(), 1);
+		REQUIRE_EQ(rq.front(), 1);
 
 		rq.reset();
 		CHECK_RINQUEUE_EMPTY(rq, IntRingQueue::kDefaultCapacity);
@@ -347,7 +347,7 @@ TEST(RingQueue, AutoResize)
 		rq.push(1);
 		rq.push(2);
 
-		EXPECT_EQ(rq.front(), 1);
+		REQUIRE_EQ(rq.front(), 1);
 		CHECK_RINGQUEUE_SIZE(rq, 2, IntRingQueue::kDefaultCapacity);
 	}
 
@@ -358,7 +358,7 @@ TEST(RingQueue, AutoResize)
 			rq.push(i);
 		}
 		CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity, IntRingQueue::kDefaultCapacity);
-		EXPECT_EQ(rq.front(), 0);
+		REQUIRE_EQ(rq.front(), 0);
 
 		rq.reset();
 		CHECK_RINQUEUE_EMPTY(rq, IntRingQueue::kDefaultCapacity);
@@ -371,12 +371,12 @@ TEST(RingQueue, AutoResize)
 			rq.push(i);
 		}
 		CHECK_RINGQUEUE_SIZE(rq, IntRingQueue::kDefaultCapacity, IntRingQueue::kDefaultCapacity);
-		EXPECT_EQ(rq.front(), 0);
+		REQUIRE_EQ(rq.front(), 0);
 
 		std::vector<int32_t> v1;
 		size_t next_capcity = (rq.capacity() + 1) * 2 - 1;
 		for (int32_t i = 0; i < (int32_t)(next_capcity-IntRingQueue::kDefaultCapacity); i++) {
-			EXPECT_EQ(rq.front(), 0);
+			REQUIRE_EQ(rq.front(), 0);
 
 			int32_t v = rand();
 			v1.push_back(v);
@@ -390,16 +390,16 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), next_capcity);
+		REQUIRE_EQ(result.size(), next_capcity);
 
 		for (size_t i = 0; i < result.size(); i++)
 		{
-			EXPECT_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].first, i);
 
 			if(i< IntRingQueue::kDefaultCapacity)
-				EXPECT_EQ(result[i].second, (int32_t)i);
+				REQUIRE_EQ(result[i].second, (int32_t)i);
 			else
-				EXPECT_EQ(result[i].second, v1[i- IntRingQueue::kDefaultCapacity]);
+				REQUIRE_EQ(result[i].second, v1[i- IntRingQueue::kDefaultCapacity]);
 		}
 
 		size_t next_capcity2 = (rq.capacity() + 1) * 2 - 1;
@@ -416,13 +416,13 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_TRUE(result.empty());
+		REQUIRE_TRUE(result.empty());
 
 		rq.walk_reserve([&result](size_t index, const int32_t& v) ->bool {
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_TRUE(result.empty());
+		REQUIRE_TRUE(result.empty());
 	}
 
 	//push one element and get
@@ -434,7 +434,7 @@ TEST(RingQueue, AutoResize)
 		CHECK_RINGQUEUE_SIZE(rq, 1, IntRingQueue::kDefaultCapacity);
 
 		int32_t v2 = rq.front();
-		EXPECT_EQ(v1, v2);
+		REQUIRE_EQ(v1, v2);
 		CHECK_RINGQUEUE_SIZE(rq, 1, IntRingQueue::kDefaultCapacity);
 
 		std::vector<std::pair<size_t, int32_t>> v3;
@@ -442,18 +442,18 @@ TEST(RingQueue, AutoResize)
 			v3.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(v3.size(), (size_t)1);
-		EXPECT_EQ(v3[0].first, (size_t)0);
-		EXPECT_EQ(v3[0].second, v1);
+		REQUIRE_EQ(v3.size(), (size_t)1);
+		REQUIRE_EQ(v3[0].first, (size_t)0);
+		REQUIRE_EQ(v3[0].second, v1);
 
 		v3.clear();
 		rq.walk_reserve([&v3](size_t index, const int32_t& v) ->bool {
 			v3.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(v3.size(), (size_t)1);
-		EXPECT_EQ(v3[0].first, (size_t)0);
-		EXPECT_EQ(v3[0].second, v1);
+		REQUIRE_EQ(v3.size(), (size_t)1);
+		REQUIRE_EQ(v3[0].first, (size_t)0);
+		REQUIRE_EQ(v3[0].second, v1);
 	}
 
 	//push some element and get
@@ -469,7 +469,7 @@ TEST(RingQueue, AutoResize)
 			rq.push(v1[i]);
 		}
 		CHECK_RINGQUEUE_SIZE(rq, FillSize, IntRingQueue::kDefaultCapacity);
-		EXPECT_EQ(rq.front(), v1[0]);
+		REQUIRE_EQ(rq.front(), v1[0]);
 
 		//get
 		std::vector<std::pair<size_t, int32_t>> result;
@@ -477,11 +477,11 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize);
+		REQUIRE_EQ(result.size(), FillSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, v1[i]);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, v1[i]);
 		}
 
 		//get reserve
@@ -490,11 +490,11 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize);
+		REQUIRE_EQ(result.size(), FillSize);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, result.size() - 1 - i);
-			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+			REQUIRE_EQ(result[i].first, result.size() - 1 - i);
+			REQUIRE_EQ(result[i].second, v1[result.size() - 1 - i]);
 		}
 	}
 
@@ -512,7 +512,7 @@ TEST(RingQueue, AutoResize)
 		}
 		//push
 		for (size_t i = 0; i < FillSize; i++) {
-			EXPECT_EQ(rq.front(), 0);
+			REQUIRE_EQ(rq.front(), 0);
 
 			rq.push(v1[i]);
 			rq.pop();
@@ -520,7 +520,7 @@ TEST(RingQueue, AutoResize)
 			CHECK_RINGQUEUE_SIZE(rq, FillSize, IntRingQueue::kDefaultCapacity);
 		}
 		for (size_t i = 0; i < FillSize; i++) {
-			EXPECT_EQ(rq.front(), v1[0]);
+			REQUIRE_EQ(rq.front(), v1[0]);
 
 			rq.push(v1[i + FillSize]);
 		}
@@ -533,11 +533,11 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 2);
+		REQUIRE_EQ(result.size(), FillSize * 2);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, v1[i]);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, v1[i]);
 		}
 
 		//get reserve
@@ -546,11 +546,11 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 2);
+		REQUIRE_EQ(result.size(), FillSize * 2);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, result.size() - 1 - i);
-			EXPECT_EQ(result[i].second, v1[result.size() - 1 - i]);
+			REQUIRE_EQ(result[i].first, result.size() - 1 - i);
+			REQUIRE_EQ(result[i].second, v1[result.size() - 1 - i]);
 		}
 	}
 
@@ -568,13 +568,13 @@ TEST(RingQueue, AutoResize)
 		}
 		//push
 		for (size_t i = 0; i < FillSize; i++) {
-			EXPECT_EQ(rq.front(), 0);
+			REQUIRE_EQ(rq.front(), 0);
 
 			rq.push(v1[i]);
 			rq.pop();
 		}
 		for (size_t i = 0; i < FillSize; i++) {
-			EXPECT_EQ(rq.front(), v1[0]);
+			REQUIRE_EQ(rq.front(), v1[0]);
 
 			rq.push(v1[i + FillSize]);
 		}
@@ -603,15 +603,15 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 3);
+		REQUIRE_EQ(result.size(), FillSize * 3);
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].first, i);
 
 			if(i<FillSize*2)
-				EXPECT_EQ(result[i].second, v1[i]);
+				REQUIRE_EQ(result[i].second, v1[i]);
 			else
-				EXPECT_EQ(result[i].second, v2[i-FillSize*2]);
+				REQUIRE_EQ(result[i].second, v2[i-FillSize*2]);
 		}
 
 		//get reserve
@@ -620,17 +620,17 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), FillSize * 3);
+		REQUIRE_EQ(result.size(), FillSize * 3);
 
 		for (size_t ri = 0; ri < result.size(); ri++)
 		{
 			size_t i = (size_t)(result.size() - 1 - ri);
 
-			EXPECT_EQ(result[ri].first, i);
+			REQUIRE_EQ(result[ri].first, i);
 			if (i < FillSize * 2)
-				EXPECT_EQ(result[ri].second, v1[i]);
+				REQUIRE_EQ(result[ri].second, v1[i]);
 			else
-				EXPECT_EQ(result[ri].second, v2[i - FillSize * 2]);
+				REQUIRE_EQ(result[ri].second, v2[i - FillSize * 2]);
 		}
 	}
 
@@ -641,7 +641,7 @@ TEST(RingQueue, AutoResize)
 		rq.push(0);
 		for (size_t i = 0; i < IntRingQueue::kDefaultCapacity; i++)
 		{
-			EXPECT_EQ(rq.front(), 0);
+			REQUIRE_EQ(rq.front(), 0);
 
 			rq.push(0);
 			rq.pop();
@@ -665,11 +665,11 @@ TEST(RingQueue, AutoResize)
 			result.push_back(std::make_pair(index, v));
 			return true;
 		});
-		EXPECT_EQ(result.size(), (size_t)(IntRingQueue::kDefaultCapacity + 1));
+		REQUIRE_EQ(result.size(), (size_t)(IntRingQueue::kDefaultCapacity + 1));
 
 		for (size_t i = 0; i < result.size(); i++) {
-			EXPECT_EQ(result[i].first, i);
-			EXPECT_EQ(result[i].second, (int32_t)i);
+			REQUIRE_EQ(result[i].first, i);
+			REQUIRE_EQ(result[i].second, (int32_t)i);
 		}
 	}
 }

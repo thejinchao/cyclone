@@ -2,7 +2,7 @@
 #include <cy_crypt.h>
 #include "cyt_event_fortest.h"
 
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
@@ -143,7 +143,7 @@ static void _writeThreadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(EventLooper, ReadAndCloseSocket)
+TEST_CASE("ReadAndCloseSocket test for EventLooper", "[EventLooper]")
 {
 	ReadThreadData data;
 	data.ready_signal = sys_api::signal_create();
@@ -176,28 +176,28 @@ TEST(EventLooper, ReadAndCloseSocket)
 			size_t index = (size_t)rand() % data.socket_counts;
 
 			uint64_t sndData = rndSend.next();
-			EXPECT_EQ(sizeof(sndData), (size_t)socket_api::write(data.socketPairs[index]->m_fd[1], (const char*)&sndData, sizeof(sndData)));
+			REQUIRE_EQ(sizeof(sndData), (size_t)socket_api::write(data.socketPairs[index]->m_fd[1], (const char*)&sndData, sizeof(sndData)));
 			activeIDs.push_back(index);
 		}
-		EXPECT_EQ(data.active_counts, activeIDs.size());
+		REQUIRE_EQ(data.active_counts, activeIDs.size());
 
 		sys_api::signal_wait(data.read_done_signal);
 
 		//begin check
-		EXPECT_GE(data.actived_counts.load(), data.active_counts);
+		REQUIRE_GE(data.actived_counts.load(), data.active_counts);
 		for (size_t i = 0; i < data.active_counts; i++) {
 			size_t index = activeIDs[i];
 			uint64_t rcvData = 0;
-			EXPECT_EQ(sizeof(rcvData), data.socketPairs[index]->rb.memcpy_out(&rcvData, sizeof(rcvData)));
-			EXPECT_EQ(rcvData, rndCheck.next());
+			REQUIRE_EQ(sizeof(rcvData), data.socketPairs[index]->rb.memcpy_out(&rcvData, sizeof(rcvData)));
+			REQUIRE_EQ(rcvData, rndCheck.next());
 		}
 		activeIDs.clear();
 		for (size_t i = 0; i < data.socket_counts; i++) {
-			EXPECT_TRUE(data.socketPairs[i]->rb.empty());
+			REQUIRE_TRUE(data.socketPairs[i]->rb.empty());
 		}
 
-		EXPECT_GE(data.looper->get_loop_counts(), 1ull);
-		EXPECT_LE(data.looper->get_loop_counts(), data.active_counts + 1); //read event(s) + inner pipe register event
+		REQUIRE_GE(data.looper->get_loop_counts(), 1ull);
+		REQUIRE_LE(data.looper->get_loop_counts(), data.active_counts + 1); //read event(s) + inner pipe register event
 
 		//quit...
 		data.looper->push_stop_request();
@@ -245,28 +245,28 @@ TEST(EventLooper, ReadAndCloseSocket)
 
 			closeIDs.insert(data.socketPairs[index]->event_id);
 		}
-		EXPECT_EQ(data.close_counts, closeIDs.size());
+		REQUIRE_EQ(data.close_counts, closeIDs.size());
 		sys_api::signal_wait(data.close_done_signal);
 
 		//begin check
 		const auto& channel_buf = data.looper->get_channel_buf();
-		EXPECT_EQ(data.closed_counts.load(), data.close_counts);
-		EXPECT_EQ(data.socket_counts - data.close_counts, (uint32_t)data.looper->get_active_channel_counts() - 1);
+		REQUIRE_EQ(data.closed_counts.load(), data.close_counts);
+		REQUIRE_EQ(data.socket_counts - data.close_counts, (uint32_t)data.looper->get_active_channel_counts() - 1);
 		for (size_t i = 0; i < channel_buf.size(); i++) {
 			const auto& channel = channel_buf[i];
 
 			if (closeIDs.end() != closeIDs.find(channel.id)) {
-				EXPECT_FALSE(channel.active);
+				REQUIRE_FALSE(channel.active);
 			}
 			else {
 				if (allIDs.end() != allIDs.find(channel.id)) {
-					EXPECT_TRUE(channel.active);
+					REQUIRE_TRUE(channel.active);
 				}
 			}
 		}
 
-		EXPECT_GE(data.looper->get_loop_counts(), 1ull);
-		EXPECT_LE(data.looper->get_loop_counts(), data.close_counts + 1); //close event(s) + inner pipe register event
+		REQUIRE_GE(data.looper->get_loop_counts(), 1ull);
+		REQUIRE_LE(data.looper->get_loop_counts(), data.close_counts + 1); //close event(s) + inner pipe register event
 
 		//quit...
 		data.looper->push_stop_request();
@@ -284,7 +284,7 @@ TEST(EventLooper, ReadAndCloseSocket)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(EventLooper, WriteSocket)
+TEST_CASE("WriteSocket test for EventLooper", "[EventLooper]")
 {
 	WriteThreadData data;
 	data.ready_signal = sys_api::signal_create();
@@ -315,8 +315,8 @@ TEST(EventLooper, WriteSocket)
 		sys_api::thread_join(thread);
 
 		for (size_t i = 0; i < data.socketPairs.size(); i++) {
-			EXPECT_GE(data.socketPairs[i]->write_counts.load(), loop_counts - 1);
-			EXPECT_LE(data.socketPairs[i]->write_counts.load(), loop_counts);
+			REQUIRE_GE(data.socketPairs[i]->write_counts.load(), loop_counts - 1);
+			REQUIRE_LE(data.socketPairs[i]->write_counts.load(), loop_counts);
 			delete data.socketPairs[i];
 		}
 		data.socketPairs.clear();

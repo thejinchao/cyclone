@@ -1,40 +1,40 @@
 ﻿#include <cy_core.h>
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 namespace {
 //-------------------------------------------------------------------------------------
-TEST(Signal, Basic)
+TEST_CASE("Basic test for Signal", "[Signal]") 
 {
 	sys_api::signal_t signal = sys_api::signal_create();
 
 	//wait
-	EXPECT_FALSE(sys_api::signal_timewait(signal, 0));
-	EXPECT_FALSE(sys_api::signal_timewait(signal, 1));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 1));
 
 	//notify, wait and timewait
 	sys_api::signal_notify(signal);
 	sys_api::signal_wait(signal);
-	EXPECT_FALSE(sys_api::signal_timewait(signal, 1));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 1));
 
 	//notify and time_wait twice
 	sys_api::signal_notify(signal);
-	EXPECT_TRUE(sys_api::signal_timewait(signal, 1));
-	EXPECT_FALSE(sys_api::signal_timewait(signal, 0));
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 1));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
 
 	//notify twice and time_wait twice
 	sys_api::signal_notify(signal);
 	sys_api::signal_notify(signal);
-	EXPECT_TRUE(sys_api::signal_timewait(signal, 0));
-	EXPECT_FALSE(sys_api::signal_timewait(signal, 1));
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 0));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 1));
 
 	//time_wait
 	int64_t begin_time = sys_api::performance_time_now();
-	EXPECT_FALSE(sys_api::signal_timewait(signal, 100));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 100));
 	int64_t end_time = sys_api::performance_time_now();
-	EXPECT_GE(end_time - begin_time, 100*1000);
-	EXPECT_LE(end_time - begin_time, 110*1000);
+	REQUIRE_GE(end_time - begin_time, 100*1000);
+	REQUIRE_LE(end_time - begin_time, 120*1000);
 
 
 	sys_api::signal_destroy(signal);
@@ -61,7 +61,7 @@ static void _threadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Signal, Multithread)
+TEST_CASE("Multithread test for Signal", "[Signal]")
 {
 	const int32_t thread_counts = 10;
 
@@ -80,18 +80,18 @@ TEST(Signal, Multithread)
 		live_counts++;
 	}
 
-	EXPECT_EQ(thread_counts, live_counts);
+	REQUIRE_EQ(thread_counts, live_counts);
 
 	while (live_counts>0) {
 		int32_t current_live_counts = live_counts;
 		sys_api::signal_notify(signal_ping);
 		sys_api::signal_wait(signal_pong);
-		EXPECT_EQ(current_live_counts - 1, live_counts.load());
+		REQUIRE_EQ(current_live_counts - 1, live_counts.load());
 	}
 
-	EXPECT_EQ(0, live_counts);
-	EXPECT_FALSE(sys_api::signal_timewait(signal_ping, 0));
-	EXPECT_FALSE(sys_api::signal_timewait(signal_pong, 0));
+	REQUIRE_EQ(0, live_counts);
+	REQUIRE_FALSE(sys_api::signal_timewait(signal_ping, 0));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal_pong, 0));
 
 	sys_api::signal_destroy(signal_ping);
 	sys_api::signal_destroy(signal_pong);

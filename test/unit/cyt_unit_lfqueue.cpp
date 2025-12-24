@@ -1,50 +1,50 @@
 #include <cy_core.h>
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 namespace {
 //-------------------------------------------------------------------------------------
-TEST(LockFreeQueue, Basic)
+TEST_CASE("Basic test for LockFreeQueue", "[LockFreeQueue]")
 {
 	const int32_t QUEUE_SIZE = 32;
 	typedef LockFreeQueue<int32_t, QUEUE_SIZE> IntQueue;
 	IntQueue queue;
 
-	EXPECT_EQ(0ll, queue.size());
+	REQUIRE_EQ(0ll, queue.size());
 
 	int32_t pop_num;
 	bool have_data = queue.pop(pop_num);
-	EXPECT_FALSE(have_data);
-	EXPECT_EQ(0ll, queue.size());
+	REQUIRE_FALSE(have_data);
+	REQUIRE_EQ(0ll, queue.size());
 
 	int32_t push_num = (int32_t)rand();
 	bool push_ret = queue.push(push_num);
-	EXPECT_EQ(1ll, queue.size());
-	EXPECT_TRUE(push_ret);
+	REQUIRE_EQ(1ll, queue.size());
+	REQUIRE_TRUE(push_ret);
 
 	have_data = queue.pop(pop_num);
-	EXPECT_EQ(pop_num, push_num);
-	EXPECT_TRUE(have_data);
-	EXPECT_EQ(0ll, queue.size());
+	REQUIRE_EQ(pop_num, push_num);
+	REQUIRE_TRUE(have_data);
+	REQUIRE_EQ(0ll, queue.size());
 
 	for (int32_t i = 0; i < QUEUE_SIZE-1; i++) {
 		push_ret = queue.push(i);
-		EXPECT_TRUE(push_ret);
-		EXPECT_EQ(size_t(i+1), queue.size());
+		REQUIRE_TRUE(push_ret);
+		REQUIRE_EQ(size_t(i+1), queue.size());
 	}
 
-	EXPECT_EQ(size_t(QUEUE_SIZE-1), queue.size());
+	REQUIRE_EQ(size_t(QUEUE_SIZE-1), queue.size());
 	push_ret = queue.push(QUEUE_SIZE);
-	EXPECT_FALSE(push_ret);
+	REQUIRE_FALSE(push_ret);
 
 	for (int32_t i = 0; i < QUEUE_SIZE-1; i++) {
 		have_data = queue.pop(pop_num);
-		EXPECT_TRUE(have_data);
-		EXPECT_EQ(i, pop_num);
-		EXPECT_EQ(size_t(QUEUE_SIZE-i-2), queue.size());
+		REQUIRE_TRUE(have_data);
+		REQUIRE_EQ(i, pop_num);
+		REQUIRE_EQ(size_t(QUEUE_SIZE-i-2), queue.size());
 	}
-	EXPECT_EQ(0ll, queue.size());
+	REQUIRE_EQ(0ll, queue.size());
 }
 
 //-------------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ public:
 #endif
 		//check result
 		for (uint32_t i = 1; i <= m_topValue; i++) {
-			EXPECT_TRUE(m_result[i].test_and_set());
+			REQUIRE_TRUE(m_result[i].test_and_set());
 		}
 
 		//free memory
@@ -179,8 +179,8 @@ private:
 	void _pushFunction(ThreadData* threadData) {
 		uint32_t nextValue = m_currentValue++;
 		while (nextValue <= m_topValue) {
-			EXPECT_GE(nextValue, 1u);
-			EXPECT_LE(nextValue, m_topValue);
+			REQUIRE_GE(nextValue, 1u);
+			REQUIRE_LE(nextValue, m_topValue);
 			while (!(m_queue->push(nextValue))) {
 				sys_api::thread_yield();
 			}
@@ -199,9 +199,9 @@ private:
 			bool pop_result = m_queue->pop(pop_value);
 
 			if (pop_result) {
-				EXPECT_GE(pop_value, 1u);
-				EXPECT_LE(pop_value, m_topValue);
-				EXPECT_FALSE(m_result[pop_value].test_and_set());
+				REQUIRE_GE(pop_value, 1u);
+				REQUIRE_LE(pop_value, m_topValue);
+				REQUIRE_FALSE(m_result[pop_value].test_and_set());
 				threadData->workCounts++;
 			}
 			else {
@@ -248,7 +248,7 @@ public:
 };
 
 //-------------------------------------------------------------------------------------
-TEST(LockFreeQueue, MultiThread)
+TEST_CASE("MultiThread test for LockFreeQueue", "[LockFreeQueue]")
 {
 	MultiThreadPushPop test1(100u, 1, 1, true);
 	test1.pushAndPop();

@@ -1,6 +1,6 @@
 ﻿#include <cy_core.h>
 #include <cy_crypt.h>
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
@@ -15,18 +15,18 @@ void _fillRandom(uint8_t* mem, size_t len)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Adler32, Basic)
+TEST_CASE("Basic test for Adler32", "[Adler32]")
 {
-	EXPECT_EQ(INITIAL_ADLER, adler32(0, 0, 0));
-	EXPECT_EQ(INITIAL_ADLER, adler32(0xFFFFFFFFul, 0, 0));
+	REQUIRE_EQ(INITIAL_ADLER, adler32(0, 0, 0));
+	REQUIRE_EQ(INITIAL_ADLER, adler32(0xFFFFFFFFul, 0, 0));
 
 	const char* hello = "Hello,World!";
 	uint32_t adler = adler32(INITIAL_ADLER, (const uint8_t*)hello, strlen(hello));
-	EXPECT_EQ(0x1c9d044aul, adler);
+	REQUIRE_EQ(0x1c9d044aul, adler);
 
 	const char* force = "May the Force be with you";
 	adler = adler32(INITIAL_ADLER, (const uint8_t*)force, strlen(force));
-	EXPECT_EQ(0x6fe408d8ul, adler);
+	REQUIRE_EQ(0x6fe408d8ul, adler);
 	
 	const uint8_t data_buf[] = {
 		0x80,0x8a,0xdc,0x82,0xec,0x0b,0x42,0xd1,0xb8,0xb8,0x4c,0xc8,0xdb,0x7a,0xcb,0x3e,
@@ -37,16 +37,16 @@ TEST(Adler32, Basic)
 	size_t data_length = sizeof(data_buf);
 
 	uint32_t adler1 = adler32(INITIAL_ADLER, data_buf, data_length);
-	EXPECT_EQ(0x75c12362ul, adler1);
+	REQUIRE_EQ(0x75c12362ul, adler1);
 
 	size_t first = 33;
 	uint32_t adler2 = adler32(INITIAL_ADLER, data_buf, first);
 	adler2 = adler32(adler2, data_buf+ first, data_length- first);
-	EXPECT_EQ(0x75c12362ul, adler2);
+	REQUIRE_EQ(0x75c12362ul, adler2);
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Adler32, Random)
+TEST_CASE("Random test for Adler32", "[Adler32]")
 {
 	const size_t buf_cap = 257;
 	uint8_t random_buf[buf_cap] = { 0 };
@@ -67,12 +67,12 @@ TEST(Adler32, Random)
 		uint32_t adler2 = adler32(INITIAL_ADLER, random_buf, first_part);
 		adler2 = adler32(adler2, random_buf + first_part, buf_size - first_part);
 
-		EXPECT_EQ(adler1, adler2);
+		REQUIRE_EQ(adler1, adler2);
 	}
 }
 
 //-------------------------------------------------------------------------------------
-TEST(DHExchange, Random)
+TEST_CASE("Random test for DHExchange", "[DHExchange]")
 {
 	const int32_t TEST_COUNTS = 20;
 	for (int32_t i = 0; i < TEST_COUNTS; i++) {
@@ -93,29 +93,29 @@ TEST(DHExchange, Random)
 		dhkey_t bob_secret;
 		DH_generate_key_secret(bob_secret, bob_private, alice_public);
 
-		EXPECT_EQ(alice_secret.dq.low, bob_secret.dq.low);
-		EXPECT_EQ(alice_secret.dq.high, bob_secret.dq.high);
+		REQUIRE_EQ(alice_secret.dq.low, bob_secret.dq.low);
+		REQUIRE_EQ(alice_secret.dq.high, bob_secret.dq.high);
 	}
 
 }
 
 //-------------------------------------------------------------------------------------
-TEST(XorShift128, Basic)
+TEST_CASE("Basic test for XorShift128", "[XorShift128]")
 {
 	XorShift128 seed;
 	seed.seed0 = 0xFACEDEADDEADFACEull;
 	seed.seed1 = 0x1234567812345678ull;
 
-	EXPECT_EQ(0xd049deb4f4d8c4dcULL, seed.next());
-	EXPECT_EQ(0x4e3e5b9bd2800ea2ULL, seed.next());
-	EXPECT_EQ(0xc0752ca2482a91f1ULL, seed.next());
-	EXPECT_EQ(0x3f5fd1b17d136ae9ULL, seed.next());
-	EXPECT_EQ(0xae06c714838dcd21ULL, seed.next());
-	EXPECT_EQ(0x45e5977a2fc13093ULL, seed.next());
-	EXPECT_EQ(0x12204cefa3234abbULL, seed.next());
-	EXPECT_EQ(0x0f6254cd56eee447ULL, seed.next());
-	EXPECT_EQ(0x6727c3095f6dcfc7ULL, seed.next());
-	EXPECT_EQ(0x00f8af6ebadb4ec3ULL, seed.next());
+	REQUIRE_EQ(0xd049deb4f4d8c4dcULL, seed.next());
+	REQUIRE_EQ(0x4e3e5b9bd2800ea2ULL, seed.next());
+	REQUIRE_EQ(0xc0752ca2482a91f1ULL, seed.next());
+	REQUIRE_EQ(0x3f5fd1b17d136ae9ULL, seed.next());
+	REQUIRE_EQ(0xae06c714838dcd21ULL, seed.next());
+	REQUIRE_EQ(0x45e5977a2fc13093ULL, seed.next());
+	REQUIRE_EQ(0x12204cefa3234abbULL, seed.next());
+	REQUIRE_EQ(0x0f6254cd56eee447ULL, seed.next());
+	REQUIRE_EQ(0x6727c3095f6dcfc7ULL, seed.next());
+	REQUIRE_EQ(0x00f8af6ebadb4ec3ULL, seed.next());
 
 	//test string decode and encode
 	const char* plain_text = "And God said, Let there be light: and there was light.";
@@ -136,13 +136,13 @@ TEST(XorShift128, Basic)
 	seed.seed1 = 0x1234567812345678ull;
 	xorshift128((uint8_t*)buf, text_len, seed);
 
-	EXPECT_EQ(0, memcmp(buf, encrypt_text, text_len));
+	REQUIRE_EQ(0, memcmp(buf, encrypt_text, text_len));
 
 	seed.seed0 = 0xFACEDEADDEADFACEull;
 	seed.seed1 = 0x1234567812345678ull;
 	xorshift128((uint8_t*)buf, text_len, seed);
 
-	ASSERT_STREQ(plain_text, buf);
+	REQUIRE_THAT(plain_text, Catch::Matchers::Equals(buf));
 
 	//encrypt with random seed
 	const int32_t TEST_COUNTS = 20;
@@ -155,13 +155,13 @@ TEST(XorShift128, Basic)
 		strncpy(buf, plain_text, text_len);
 		xorshift128((uint8_t*)buf, text_len, seed_encrypt);
 		xorshift128((uint8_t*)buf, text_len, seed_decrypt);
-		ASSERT_STREQ(plain_text, buf);
+		REQUIRE_THAT(plain_text, Catch::Matchers::Equals(buf));
 	}
 
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Rijndael, Basic)
+TEST_CASE("Basic test for Rijndael", "[Rijndael]")
 {
 	Rijndael::BLOCK key = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	Rijndael aes(key);
@@ -175,18 +175,18 @@ TEST(Rijndael, Basic)
 	const Rijndael::BLOCK iv_check = { 0xc5, 0x31, 0xc0, 0xe4, 0x26, 0x9c, 0x26, 0x92, 0x1a, 0xf4, 0xd0, 0xd0, 0xef, 0xa8, 0x7b, 0x23 };
 
 	size_t text_len = strlen(plain_text);
-	EXPECT_EQ(text_len%Rijndael::BLOCK_SIZE, 0ull);
+	REQUIRE_EQ(text_len%Rijndael::BLOCK_SIZE, 0ull);
 
 	uint8_t buf1[128] = { 0 }, buf2[128] = { 0 };
 	memcpy(buf1, plain_text, text_len);
 
 	//Encrypt once
 	aes.encrypt((const uint8_t*)plain_text, buf1, text_len);
-	EXPECT_EQ(0, memcmp(buf1, encrypt_text, text_len));
+	REQUIRE_EQ(0, memcmp(buf1, encrypt_text, text_len));
 
 	//Decrypt once
 	aes.decrypt(buf1, buf2, text_len);
-	EXPECT_EQ(0, memcmp(buf2, plain_text, text_len));
+	REQUIRE_EQ(0, memcmp(buf2, plain_text, text_len));
 
 	//Encrypt/Decrypt part
 	Rijndael::BLOCK iv_buf;
@@ -195,28 +195,28 @@ TEST(Rijndael, Basic)
 	for (size_t i = 0; i < text_len; i += Rijndael::BLOCK_SIZE) {
 		aes.encrypt((const uint8_t*)plain_text + i, buf1 + i, Rijndael::BLOCK_SIZE, iv_buf);
 	}
-	EXPECT_EQ(0, memcmp(encrypt_text, buf1, text_len));
-	EXPECT_EQ(0, memcmp(iv_check, iv_buf, Rijndael::BLOCK_SIZE));
+	REQUIRE_EQ(0, memcmp(encrypt_text, buf1, text_len));
+	REQUIRE_EQ(0, memcmp(iv_check, iv_buf, Rijndael::BLOCK_SIZE));
 	memset(buf1, 0, text_len);
 
 	memcpy(iv_buf, Rijndael::DefaultIV, Rijndael::BLOCK_SIZE);
 	for (size_t i = 0; i < text_len; i += Rijndael::BLOCK_SIZE) {
 		aes.decrypt(encrypt_text + i, buf1 + i, Rijndael::BLOCK_SIZE, iv_buf);
 	}
-	EXPECT_EQ(0, memcmp(plain_text, buf1, text_len));
-	EXPECT_EQ(0, memcmp(iv_check, iv_buf, Rijndael::BLOCK_SIZE));
+	REQUIRE_EQ(0, memcmp(plain_text, buf1, text_len));
+	REQUIRE_EQ(0, memcmp(iv_check, iv_buf, Rijndael::BLOCK_SIZE));
 	memset(buf1, 0, text_len);
 
 	//Encrypt self
 	memcpy(buf1, plain_text, text_len);
 	aes.encrypt(buf1, buf1, text_len);
-	EXPECT_EQ(0, memcmp(encrypt_text, buf1, text_len));
+	REQUIRE_EQ(0, memcmp(encrypt_text, buf1, text_len));
 	memset(buf1, 0, text_len);
 
 	//Decrypt self
 	memcpy(buf1, encrypt_text, text_len);
 	aes.decrypt(buf1, buf1, text_len);
-	EXPECT_EQ(0, memcmp(plain_text, buf1, text_len));
+	REQUIRE_EQ(0, memcmp(plain_text, buf1, text_len));
 	memset(buf1, 0, text_len);
 
 
@@ -232,7 +232,7 @@ TEST(Rijndael, Basic)
 
 		aes2.encrypt(buf1, buf2, buf_size);
 		aes2.decrypt(buf2, buf2, buf_size);
-		EXPECT_EQ(0, memcmp(buf1, buf2, buf_size));
+		REQUIRE_EQ(0, memcmp(buf1, buf2, buf_size));
 	}
 }
 

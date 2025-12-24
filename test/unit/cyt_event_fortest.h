@@ -51,8 +51,8 @@ public:
 
 //-------------------------------------------------------------------------------------
 #define CHECK_CHANNEL_SIZE(c, a, f) \
-	EXPECT_EQ((size_t)(c), channels.size()); \
-	EXPECT_EQ((int32_t)(a), looper.get_active_channel_counts()); \
-	EXPECT_EQ((int32_t)(a), looper.get_active_channel_list_counts()); \
-	EXPECT_EQ((int32_t)(f), looper.get_free_channel_counts()); 
+	REQUIRE_EQ((size_t)(c), channels.size()); \
+	REQUIRE_EQ((int32_t)(a), looper.get_active_channel_counts()); \
+	REQUIRE_EQ((int32_t)(a), looper.get_active_channel_list_counts()); \
+	REQUIRE_EQ((int32_t)(f), looper.get_free_channel_counts()); 
 

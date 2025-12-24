@@ -1,27 +1,27 @@
 ﻿#include <cy_core.h>
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 namespace {
 
 //-------------------------------------------------------------------------------------
-TEST(System, Basic)
+TEST_CASE("Basic test for System", "[System]")
 {
-	EXPECT_EQ(1ull, sizeof(int8_t));
-	EXPECT_EQ(1ull, sizeof(uint8_t));
+	REQUIRE_EQ(1ull, sizeof(int8_t));
+	REQUIRE_EQ(1ull, sizeof(uint8_t));
 
-	EXPECT_EQ(2ull, sizeof(int16_t));
-	EXPECT_EQ(2ull, sizeof(uint16_t));
+	REQUIRE_EQ(2ull, sizeof(int16_t));
+	REQUIRE_EQ(2ull, sizeof(uint16_t));
 
-	EXPECT_EQ(4ull, sizeof(int32_t));
-	EXPECT_EQ(4ull, sizeof(uint32_t));
+	REQUIRE_EQ(4ull, sizeof(int32_t));
+	REQUIRE_EQ(4ull, sizeof(uint32_t));
 
-	EXPECT_EQ(8ull, sizeof(int64_t));
-	EXPECT_EQ(8ull, sizeof(uint64_t));
+	REQUIRE_EQ(8ull, sizeof(int64_t));
+	REQUIRE_EQ(8ull, sizeof(uint64_t));
 
-	EXPECT_EQ(0x3412u, socket_api::ntoh_16(0x1234));
-	EXPECT_EQ(0x78563412u, socket_api::ntoh_32(0x12345678));
+	REQUIRE_EQ(0x3412u, socket_api::ntoh_16(0x1234));
+	REQUIRE_EQ(0x78563412u, socket_api::ntoh_32(0x12345678));
 }
 
 //-------------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ public:
 		std::pair<bool, int32_t>* ball = (std::pair<bool, int32_t>*)(param);
 
 		sys_api::mutex_lock(m_mutex);
-		EXPECT_FALSE(ball->first);
+		REQUIRE_FALSE(ball->first);
 
 		ball->first = true;
 		m_lock_status = ball->second;
@@ -86,7 +86,7 @@ public:
 };
 
 //-------------------------------------------------------------------------------------
-TEST(System, Mutex)
+TEST_CASE("Mutex test for System", "[System]")
 {
 	sys_api::mutex_t m = sys_api::mutex_create();
 
@@ -100,31 +100,31 @@ TEST(System, Mutex)
 
 	//wait 0.5 sec
 	sys_api::thread_sleep(500);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 0);
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 0);
 
 	//free in main thread
 	sys_api::mutex_unlock(m);
 	sys_api::thread_sleep(500);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 1); //should be locked in other thread
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 1); //should be locked in other thread
 
 	//try lock in main thread
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), false);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), false);
 
 	//try lock in main thread with time out
 	int64_t begin_time = sys_api::performance_time_now();
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 100), false);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 100), false);
 	int64_t end_time = sys_api::performance_time_now();
 	int32_t time_spend = (int32_t)(end_time - begin_time) / 1000;
 
-	EXPECT_GE(time_spend, 100);
-	EXPECT_LE(time_spend, 200);
+	REQUIRE_GE(time_spend, 100);
+	REQUIRE_LE(time_spend, 200);
 
 	sys_api::thread_join(t1);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 2); //should unlock in other thread
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 2); //should unlock in other thread
 
 	//--------------------
 	//lock in main thread
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
 
 	//test lock time out in other thread
 	another_thread.m_lock_status = 0;
@@ -133,11 +133,11 @@ TEST(System, Mutex)
 
 	//wait 0.5 sec
 	sys_api::thread_sleep(500);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 0);
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 0);
 
 	//wait 1 sec
 	sys_api::thread_sleep(1000);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 2); //other thread should stopped
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 2); //other thread should stopped
 	sys_api::thread_join(t2);
 
 	//unlock in main thread
@@ -150,24 +150,24 @@ TEST(System, Mutex)
 
 	//wait 0.5 sec
 	sys_api::thread_sleep(500);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 1); //should be locked in other thread
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), false);
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 1); //should be locked in other thread
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), false);
 
 	sys_api::thread_sleep(1000);
-	EXPECT_EQ(another_thread.m_lock_status.load(), 3); //should unlock in other thread
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 3); //should unlock in other thread
 	sys_api::thread_join(t3);
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
 	sys_api::mutex_unlock(m);
 
 	//-------------------------------
 	//lock in main thread 
 	begin_time = sys_api::performance_time_now();
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 100), true);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 100), true);
 	end_time = sys_api::performance_time_now();
 	time_spend = (int32_t)(end_time - begin_time) / 1000;
 
-	EXPECT_GE(time_spend, 0);
-	EXPECT_LE(time_spend, 50);
+	REQUIRE_GE(time_spend, 0);
+	REQUIRE_LE(time_spend, 50);
 
 	//run several work thread to wait unlock
 	size_t work_thread_counts = (size_t)sys_api::get_cpu_counts();
@@ -188,7 +188,7 @@ TEST(System, Mutex)
 	for (size_t i = 0; i < work_thread_counts; i++) {
 		sys_api::thread_join(work_thread_id[i]);
 
-		EXPECT_TRUE(work_thread[i].m_lock_status.load() == 1 || work_thread[i].m_lock_status.load() == 2);
+		REQUIRE_TRUE(work_thread[i].m_lock_status.load() == 1 || work_thread[i].m_lock_status.load() == 2);
 
 		if (work_thread[i].m_lock_status == 1)
 			got_counts++;
@@ -197,12 +197,12 @@ TEST(System, Mutex)
 			did_not_got_counts++;
 	}
 
-	EXPECT_EQ(got_counts, 1);
-	EXPECT_EQ((size_t)(got_counts + did_not_got_counts), work_thread_counts);
+	REQUIRE_EQ(got_counts, 1);
+	REQUIRE_EQ((size_t)(got_counts + did_not_got_counts), work_thread_counts);
 
 	//------------------------------
 	//lock in main thread
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
 
 	std::pair<bool, int32_t> the_ball(false, 0);
 	for (size_t i = 0; i < work_thread_counts; i++) {
@@ -220,16 +220,16 @@ TEST(System, Mutex)
 		sys_api::thread_join(work_thread_id[i]);
 
 		int32_t ball_number = work_thread[i].m_lock_status.load();
-		EXPECT_TRUE(ball_number >= 0 || (size_t)ball_number < work_thread_counts);
+		REQUIRE_TRUE(ball_number >= 0 || (size_t)ball_number < work_thread_counts);
 
 		result[ball_number] += 1;
 	}
 	for (size_t i = 0; i < work_thread_counts; i++) {
-		EXPECT_EQ(result[i], 1);
+		REQUIRE_EQ(result[i], 1);
 	}
 
 	//should unlock status now
-	EXPECT_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
 	sys_api::mutex_unlock(m);
 
 
@@ -242,33 +242,33 @@ TEST(System, Mutex)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(System, Atomic)
+TEST_CASE("Atomic test for System", "[System]")
 {
 	atomic_int32_t a(1);
 
-	EXPECT_TRUE(atomic_compare_exchange(a, 1, 2)); //1==1
-	EXPECT_EQ(a.load(), 2);
+	REQUIRE_TRUE(atomic_compare_exchange(a, 1, 2)); //1==1
+	REQUIRE_EQ(a.load(), 2);
 
-	EXPECT_FALSE(atomic_compare_exchange(a, 1, 2)); //1!=2
-	EXPECT_EQ(a.load(), 2);
+	REQUIRE_FALSE(atomic_compare_exchange(a, 1, 2)); //1!=2
+	REQUIRE_EQ(a.load(), 2);
 
-	EXPECT_TRUE(atomic_smaller_exchange(a, 1, 3)); //1<2
-	EXPECT_EQ(a.load(), 3);
+	REQUIRE_TRUE(atomic_smaller_exchange(a, 1, 3)); //1<2
+	REQUIRE_EQ(a.load(), 3);
 
-	EXPECT_FALSE(atomic_smaller_exchange(a, 4, 10)); // 3 !< 4
-	EXPECT_EQ(a.load(), 3);
+	REQUIRE_FALSE(atomic_smaller_exchange(a, 4, 10)); // 3 !< 4
+	REQUIRE_EQ(a.load(), 3);
 
-	EXPECT_FALSE(atomic_smaller_exchange(a, 3, 10)); // 3 !< 3
-	EXPECT_EQ(a.load(), 3);
+	REQUIRE_FALSE(atomic_smaller_exchange(a, 3, 10)); // 3 !< 3
+	REQUIRE_EQ(a.load(), 3);
 
-	EXPECT_TRUE(atomic_greater_exchange(a, 4, 4)); // 4>3
-	EXPECT_EQ(a.load(), 4);
+	REQUIRE_TRUE(atomic_greater_exchange(a, 4, 4)); // 4>3
+	REQUIRE_EQ(a.load(), 4);
 
-	EXPECT_FALSE(atomic_greater_exchange(a, 3, 10)); // 3 !> 4
-	EXPECT_EQ(a.load(), 4);
+	REQUIRE_FALSE(atomic_greater_exchange(a, 3, 10)); // 3 !> 4
+	REQUIRE_EQ(a.load(), 4);
 
-	EXPECT_FALSE(atomic_greater_exchange(a, 4, 10)); // 4 !> 4
-	EXPECT_EQ(a.load(), 4);
+	REQUIRE_FALSE(atomic_greater_exchange(a, 4, 10)); // 4 !> 4
+	REQUIRE_EQ(a.load(), 4);
 }
 
 }

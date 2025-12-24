@@ -1,0 +1,10 @@
+#include "catch2/catch.hpp"
+
+#define REQUIRE_EQ(a, b)			REQUIRE((a) == (b))
+#define REQUIRE_LT(a, b)			REQUIRE((a) < (b))
+#define REQUIRE_GT(a, b)			REQUIRE((a) > (b))
+#define REQUIRE_LE(a, b)			REQUIRE((a) <= (b))
+#define REQUIRE_GE(a, b)			REQUIRE((a) >= (b))
+#define REQUIRE_RANCE(a, min, max)	REQUIRE(((a) >= (min) && (a)<=(max)))
+#define REQUIRE_TRUE(a)				REQUIRE((a))
+#define REQUIRE_STREQ(a, b)			REQUIRE_THAT((a), Catch::Matchers::Equals(b))

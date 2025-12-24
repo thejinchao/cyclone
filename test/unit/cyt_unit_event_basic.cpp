@@ -1,14 +1,14 @@
 #include <cy_event.h>
 #include "cyt_event_fortest.h"
 
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 namespace {
 
 //-------------------------------------------------------------------------------------
-TEST(EventLooper, Basic)
+TEST_CASE("Basic test for EventLooper", "[EventLooper]")
 {
 	EventLooper_ForTest looper;
 	const size_t default_channel_counts = EventLooper_ForTest::get_DEFAULT_CHANNEL_BUF_COUNTS();

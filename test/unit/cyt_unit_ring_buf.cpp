@@ -1,14 +1,9 @@
 ﻿#include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4127)
-#endif
 
 namespace {
 //-------------------------------------------------------------------------------------
@@ -21,28 +16,28 @@ void _fillRandom(uint8_t* mem, size_t len)
 
 //-------------------------------------------------------------------------------------
 #define CHECK_RINGBUF_EMPTY(rb, c) \
-	EXPECT_EQ(0ul, rb.size()); \
-	EXPECT_EQ((size_t)(c), rb.capacity()); \
-	EXPECT_EQ((size_t)(c), rb.get_free_size()); \
-	EXPECT_TRUE(rb.empty()); \
-	EXPECT_FALSE(rb.full());
+	REQUIRE_EQ(0ul, rb.size()); \
+	REQUIRE_EQ((size_t)(c), rb.capacity()); \
+	REQUIRE_EQ((size_t)(c), rb.get_free_size()); \
+	REQUIRE_TRUE(rb.empty()); \
+	REQUIRE_FALSE(rb.full());
 
 //-------------------------------------------------------------------------------------
 #define CHECK_RINGBUF_SIZE(rb, s, c) \
-	EXPECT_EQ((size_t)(s), rb.size()); \
-	EXPECT_EQ((size_t)(c), rb.capacity()); \
-	EXPECT_EQ((size_t)((c) - (s)), rb.get_free_size()); \
+	REQUIRE_EQ((size_t)(s), rb.size()); \
+	REQUIRE_EQ((size_t)(c), rb.capacity()); \
+	REQUIRE_EQ((size_t)((c) - (s)), rb.get_free_size()); \
 	if ((s) == 0) \
-		EXPECT_TRUE(rb.empty()); \
+		REQUIRE_TRUE(rb.empty()); \
 	else \
-		EXPECT_FALSE(rb.empty()); \
+		REQUIRE_FALSE(rb.empty()); \
 	if ((size_t)(s) == rb.capacity()) \
-		EXPECT_TRUE(rb.full()); \
+		REQUIRE_TRUE(rb.full()); \
 	else \
-		EXPECT_FALSE(rb.full()); 
+		REQUIRE_FALSE(rb.full()); 
 
 //-------------------------------------------------------------------------------------
-TEST(RingBuf, Basic)
+TEST_CASE("Basic test for RingBuf", "[RingBuf]")
 {
 	const char* text_pattern = "Hello,World!";
 	const size_t text_length = strlen(text_pattern);
@@ -139,7 +134,7 @@ TEST(RingBuf, Basic)
 	{
 		RingBuf rb;
 		rb.memcpy_into(text_pattern, text_length);
-		EXPECT_EQ(0ul, rb.memcpy_out(0, 0));
+		REQUIRE_EQ(0ul, rb.memcpy_out(0, 0));
 
 		CHECK_RINGBUF_SIZE(rb, text_length, RingBuf::kDefaultCapacity);
 	}
@@ -151,11 +146,11 @@ TEST(RingBuf, Basic)
 
 		const size_t READ_SIZE = 8;
 
-		EXPECT_EQ(READ_SIZE, rb.memcpy_out(buffer2, READ_SIZE));
+		REQUIRE_EQ(READ_SIZE, rb.memcpy_out(buffer2, READ_SIZE));
 
 		CHECK_RINGBUF_SIZE(rb, text_length - READ_SIZE, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(0, memcmp(buffer2, text_pattern, READ_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, text_pattern, READ_SIZE));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -167,10 +162,10 @@ TEST(RingBuf, Basic)
 
 		const size_t READ_SIZE = text_length;
 
-		EXPECT_EQ(READ_SIZE, rb.memcpy_out(buffer2, READ_SIZE));
+		REQUIRE_EQ(READ_SIZE, rb.memcpy_out(buffer2, READ_SIZE));
 		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(0, memcmp(buffer2, text_pattern, text_length));
+		REQUIRE_EQ(0, memcmp(buffer2, text_pattern, text_length));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -182,16 +177,16 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb;
 		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity- TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity- TEST_WRAP_SIZE, TEST_WRAP_SIZE*2);
 
-		EXPECT_EQ(0, memcmp(buffer2, buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 
 		CHECK_RINGBUF_SIZE(rb, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(TEST_WRAP_SIZE * 3, rb.memcpy_out(buffer2, TEST_WRAP_SIZE * 3));
-		EXPECT_EQ(0, memcmp(buffer2, buffer1+ RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 3));
+		REQUIRE_EQ(TEST_WRAP_SIZE * 3, rb.memcpy_out(buffer2, TEST_WRAP_SIZE * 3));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1+ RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 3));
 
 		CHECK_RINGBUF_EMPTY(rb, RingBuf::kDefaultCapacity);
 	}
@@ -205,7 +200,7 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb;
 		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 2);
 
 		rb.reset();
@@ -221,7 +216,7 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb;
 		rb.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 2);
 
 		//overflow
@@ -230,8 +225,8 @@ TEST(RingBuf, Basic)
 		CHECK_RINGBUF_SIZE(rb, RingBuf::kDefaultCapacity + TEST_WRAP_SIZE * 3, (RingBuf::kDefaultCapacity + 1) * 2 - 1);
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(RingBuf::kDefaultCapacity + TEST_WRAP_SIZE * 3, rb.memcpy_out(buffer2, rb.size()));
-		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.size()));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity + TEST_WRAP_SIZE * 3, rb.memcpy_out(buffer2, rb.size()));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb.size()));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -242,15 +237,15 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1, rb2;
 		rb1.memcpy_into(text_pattern, text_length);
-		EXPECT_EQ(COPY_SIZE, rb1.moveto(rb2, COPY_SIZE));
+		REQUIRE_EQ(COPY_SIZE, rb1.moveto(rb2, COPY_SIZE));
 
 		CHECK_RINGBUF_SIZE(rb1, text_length- COPY_SIZE, RingBuf::kDefaultCapacity);
 		CHECK_RINGBUF_SIZE(rb2, COPY_SIZE, RingBuf::kDefaultCapacity);
 
 		_fillRandom(buffer2, buffer_size);
 
-		EXPECT_EQ(COPY_SIZE, rb2.memcpy_out(buffer2, COPY_SIZE));
-		EXPECT_EQ(0, memcmp(buffer2, text_pattern, COPY_SIZE));
+		REQUIRE_EQ(COPY_SIZE, rb2.memcpy_out(buffer2, COPY_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, text_pattern, COPY_SIZE));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -263,18 +258,18 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1, rb2;
 		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
 
-		EXPECT_EQ(COPY_SIZE, rb1.moveto(rb2, COPY_SIZE));
+		REQUIRE_EQ(COPY_SIZE, rb1.moveto(rb2, COPY_SIZE));
 
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE, RingBuf::kDefaultCapacity);
 		CHECK_RINGBUF_SIZE(rb2, COPY_SIZE, RingBuf::kDefaultCapacity);
 
 		_fillRandom(buffer2, buffer_size);
 
-		EXPECT_EQ(COPY_SIZE, rb2.memcpy_out(buffer2, COPY_SIZE));
-		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb2.size()));
+		REQUIRE_EQ(COPY_SIZE, rb2.memcpy_out(buffer2, COPY_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb2.size()));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -286,15 +281,15 @@ TEST(RingBuf, Basic)
 		RingBuf rb1;
 		rb1.memcpy_into(text_pattern, text_length);
 
-		EXPECT_EQ(PEEK_SIZE, rb1.peek(0, buffer2, PEEK_SIZE));
+		REQUIRE_EQ(PEEK_SIZE, rb1.peek(0, buffer2, PEEK_SIZE));
 		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(0, memcmp(buffer2, text_pattern, PEEK_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, text_pattern, PEEK_SIZE));
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(PEEK_SIZE, rb1.peek(1, buffer2, PEEK_SIZE));
+		REQUIRE_EQ(PEEK_SIZE, rb1.peek(1, buffer2, PEEK_SIZE));
 
 		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(0, memcmp(buffer2, text_pattern+1, PEEK_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, text_pattern+1, PEEK_SIZE));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -306,23 +301,23 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1;
 		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(TEST_WRAP_SIZE, rb1.peek(0, buffer2, TEST_WRAP_SIZE));
+		REQUIRE_EQ(TEST_WRAP_SIZE, rb1.peek(0, buffer2, TEST_WRAP_SIZE));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(0, memcmp(buffer2, buffer1+ RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1+ RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE));
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(TEST_WRAP_SIZE * 2, rb1.peek(TEST_WRAP_SIZE, buffer2, TEST_WRAP_SIZE*2));
+		REQUIRE_EQ(TEST_WRAP_SIZE * 2, rb1.peek(TEST_WRAP_SIZE, buffer2, TEST_WRAP_SIZE*2));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE*2));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE*2));
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(TEST_WRAP_SIZE, rb1.peek(TEST_WRAP_SIZE*3, buffer2, TEST_WRAP_SIZE));
+		REQUIRE_EQ(TEST_WRAP_SIZE, rb1.peek(TEST_WRAP_SIZE*3, buffer2, TEST_WRAP_SIZE));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, TEST_WRAP_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, TEST_WRAP_SIZE));
 	}
 
 	_fillRandom(buffer2, buffer_size);
@@ -334,15 +329,15 @@ TEST(RingBuf, Basic)
 		RingBuf rb1;
 		rb1.memcpy_into(text_pattern, text_length);
 
-		EXPECT_EQ(DISCARD_SIZE, rb1.discard(DISCARD_SIZE));
+		REQUIRE_EQ(DISCARD_SIZE, rb1.discard(DISCARD_SIZE));
 		CHECK_RINGBUF_SIZE(rb1, text_length-DISCARD_SIZE, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(text_length - DISCARD_SIZE, rb1.memcpy_out(buffer2, text_length));
-		EXPECT_EQ(0, memcmp(buffer2, text_pattern+ DISCARD_SIZE, text_length - DISCARD_SIZE));
+		REQUIRE_EQ(text_length - DISCARD_SIZE, rb1.memcpy_out(buffer2, text_length));
+		REQUIRE_EQ(0, memcmp(buffer2, text_pattern+ DISCARD_SIZE, text_length - DISCARD_SIZE));
 
 		CHECK_RINGBUF_EMPTY(rb1, RingBuf::kDefaultCapacity);
 		rb1.memcpy_into(text_pattern, text_length);
-		EXPECT_EQ(text_length, rb1.discard(RingBuf::kDefaultCapacity));
+		REQUIRE_EQ(text_length, rb1.discard(RingBuf::kDefaultCapacity));
 		CHECK_RINGBUF_EMPTY(rb1, RingBuf::kDefaultCapacity);
 	}
 
@@ -355,15 +350,15 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1;
 		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
 
-		EXPECT_EQ(TEST_WRAP_SIZE * 3, rb1.discard(TEST_WRAP_SIZE * 3));
+		REQUIRE_EQ(TEST_WRAP_SIZE * 3, rb1.discard(TEST_WRAP_SIZE * 3));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE, RingBuf::kDefaultCapacity);
 
 		_fillRandom(buffer2, buffer_size);
-		EXPECT_EQ(TEST_WRAP_SIZE, rb1.memcpy_out(buffer2, TEST_WRAP_SIZE));
-		EXPECT_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, TEST_WRAP_SIZE));
+		REQUIRE_EQ(TEST_WRAP_SIZE, rb1.memcpy_out(buffer2, TEST_WRAP_SIZE));
+		REQUIRE_EQ(0, memcmp(buffer2, buffer1 + RingBuf::kDefaultCapacity + TEST_WRAP_SIZE, TEST_WRAP_SIZE));
 	}
 
 	//checksum
@@ -371,14 +366,14 @@ TEST(RingBuf, Basic)
 		RingBuf rb1;
 		rb1.memcpy_into(text_pattern, text_length);
 
-		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(text_length, 0));
-		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(text_length, 1));
-		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(0, text_length+1));
-		EXPECT_EQ(INITIAL_ADLER, rb1.checksum(0,0));
+		REQUIRE_EQ(INITIAL_ADLER, rb1.checksum(text_length, 0));
+		REQUIRE_EQ(INITIAL_ADLER, rb1.checksum(text_length, 1));
+		REQUIRE_EQ(INITIAL_ADLER, rb1.checksum(0, text_length+1));
+		REQUIRE_EQ(INITIAL_ADLER, rb1.checksum(0,0));
 
-		EXPECT_EQ(0x1c9d044aul, rb1.checksum(0, text_length));
-		EXPECT_EQ(0x0d0c02e7ul, rb1.checksum(0, 8));
-		EXPECT_EQ(0x0ddc0311ul, rb1.checksum(1, 8));
+		REQUIRE_EQ(0x1c9d044aul, rb1.checksum(0, text_length));
+		REQUIRE_EQ(0x0d0c02e7ul, rb1.checksum(0, 8));
+		REQUIRE_EQ(0x0ddc0311ul, rb1.checksum(1, 8));
 
 		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
 	}
@@ -390,13 +385,13 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1;
 		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.memcpy_out(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 3);
 
-		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE), rb1.checksum(0, TEST_WRAP_SIZE));
-		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE*3), rb1.checksum(0, TEST_WRAP_SIZE*3));
-		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity, TEST_WRAP_SIZE), rb1.checksum(TEST_WRAP_SIZE*2, TEST_WRAP_SIZE));
-		EXPECT_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity+ TEST_WRAP_SIZE, TEST_WRAP_SIZE), rb1.checksum(TEST_WRAP_SIZE * 3, TEST_WRAP_SIZE));
+		REQUIRE_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE), rb1.checksum(0, TEST_WRAP_SIZE));
+		REQUIRE_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE*3), rb1.checksum(0, TEST_WRAP_SIZE*3));
+		REQUIRE_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity, TEST_WRAP_SIZE), rb1.checksum(TEST_WRAP_SIZE*2, TEST_WRAP_SIZE));
+		REQUIRE_EQ(adler32(INITIAL_ADLER, buffer1 + RingBuf::kDefaultCapacity+ TEST_WRAP_SIZE, TEST_WRAP_SIZE), rb1.checksum(TEST_WRAP_SIZE * 3, TEST_WRAP_SIZE));
 	}
 
 	//normalize
@@ -404,11 +399,11 @@ TEST(RingBuf, Basic)
 		RingBuf rb1;
 		rb1.memcpy_into(text_pattern, text_length);
 
-		EXPECT_EQ(0, memcmp(text_pattern, rb1.normalize(), text_length));
+		REQUIRE_EQ(0, memcmp(text_pattern, rb1.normalize(), text_length));
 		CHECK_RINGBUF_SIZE(rb1, text_length, RingBuf::kDefaultCapacity);
 
 		rb1.discard(1);
-		EXPECT_EQ(0, memcmp(text_pattern+1, rb1.normalize(), text_length-1));
+		REQUIRE_EQ(0, memcmp(text_pattern+1, rb1.normalize(), text_length-1));
 		CHECK_RINGBUF_SIZE(rb1, text_length-1, RingBuf::kDefaultCapacity);
 	}
 
@@ -419,16 +414,16 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1;
 		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, TEST_WRAP_SIZE * 2);
-		EXPECT_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE*2, rb1.normalize(), TEST_WRAP_SIZE*3));
+		REQUIRE_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE*2, rb1.normalize(), TEST_WRAP_SIZE*3));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
 
 		rb1.reset();
 		rb1.memcpy_into(buffer1, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE));
 		rb1.memcpy_into(buffer1 + RingBuf::kDefaultCapacity, TEST_WRAP_SIZE * 2);
-		EXPECT_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.normalize(), TEST_WRAP_SIZE * 3));
+		REQUIRE_EQ(0, memcmp(buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE, rb1.normalize(), TEST_WRAP_SIZE * 3));
 		CHECK_RINGBUF_SIZE(rb1, TEST_WRAP_SIZE * 3, RingBuf::kDefaultCapacity);
 	}
 
@@ -441,28 +436,28 @@ TEST(RingBuf, Basic)
 		temp_buffer1[A_POS] = 'A';
 
 		RingBuf rb1;
-		EXPECT_LT(rb1.search(0, 'A'), 0);
+		REQUIRE_LT(rb1.search(0, 'A'), 0);
 
 		rb1.memcpy_into(temp_buffer1, BUF1_SIZE);
-		EXPECT_EQ(rb1.search(0, 'A'), A_POS);
+		REQUIRE_EQ(rb1.search(0, 'A'), A_POS);
 
 		for (size_t i = 0; i <= A_POS; i++) {
-			EXPECT_EQ(rb1.search(i, 'A'), A_POS);
+			REQUIRE_EQ(rb1.search(i, 'A'), A_POS);
 		}
 
 		for (size_t i = A_POS + 1; i <= rb1.capacity(); i++) {
-			EXPECT_LT(rb1.search(i, 'A'), 0);
+			REQUIRE_LT(rb1.search(i, 'A'), 0);
 		}
 
 		const ssize_t DISCARD_SIZE = 3;
 		rb1.discard(DISCARD_SIZE);
 
 		for (size_t i = 0; i <= A_POS- DISCARD_SIZE; i++) {
-			EXPECT_EQ(rb1.search(i, 'A'), A_POS- DISCARD_SIZE);
+			REQUIRE_EQ(rb1.search(i, 'A'), A_POS- DISCARD_SIZE);
 		}
 
 		for (size_t i = A_POS- DISCARD_SIZE + 1; i <= rb1.capacity(); i++) {
-			EXPECT_LT(rb1.search(i, 'A'), 0);
+			REQUIRE_LT(rb1.search(i, 'A'), 0);
 		}
 	}
 
@@ -476,7 +471,7 @@ TEST(RingBuf, Basic)
 
 		RingBuf rb1;
 		rb1.memcpy_into(buffer2, RingBuf::kDefaultCapacity - TEST_WRAP_SIZE);
-		EXPECT_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, rb1.discard(RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2));
 
 		const ssize_t A_POS = 40;
 		const ssize_t B_POS = 80;
@@ -489,14 +484,14 @@ TEST(RingBuf, Basic)
 
 		for (size_t i = 0; i < rb1.capacity(); i++) {
 			if(i<=A_POS)
-				EXPECT_EQ(rb1.search(i, 'A'), A_POS);
+				REQUIRE_EQ(rb1.search(i, 'A'), A_POS);
 			else
-				EXPECT_LT(rb1.search(i, 'A'), 0);
+				REQUIRE_LT(rb1.search(i, 'A'), 0);
 
 			if (i <= B_POS)
-				EXPECT_EQ(rb1.search(i, 'B'), B_POS);
+				REQUIRE_EQ(rb1.search(i, 'B'), B_POS);
 			else
-				EXPECT_LT(rb1.search(i, 'B'), 0);
+				REQUIRE_LT(rb1.search(i, 'B'), 0);
 		}
 
 	}
@@ -504,7 +499,7 @@ TEST(RingBuf, Basic)
 
 
 //-------------------------------------------------------------------------------------
-TEST(RingBuf, Socket)
+TEST_CASE("Socket test for RingBuf", "[RingBuf]")
 {
 	const char* text_pattern = "Hello,World!";
 	const size_t text_length = strlen(text_pattern);
@@ -527,19 +522,19 @@ TEST(RingBuf, Socket)
 
 		//send few bytes
 		rb_snd.memcpy_into(text_pattern, text_length);
-		EXPECT_EQ(text_length, (size_t)rb_snd.write_socket(pipe.get_write_port()));
+		REQUIRE_EQ(text_length, (size_t)rb_snd.write_socket(pipe.get_write_port()));
 		CHECK_RINGBUF_EMPTY(rb_snd, RingBuf::kDefaultCapacity);
 
 		RingBuf rb_rcv;
-		EXPECT_EQ(text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
+		REQUIRE_EQ(text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
 		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
 		rb_rcv.discard(text_length);
 		CHECK_RINGBUF_EMPTY(rb_rcv, RingBuf::kDefaultCapacity);
 
 		uint32_t read_buf;
-		EXPECT_EQ(SOCKET_ERROR, pipe.read((char*)&read_buf, sizeof(read_buf)));
-		EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+		REQUIRE_EQ(SOCKET_ERROR, pipe.read((char*)&read_buf, sizeof(read_buf)));
+		REQUIRE_TRUE(socket_api::is_lasterror_WOULDBLOCK());
 
 		//send and receive again
 		rb_snd.memcpy_into(text_pattern, text_length);
@@ -552,13 +547,13 @@ TEST(RingBuf, Socket)
 		rb_rcv.discard(text_length);
 		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(text_length, (size_t)rb_snd.write_socket(pipe.get_write_port()));
-		EXPECT_EQ(text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
+		REQUIRE_EQ(text_length, (size_t)rb_snd.write_socket(pipe.get_write_port()));
+		REQUIRE_EQ(text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
 		CHECK_RINGBUF_EMPTY(rb_snd, RingBuf::kDefaultCapacity);
 		CHECK_RINGBUF_SIZE(rb_rcv, text_length*2, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize()+text_length, text_pattern, text_length));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize()+text_length, text_pattern, text_length));
 	}
 
 	//read_socket to full
@@ -571,13 +566,13 @@ TEST(RingBuf, Socket)
 		rb_rcv.discard(text_length);
 		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(RingBuf::kDefaultCapacity, pipe.write((const char*)buffer1, RingBuf::kDefaultCapacity));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity, pipe.write((const char*)buffer1, RingBuf::kDefaultCapacity));
 
-		EXPECT_EQ(RingBuf::kDefaultCapacity-text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port(), false));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity-text_length, (size_t)rb_rcv.read_socket(pipe.get_read_port(), false));
 		CHECK_RINGBUF_SIZE(rb_rcv, RingBuf::kDefaultCapacity, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize() + text_length, buffer1, RingBuf::kDefaultCapacity-text_length));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize() + text_length, buffer1, RingBuf::kDefaultCapacity-text_length));
 	}
 
 	//read_socket and expand
@@ -590,13 +585,13 @@ TEST(RingBuf, Socket)
 		rb_rcv.discard(text_length);
 		CHECK_RINGBUF_SIZE(rb_rcv, text_length, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(RingBuf::kDefaultCapacity, pipe.write((const char*)buffer1, RingBuf::kDefaultCapacity));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity, pipe.write((const char*)buffer1, RingBuf::kDefaultCapacity));
 
-		EXPECT_EQ(RingBuf::kDefaultCapacity, rb_rcv.read_socket(pipe.get_read_port()));
+		REQUIRE_EQ(RingBuf::kDefaultCapacity, rb_rcv.read_socket(pipe.get_read_port()));
 		CHECK_RINGBUF_SIZE(rb_rcv, text_length + RingBuf::kDefaultCapacity, (RingBuf::kDefaultCapacity + 1) * 2 - 1);
 
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize() + text_length, buffer1, RingBuf::kDefaultCapacity));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize(), text_pattern, text_length));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize() + text_length, buffer1, RingBuf::kDefaultCapacity));
 	}
 
 	//make wrap condition and write_socket
@@ -611,14 +606,14 @@ TEST(RingBuf, Socket)
 		CHECK_RINGBUF_SIZE(rb_snd, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
 
 		Pipe pipe;
-		EXPECT_EQ(TEST_WRAP_SIZE * 4, (size_t)rb_snd.write_socket(pipe.get_write_port()));
+		REQUIRE_EQ(TEST_WRAP_SIZE * 4, (size_t)rb_snd.write_socket(pipe.get_write_port()));
 		CHECK_RINGBUF_EMPTY(rb_snd, RingBuf::kDefaultCapacity);
 
 		RingBuf rb_rcv;
-		EXPECT_EQ(TEST_WRAP_SIZE * 4, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
+		REQUIRE_EQ(TEST_WRAP_SIZE * 4, (size_t)rb_rcv.read_socket(pipe.get_read_port()));
 		CHECK_RINGBUF_SIZE(rb_rcv, TEST_WRAP_SIZE * 4, RingBuf::kDefaultCapacity);
 
-		EXPECT_EQ(0, memcmp(rb_rcv.normalize(), buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 4));
+		REQUIRE_EQ(0, memcmp(rb_rcv.normalize(), buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 4));
 	}
 }
 

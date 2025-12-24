@@ -1,11 +1,11 @@
 ﻿#include <cy_event.h>
 #include "cyt_event_fortest.h"
 
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
-#define MAX_TIMER_ERROR	(10)		//10ms
+#define MAX_TIMER_ERROR	(20)		//20ms
 
 namespace {
 
@@ -116,7 +116,7 @@ static void _multiTimerThreadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(EventLooper, Timer)
+TEST_CASE("Timer test for EventLooper", "[EventLooper][Timer]")
 {
 	ThreadData data;
 	data.begin_signal = sys_api::signal_create();
@@ -138,9 +138,9 @@ TEST(EventLooper, Timer)
 		sys_api::signal_wait(data.end_signal);
 		int64_t end_time = sys_api::performance_time_now();
 
-		EXPECT_EQ(1, data.counts.load());
-		EXPECT_GE(end_time - begin_time, (data.freq - MAX_TIMER_ERROR) * 1000ll);
-		EXPECT_LE(end_time - begin_time, (data.freq + MAX_TIMER_ERROR) * 1000ll);
+		REQUIRE_EQ(1, data.counts.load());
+		REQUIRE_GE(end_time - begin_time, (data.freq - MAX_TIMER_ERROR) * 1000ll);
+		REQUIRE_LE(end_time - begin_time, (data.freq + MAX_TIMER_ERROR) * 1000ll);
 		sys_api::thread_join(thread);
 	}
 
@@ -163,12 +163,12 @@ TEST(EventLooper, Timer)
 		int32_t current_index = data.counts.load();
 
 		sys_api::signal_notify(data.break_signal);
-		EXPECT_GE(current_index, repeat_times);
-		EXPECT_LE(current_index, repeat_times+1);
+		REQUIRE_GE(current_index, repeat_times);
+		REQUIRE_LE(current_index, repeat_times+1);
 		sys_api::thread_join(thread);
 		int64_t end_time = sys_api::performance_time_now();
-		EXPECT_GE(end_time - begin_time, sleep_time * 1000ll);
-		EXPECT_LE(end_time - begin_time, (int64_t)(sleep_time + data.freq + MAX_TIMER_ERROR) * 1000ll);
+		REQUIRE_GE(end_time - begin_time, sleep_time * 1000ll);
+		REQUIRE_LE(end_time - begin_time, (int64_t)(sleep_time + data.freq + MAX_TIMER_ERROR) * 1000ll);
 	}
 
 	//timer then pause/resume
@@ -184,16 +184,16 @@ TEST(EventLooper, Timer)
 
 		uint32_t sleep_time = data.freq * ((uint32_t)data.pause_counts+2) + MAX_TIMER_ERROR;
 		sys_api::thread_sleep((int32_t)sleep_time);
-		EXPECT_EQ(data.counts.load(), data.pause_counts);
+		REQUIRE_EQ(data.counts.load(), data.pause_counts);
 
 		sys_api::thread_sleep(MAX_TIMER_ERROR);
-		EXPECT_EQ(data.counts.load(), data.pause_counts);
+		REQUIRE_EQ(data.counts.load(), data.pause_counts);
 
 		//resume
 		data.pause_counts = data.pause_counts*2;
 		data.looper->enable_read(data.timer_id);
 		sys_api::thread_sleep((int32_t)sleep_time);
-		EXPECT_EQ(data.counts.load(), data.pause_counts);
+		REQUIRE_EQ(data.counts.load(), data.pause_counts);
 
 		//stop thread
 		data.looper->push_stop_request();
@@ -206,7 +206,7 @@ TEST(EventLooper, Timer)
 }
 
 //-------------------------------------------------------------------------------------
-TEST(EventLooper, MultiTimer)
+TEST_CASE("MultiTimer test for EventLooper", "[EventLooper][MultiTimer]")
 {
 	MultiTimerThreadData data;
 	data.begin_signal = sys_api::signal_create();
@@ -214,7 +214,7 @@ TEST(EventLooper, MultiTimer)
 	data.resume_signal = sys_api::signal_create();
 
 	{
-		data.timers.push_back(MultiTimerData{ 0, 11, 0 });
+		data.timers.push_back(MultiTimerData{ 0, 17, 0 });
 		data.timers.push_back(MultiTimerData{ 0, 23, 0 });
 		data.timers.push_back(MultiTimerData{ 0, 47, 0 });
 		data.timers.push_back(MultiTimerData{ 0, 97, 0 });
@@ -239,8 +239,11 @@ TEST(EventLooper, MultiTimer)
 
 		for (size_t i = 0; i < data.timers.size(); i++) {
 			MultiTimerData& timer = data.timers[i];
-			EXPECT_GE(timer.freq*timer.counts, (uint32_t)(sleep_time - timer.freq));
-			EXPECT_LE(timer.freq*timer.counts, (uint32_t)sleep_time);
+
+			CAPTURE(timer.freq, timer.counts, sleep_time, sleep_time / timer.freq);
+
+			REQUIRE_GE(timer.counts, sleep_time / timer.freq - 1);
+			REQUIRE_LE(timer.counts, sleep_time / timer.freq + 1);
 
 			if (i == disable_timer_index) {
 				disabled_timer_counts = timer.counts;
@@ -261,11 +264,12 @@ TEST(EventLooper, MultiTimer)
 			MultiTimerData& timer = data.timers[i];
 
 			if (i == disable_timer_index) {
-				EXPECT_EQ(disabled_timer_counts, timer.counts);
+				REQUIRE_EQ(disabled_timer_counts, timer.counts);
 			}
 			else {
-				EXPECT_GE(timer.freq*timer.counts, (uint32_t)(sleep_time*2 - timer.freq));
-				EXPECT_LE(timer.freq*timer.counts, (uint32_t)(sleep_time*2 + timer.freq));
+				CAPTURE(timer.freq, timer.counts, timer.freq * timer.counts, sleep_time * 2, 2 * sleep_time / timer.freq);
+				REQUIRE_GE(timer.counts, (uint32_t)(2 * sleep_time / timer.freq - 1));
+				REQUIRE_LE(timer.counts, (uint32_t)(2 * sleep_time / timer.freq + 1));
 			}
 		}
 

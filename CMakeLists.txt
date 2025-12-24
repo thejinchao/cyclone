@@ -83,14 +83,6 @@ unset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
 endif()
 
 ########
-#find gtest and gmock library
-########
-if(MSVC AND CY_MSVC_MT)
-    set(GTEST_MSVC_SEARCH MT)
-endif()
-find_package(GTest)
-
-########
 #pthread library
 ########
 if(CY_SYS_ANDROID)
@@ -117,11 +109,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/cyclone_config.h.in ${CY_AUTO_
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(source)
 add_subdirectory(samples)
-
-########
-#test dictionary
-########
-if(GTEST_FOUND)
-	enable_testing()
-	add_subdirectory(test)
-endif()
+add_subdirectory(test)

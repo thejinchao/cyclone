@@ -1,13 +1,13 @@
 #include <cy_core.h>
 #include <cy_crypt.h>
 #include <cy_event.h>
-#include <gtest/gtest.h>
+#include "cyt_unit_utils.h"
 
 using namespace cyclone;
 
 namespace {
 //-------------------------------------------------------------------------------------
-TEST(Pipe, Basic)
+TEST_CASE("Basic test for Pipe", "[Pipe]")
 {
 	Pipe pipe;
 
@@ -18,23 +18,23 @@ TEST(Pipe, Basic)
 	char read_buf[readbuf_len] = { 0 };
 
 	ssize_t read_size = pipe.read(read_buf, readbuf_len);
-	EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
-	EXPECT_EQ(SOCKET_ERROR, read_size);
+	REQUIRE_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+	REQUIRE_EQ(SOCKET_ERROR, read_size);
 
 	ssize_t write_size = pipe.write(plain_text, text_len);
-	EXPECT_EQ(text_len, (size_t)write_size);
+	REQUIRE_EQ(text_len, (size_t)write_size);
 
 	read_size = pipe.read(read_buf, readbuf_len);
-	EXPECT_EQ(text_len, (size_t)read_size);
-	EXPECT_STREQ(plain_text, read_buf);
+	REQUIRE_EQ(text_len, (size_t)read_size);
+	REQUIRE_STREQ(plain_text, read_buf);
 
 	read_size = pipe.read(read_buf, readbuf_len);
-	EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
-	EXPECT_EQ(SOCKET_ERROR, read_size);
+	REQUIRE_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+	REQUIRE_EQ(SOCKET_ERROR, read_size);
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Pipe, Overflow)
+TEST_CASE("Overflow test for Pipe", "[Pipe]")
 {
 	Pipe pipe;
 
@@ -58,7 +58,7 @@ TEST(Pipe, Overflow)
 
 		ssize_t write_size = pipe.write(snd_block, snd_block_size);
 		if (write_size <= 0) {
-			EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+			REQUIRE_TRUE(socket_api::is_lasterror_WOULDBLOCK());
 			break;
 		}
 		total_snd_size += (size_t)write_size;
@@ -69,14 +69,14 @@ TEST(Pipe, Overflow)
 		uint64_t read_data;
 		ssize_t read_size = pipe.read((char*)&read_data, sizeof(read_data));
 		if (read_size <= 0) {
-			EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+			REQUIRE_TRUE(socket_api::is_lasterror_WOULDBLOCK());
 			break;
 		}
 		total_rcv_size += (size_t)read_size;
-		EXPECT_EQ(read_data, rndPop.next());
+		REQUIRE_EQ(read_data, rndPop.next());
 	}
 
-	EXPECT_EQ(total_snd_size, total_rcv_size);
+	REQUIRE_EQ(total_snd_size, total_rcv_size);
 }
 
 //-------------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ void _push_function(void* param)
 			continue;
 		}
 	}
-	EXPECT_EQ(total_snd_size, data->total_size);
+	REQUIRE_EQ(total_snd_size, data->total_size);
 }
 
 //-------------------------------------------------------------------------------------
@@ -127,8 +127,8 @@ void _pop_function(void* param)
 	while (total_rcv_size<(data->total_size)) {
 		ssize_t read_size = rcvBuf.read_socket(data->pipe.get_read_port(), false);
 		while (rcvBuf.size() >= sizeof(uint64_t)) {
-			EXPECT_EQ(sizeof(uint64_t), rcvBuf.memcpy_out(&read_data, sizeof(uint64_t)));
-			EXPECT_EQ(rnd.next(), read_data);
+			REQUIRE_EQ(sizeof(uint64_t), rcvBuf.memcpy_out(&read_data, sizeof(uint64_t)));
+			REQUIRE_EQ(rnd.next(), read_data);
 			total_rcv_size += sizeof(uint64_t);
 		}
 
@@ -136,15 +136,15 @@ void _pop_function(void* param)
 			sys_api::thread_yield();
 		}
 	}
-	EXPECT_TRUE(rcvBuf.empty());
-	EXPECT_EQ(total_rcv_size, data->total_size);
-	EXPECT_EQ(SOCKET_ERROR, (data->pipe).read((char*)&read_data, sizeof(read_data)));
-	EXPECT_TRUE(socket_api::is_lasterror_WOULDBLOCK());
-	EXPECT_EQ(RingBuf::kDefaultCapacity, rcvBuf.capacity());
+	REQUIRE_TRUE(rcvBuf.empty());
+	REQUIRE_EQ(total_rcv_size, data->total_size);
+	REQUIRE_EQ(SOCKET_ERROR, (data->pipe).read((char*)&read_data, sizeof(read_data)));
+	REQUIRE_TRUE(socket_api::is_lasterror_WOULDBLOCK());
+	REQUIRE_EQ(RingBuf::kDefaultCapacity, rcvBuf.capacity());
 }
 
 //-------------------------------------------------------------------------------------
-TEST(Pipe, MultiThread)
+TEST_CASE("MultiThread test for Pipe", "[Pipe]")
 {
 	ThreadData data;
 	data.rnd.make();
