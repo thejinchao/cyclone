@@ -106,43 +106,17 @@ public:
 		}
 
 		//wait all push thread
-		double averageCounts = 0.0;
 		for (int32_t i = 0; i < m_pushThreads; i++) {
 			sys_api::signal_wait(pushThreadData[i]->complete);
-			averageCounts += (double)pushThreadData[i]->workCounts;
 		}	
 		m_noMoreData = true;
 
-		averageCounts /= m_pushThreads;
-
-#if 0
-		std::string pushWorkReport = "PushReport: ";
-		for (int32_t i = 0; i < m_pushThreads; i++) {
-			char temp[32] = { 0 };
-			snprintf(temp, 32, "%.3f%%,", ((double)pushThreadData[i]->workCounts - averageCounts)*100.0 / averageCounts);
-
-			pushWorkReport += temp;
-		}
-		printf("%s\n", pushWorkReport.c_str());
-#endif
 
 		//wait all pop thread
-		averageCounts = 0.0;
 		for (int32_t i = 0; i < m_popThreads; i++) {
 			sys_api::signal_wait(popThreadData[i]->complete);
-			averageCounts += (double)popThreadData[i]->workCounts;
 		}
-		averageCounts /= m_popThreads;
-#if 0
-		std::string popWorkReport = "PopReport: ";
-		for (int32_t i = 0; i < m_popThreads; i++) {
-			char temp[32] = { 0 };
-			snprintf(temp, 32, "%.3f%%,", ((double)popThreadData[i]->workCounts - averageCounts)*100.0 / averageCounts);
 
-			popWorkReport += temp;
-		}
-		printf("%s\n", popWorkReport.c_str());
-#endif
 		//check result
 		for (uint32_t i = 1; i <= m_topValue; i++) {
 			REQUIRE_TRUE(m_result[i].test_and_set());
