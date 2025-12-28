@@ -8,6 +8,8 @@ namespace {
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for System", "[System]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	REQUIRE_EQ(1ull, sizeof(int8_t));
 	REQUIRE_EQ(1ull, sizeof(uint8_t));
 
@@ -88,6 +90,8 @@ public:
 //-------------------------------------------------------------------------------------
 TEST_CASE("Mutex test for System", "[System]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	sys_api::mutex_t m = sys_api::mutex_create();
 
 	//-------------------------
@@ -244,6 +248,8 @@ TEST_CASE("Mutex test for System", "[System]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Atomic test for System", "[System]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	atomic_int32_t a(1);
 
 	REQUIRE_TRUE(atomic_compare_exchange(a, 1, 2)); //1==1

@@ -145,6 +145,8 @@ static void _writeThreadFunction(void* param)
 //-------------------------------------------------------------------------------------
 TEST_CASE("ReadAndCloseSocket test for EventLooper", "[EventLooper]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	ReadThreadData data;
 	data.ready_signal = sys_api::signal_create();
 	data.read_done_signal = sys_api::signal_create();
@@ -286,6 +288,8 @@ TEST_CASE("ReadAndCloseSocket test for EventLooper", "[EventLooper]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("WriteSocket test for EventLooper", "[EventLooper]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	WriteThreadData data;
 	data.ready_signal = sys_api::signal_create();
 	data.loop_stoped_signal = sys_api::signal_create();

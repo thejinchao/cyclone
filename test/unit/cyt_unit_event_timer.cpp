@@ -118,6 +118,8 @@ static void _multiTimerThreadFunction(void* param)
 //-------------------------------------------------------------------------------------
 TEST_CASE("Timer test for EventLooper", "[EventLooper][Timer]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	ThreadData data;
 	data.begin_signal = sys_api::signal_create();
 	data.end_signal = sys_api::signal_create();
@@ -208,6 +210,8 @@ TEST_CASE("Timer test for EventLooper", "[EventLooper][Timer]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("MultiTimer test for EventLooper", "[EventLooper][MultiTimer]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	MultiTimerThreadData data;
 	data.begin_signal = sys_api::signal_create();
 	data.pause_signal = sys_api::signal_create();

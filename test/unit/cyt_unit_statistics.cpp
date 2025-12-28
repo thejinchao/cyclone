@@ -9,6 +9,8 @@ using namespace cyclone;
 //-------------------------------------------------------------------------------------
 TEST_CASE("MinMaxValue test for Signal", "[Statistics]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	typedef MinMaxValue<int32_t> IntMinMaxValue;
 
 	{
@@ -111,6 +113,8 @@ TEST_CASE("MinMaxValue test for Signal", "[Statistics]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("PeriodValue test for Signal", "[Statistics]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	typedef PeriodValue<int32_t, true> IntPeriodValue;
 
 	{

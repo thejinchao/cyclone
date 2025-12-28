@@ -17,6 +17,8 @@ void _fillRandom(uint8_t* mem, size_t len)
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for Adler32", "[Adler32]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	REQUIRE_EQ(INITIAL_ADLER, adler32(0, 0, 0));
 	REQUIRE_EQ(INITIAL_ADLER, adler32(0xFFFFFFFFul, 0, 0));
 
@@ -48,6 +50,8 @@ TEST_CASE("Basic test for Adler32", "[Adler32]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Random test for Adler32", "[Adler32]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const size_t buf_cap = 257;
 	uint8_t random_buf[buf_cap] = { 0 };
 
@@ -74,6 +78,8 @@ TEST_CASE("Random test for Adler32", "[Adler32]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Random test for DHExchange", "[DHExchange]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const int32_t TEST_COUNTS = 20;
 	for (int32_t i = 0; i < TEST_COUNTS; i++) {
 
@@ -102,6 +108,8 @@ TEST_CASE("Random test for DHExchange", "[DHExchange]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for XorShift128", "[XorShift128]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	XorShift128 seed;
 	seed.seed0 = 0xFACEDEADDEADFACEull;
 	seed.seed1 = 0x1234567812345678ull;
@@ -163,6 +171,8 @@ TEST_CASE("Basic test for XorShift128", "[XorShift128]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for Rijndael", "[Rijndael]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	Rijndael::BLOCK key = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 	Rijndael aes(key);
 

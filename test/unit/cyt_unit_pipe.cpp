@@ -9,6 +9,8 @@ namespace {
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for Pipe", "[Pipe]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	Pipe pipe;
 
 	const char* plain_text = "Hello,World!";
@@ -36,6 +38,8 @@ TEST_CASE("Basic test for Pipe", "[Pipe]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Overflow test for Pipe", "[Pipe]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	Pipe pipe;
 
 	XorShift128 rndPush, rndPop;
@@ -146,6 +150,8 @@ void _pop_function(void* param)
 //-------------------------------------------------------------------------------------
 TEST_CASE("MultiThread test for Pipe", "[Pipe]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	ThreadData data;
 	data.rnd.make();
 	data.total_size = 1024 * 1024*10; //1MB

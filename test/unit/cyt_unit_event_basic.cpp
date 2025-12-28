@@ -10,6 +10,8 @@ namespace {
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for EventLooper", "[EventLooper]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	EventLooper_ForTest looper;
 	const size_t default_channel_counts = EventLooper_ForTest::get_DEFAULT_CHANNEL_BUF_COUNTS();
 

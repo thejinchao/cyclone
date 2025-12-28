@@ -27,6 +27,8 @@ using namespace cyclone;
 //-------------------------------------------------------------------------------------
 TEST_CASE("FixedCapcity test for RingQueue", "[RingQueue]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const size_t TestSize = 31;
 	typedef RingQueue<int32_t> IntRingQueue;
 
@@ -321,6 +323,8 @@ TEST_CASE("FixedCapcity test for RingQueue", "[RingQueue]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("AutoResize test for RingQueue", "[RingQueue]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	typedef RingQueue<int32_t> IntRingQueue;
 
 	// Initial conditions

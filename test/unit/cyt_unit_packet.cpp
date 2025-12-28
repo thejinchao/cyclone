@@ -38,6 +38,8 @@ uint32_t* _makeHead(uint16_t size, uint16_t id, uint32_t& head_for_check)
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for Packet", "[Packet]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const size_t HEAD_SIZE = 8;
 	const uint16_t PACKET_ID = 0x1234;
 	const uint32_t RESERVED = 0xFACEC00Du;

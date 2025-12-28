@@ -39,6 +39,8 @@ void _fillRandom(uint8_t* mem, size_t len)
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for RingBuf", "[RingBuf]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const char* text_pattern = "Hello,World!";
 	const size_t text_length = strlen(text_pattern);
 
@@ -501,6 +503,8 @@ TEST_CASE("Basic test for RingBuf", "[RingBuf]")
 //-------------------------------------------------------------------------------------
 TEST_CASE("Socket test for RingBuf", "[RingBuf]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const char* text_pattern = "Hello,World!";
 	const size_t text_length = strlen(text_pattern);
 

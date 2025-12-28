@@ -7,6 +7,8 @@ namespace {
 //-------------------------------------------------------------------------------------
 TEST_CASE("Basic test for LockFreeQueue", "[LockFreeQueue]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	const int32_t QUEUE_SIZE = 32;
 	typedef LockFreeQueue<int32_t, QUEUE_SIZE> IntQueue;
 	IntQueue queue;
@@ -224,6 +226,8 @@ public:
 //-------------------------------------------------------------------------------------
 TEST_CASE("MultiThread test for LockFreeQueue", "[LockFreeQueue]")
 {
+	PRINT_CURRENT_TEST_NAME();
+
 	MultiThreadPushPop test1(100u, 1, 1, true);
 	test1.pushAndPop();
 	
