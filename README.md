@@ -1,59 +1,93 @@
 # Cyclone
-Cyclone is a lightweight network library, It is cross-platform and high-performance
-- Cross platform (Windows, Mac OS X, Linux, Android)
-- Non-blocking IO + IO multiplexing, support `epoll`, `kqueue`, `select`
-- One loop per thread + reactor model
-- Mostly wait-free multi-threaded design
-- Support vectored I/O and timerfd api(Linux)
-- Usefull utility support(DH key exchange, AES, adler32, and more)
-- Unit test and samples
-   
-# Dependencies
-Cyclone depends on following libraries 
-- [CMake](http://cmake.org/), at least version 2.8
-- [jemalloc](http://jemalloc.net/) , Optional
-- To run unit test:
-  - [Google Test](https://github.com/google/googletest)
- 
- Cyclone has been tested with Clang (under Mac OS X), GCC 4.8+ (under Linux), Android Build Tools 25.0 and Microsoft Visual Studio 2017(under Windows 10).
- 
- # Build & Test
- ## On Linux or Mac OS X:
+
+Cyclone is a lightweight, cross-platform, high-performance C++ network library built with modern C++11 features. It provides a comprehensive set of networking utilities with an event-driven architecture based on the Reactor pattern.
+
+## Features
+
+- ✅ **Cross-platform**: Windows, macOS, Linux, Android
+- ✅ **High-performance I/O**: Non-blocking I/O with IO multiplexing (`epoll`/`kqueue`/`select`)
+- ✅ **Event-driven**: Reactor pattern with one loop per thread
+- ✅ **Lock-free design**: Mostly wait-free multi-threaded data structures
+- ✅ **Advanced I/O**: Vectored I/O support (`readv`/`writev`) and `timerfd` API (Linux and Android)
+- ✅ **Cryptographic utilities**: DH key exchange, AES encryption, Adler32 checksum, and more
+- ✅ **Comprehensive testing**: Full unit test suite using Catch2
+- ✅ **Rich samples**: Multiple example applications demonstrating various use cases
+
+## Dependencies
+
+- [CMake](http://cmake.org/) 3.15 or later
+- C++11 compatible compiler
+- [Catch2](https://github.com/catchorg/Catch2) v2.13.10 (included as single header file, no external dependency)
+
+## Build & Test
+
+### On Linux or macOS:
  ```
  git clone https://github.com/thejinchao/cyclone
  mkdir _build && cd _build
  cmake -G "Unix Makefiles" ../cyclone
  make
- make test
  ```
-## On Windows
-1. Open CMake-GUI, enter the correct directory for source code and build. Then click *Configure*, choose your installed version of the Microsoft Visual Studio.
-2. Click generate after fixing all missing variables to generate your Visual Studio solution.
-3. Open the solution and compile the code.
-4. Right click the project *RUN TESTS* and slect *Build* to run unit test
+### On Windows
 
-## On Android
-Build on the windows host machine, make sure the flowing envionment variables have been set correctly. `ANDROID_SDK_ROOT`, `ANDROID_NDK_ROOT`
-```
+```cmd
 git clone https://github.com/thejinchao/cyclone
 mkdir _build && cd _build
-%ANDROID_SDK_ROOT%/cmake/3.10.2.4988404/bin/cmake.exe -G "Ninja" -DANDROID_ABI=armeabi-v7a ^
+cmake -G "Visual Studio 17 2022" -A x64 ..\cyclone
+cmake --build . --config Release
+```
+
+### On Android
+
+Build on the host machine (Windows/Linux/macOS). Make sure the following environment variables are set correctly:
+- `ANDROID_SDK_ROOT`
+- `ANDROID_NDK_ROOT`
+
+#### Using CMake from Android SDK:
+
+```bash
+git clone https://github.com/thejinchao/cyclone
+mkdir _build && cd _build
+%ANDROID_SDK_ROOT%/cmake/<version>/bin/cmake.exe -G "Ninja" -DANDROID_ABI=arm64-v8a ^
  -DANDROID_NDK=%ANDROID_NDK_ROOT% -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT%/build/cmake/android.toolchain.cmake ^
- -DANDROID_NATIVE_API_LEVEL=28 -DCMAKE_MAKE_PROGRAM=%ANDROID_SDK_ROOT%/cmake/3.10.2.4988404/bin/ninja.exe ^
+ -DANDROID_NATIVE_API_LEVEL=34 -DCMAKE_MAKE_PROGRAM=%ANDROID_SDK_ROOT%/cmake/<version>/bin/ninja.exe ^
  ../cyclone
 
-%ANDROID_SDK_ROOT%/cmake/3.10.2.4988404/bin/ninja.exe
+%ANDROID_SDK_ROOT%/cmake/<version>/bin/ninja.exe
 ```
-To run unit test, an android device with root authority is required.
-```
+
+#### Running Tests on Android Device:
+```bash
 adb push test/unit/cyt_unit /data/local/tmp/
 adb shell chmod +x /data/local/tmp/cyt_unit
 adb shell /data/local/tmp/cyt_unit
 ```
-# Samples
-- **echo** a typical client/server program
-- **timer** just show how to use timer function
-- **chat** a simple chat room program
-- **socks5** a [Socks5](http://www.ietf.org/rfc/rfc1928.txt) proxy server(only support tcp protocol)
-- **relay** a interesting socket tunnel utility, support n:1, 1:n, key-exchange and aes encrypt.
-- **filetransfer** Transfer a file to another machine as soon as possible
+## Testing
+
+Cyclone uses [Catch2](https://github.com/catchorg/Catch2) v2.13.10 for unit testing. The test framework is included as a single header file, so no external dependencies are required.
+
+Cyclone has been tested with:
+- Microsoft Visual Studio 2022 (under Windows 11)
+- Clang 17 (under MacOS 26)
+- GCC 11.5 (under AlmaLinux 9.7)
+- Android NDK 27, API level 34
+
+### Test Coverage
+
+The test suite covers:
+- ✅ Core utilities (Signal, Lock-Free Queue, Ring Buffer, System API)
+- ✅ Event loop (Basic events, Timers, Socket events)
+- ✅ Cryptographic utilities (AES, DH, Adler32, XorShift128)
+- ✅ Utility classes (Statistics, Ring Queue, Pipe, Packet)
+
+## Samples
+- **echo** - A typical client/server program demonstrating basic TCP communication
+- **timer** - Demonstrates how to use timer functionality in event loop
+- **chat** - A simple chat room program with multiple clients
+- **socks5** - A [SOCKS5](http://www.ietf.org/rfc/rfc1928.txt) proxy server (TCP protocol only)
+- **relay** - An interesting socket tunnel utility, supports n:1, 1:n connections, key-exchange and AES encryption
+- **filetransfer** - High-performance file transfer utility
+
+## License
+
+Copyright(C) thecodeway.com
