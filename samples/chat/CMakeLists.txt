@@ -17,31 +17,12 @@ add_executable(chat-client chat_client.cpp)
 set_property(TARGET chat-server PROPERTY FOLDER "samples/chat")
 set_property(TARGET chat-client PROPERTY FOLDER "samples/chat")
 
-if(CY_SYS_WINDOWS)
 target_link_libraries(chat-server
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
 
 target_link_libraries(chat-client
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
-
-else()
-
-target_link_libraries(chat-server
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-target_link_libraries(chat-client
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-endif()

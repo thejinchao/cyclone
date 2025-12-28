@@ -23,31 +23,12 @@ add_executable(ft-client
 set_property(TARGET ft-server PROPERTY FOLDER "samples/filetransfer")
 set_property(TARGET ft-client PROPERTY FOLDER "samples/filetransfer")
 
-if(CY_SYS_WINDOWS)
 target_link_libraries(ft-server
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
 
 target_link_libraries(ft-client
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
-
-else()
-
-target_link_libraries(ft-server
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-target_link_libraries(ft-client
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-endif()

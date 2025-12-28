@@ -19,19 +19,7 @@ add_executable(socks5
 
 set_property(TARGET socks5 PROPERTY FOLDER "samples/socks5")
 
-if(CY_SYS_WINDOWS)
 target_link_libraries(socks5
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
-
-else()
-
-target_link_libraries(socks5
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-endif()

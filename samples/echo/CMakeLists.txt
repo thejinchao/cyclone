@@ -17,31 +17,12 @@ add_executable(echo-client echo_client.cpp)
 set_property(TARGET echo-server PROPERTY FOLDER "samples/echo")
 set_property(TARGET echo-client PROPERTY FOLDER "samples/echo")
 
-if(CY_SYS_WINDOWS)
 target_link_libraries(echo-server
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
 
 target_link_libraries(echo-client
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
-
-else()
-
-target_link_libraries(echo-server
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-target_link_libraries(echo-client
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-endif()

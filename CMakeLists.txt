@@ -33,8 +33,6 @@ set(CY_SOURCE_UTILITY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/source/cyUtility)
 ########
 #check include file
 ########
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-
 include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
 check_include_file(unistd.h 		CY_HAVE_UNISTD_H)
@@ -54,12 +52,13 @@ check_include_file(sys/eventfd.h	CY_HAVE_SYS_EVENTFD_H)
 #check functions
 ########
 include(CheckFunctionExists)
-check_function_exists(epoll_ctl	CY_HAVE_EPOLL)
-check_function_exists(readv CY_HAVE_READWRITE_V)
-check_function_exists(pipe2 CY_HAVE_PIPE2)
-check_function_exists(kqueue CY_HAVE_KQUEUE)
-check_function_exists(timerfd_create CY_HAVE_TIMERFD)
-check_function_exists(pthread_mutex_timedlock CY_HAVE_TIMED_LOCK)
+include(CheckCXXSourceCompiles)
+check_function_exists(epoll_ctl			CY_HAVE_EPOLL)
+check_function_exists(readv				CY_HAVE_READWRITE_V)
+check_function_exists(pipe2				CY_HAVE_PIPE2)
+check_function_exists(kqueue			CY_HAVE_KQUEUE)
+check_function_exists(timerfd_create	CY_HAVE_TIMERFD)
+
 
 ########
 #compiler flag
@@ -71,8 +70,15 @@ else()
 endif()
 
 ########
-#find third library
+#set system library
 ########
+set(CY_SYSTEM_LIBRARIES "")
+if(CY_SYS_LINUX)
+elseif(CY_SYS_WINDOWS)
+	set(CY_SYSTEM_LIBRARIES ws2_32.lib shlwapi.lib winmm.lib)
+elseif(CY_SYS_MACOS)
+elseif(CY_SYS_ANDROID)
+endif()
 
 #defined in $ANDROID_SDK_ROOT/build/cmake/android.toolchain.cmake
 if(CY_SYS_ANDROID)
@@ -80,15 +86,6 @@ unset(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM)
 unset(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY)
 unset(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE)
 unset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
-endif()
-
-########
-#pthread library
-########
-if(CY_SYS_ANDROID)
-	set(PTHREAD_LIBRARIES "")
-else()
-	set(PTHREAD_LIBRARIES "pthread")
 endif()
 
 ########

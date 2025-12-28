@@ -14,19 +14,7 @@ add_executable(timer timer.cpp)
 
 set_property(TARGET timer PROPERTY FOLDER "samples/timer")
 
-if(CY_SYS_WINDOWS)
 target_link_libraries(timer
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
-
-else()
-
-target_link_libraries(timer
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-endif()

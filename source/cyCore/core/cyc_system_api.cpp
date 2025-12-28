@@ -10,8 +10,8 @@ Copyright(C) thecodeway.com
 #else
 #include <sys/syscall.h>
 #include <sys/time.h>
-#include <pthread.h>
 #include <sched.h>
+#include <condition_variable>
 #endif
 
 #ifdef CY_SYS_MACOS
@@ -162,7 +162,9 @@ void thread_sleep(int32_t msec)
 //-------------------------------------------------------------------------------------
 bool thread_join(thread_t thread, int32_t wait_time_ms)
 {
-	thread_data_s* data = (thread_data_s*)thread;
+	thread_data_s* data = static_cast<thread_data_s*>(thread);
+	if (data == nullptr) return true;
+
 	assert(!(data->detached));
 
 	if (wait_time_ms < 0) {
@@ -199,7 +201,7 @@ struct mutex_data_s
 #ifdef CY_SYS_WINDOWS
 	HANDLE h;
 #else
-	pthread_mutex_t h;
+	std::timed_mutex h;
 #endif
 };
 
@@ -214,8 +216,6 @@ mutex_t mutex_create(void)
 		delete mutex;
 		return nullptr;
 	}
-#else
-	pthread_mutex_init(&(mutex->h), 0);
 #endif
 	return mutex;
 }
@@ -224,12 +224,11 @@ mutex_t mutex_create(void)
 void mutex_destroy(mutex_t m)
 {
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+	if (mutex == nullptr) return;
 
 #ifdef CY_SYS_WINDOWS
 	::CloseHandle(mutex->h);
 	mutex->h = NULL;
-#else
-	pthread_mutex_destroy(&(mutex->h));
 #endif
 	delete mutex;
 }
@@ -238,11 +237,12 @@ void mutex_destroy(mutex_t m)
 void mutex_lock(mutex_t m)
 {
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+	if (mutex == nullptr) return;
 
 #ifdef CY_SYS_WINDOWS
 	::WaitForSingleObject(mutex->h, INFINITE);
 #else
-	pthread_mutex_lock(&(mutex->h));
+	mutex->h.lock();
 #endif
 }
 
@@ -250,41 +250,20 @@ void mutex_lock(mutex_t m)
 bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 {
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+	if (mutex == nullptr) return false;
 
 #ifdef CY_SYS_WINDOWS
 	return WAIT_OBJECT_0 == ::WaitForSingleObject(mutex->h, wait_time_ms);
 #else
 	if (wait_time_ms <= 0)
 	{
-		return 0 == pthread_mutex_trylock(&(mutex->h));
+		return mutex->h.try_lock();
 	}
 	else
 	{
-	#ifdef CY_HAVE_TIMED_LOCK
-		struct timespec timestamp;
-		clock_gettime(CLOCK_REALTIME, &timestamp);
-		timestamp.tv_sec += wait_time_ms / 1000;
-		timestamp.tv_nsec += (wait_time_ms % 1000) * 1000 * 1000;
-
-		const int32_t kNanoSecondsPerSecond = 1000l * 1000l * 1000l;
-		if (timestamp.tv_nsec >= kNanoSecondsPerSecond)
-		{
-			timestamp.tv_nsec -= kNanoSecondsPerSecond;
-			++timestamp.tv_sec;
-		}
-
-		return 0 == pthread_mutex_timedlock(&(mutex->h), &timestamp);
-	#else
-		int64_t time_out = performance_time_now() + wait_time_ms*1000ll;
-		while (pthread_mutex_trylock(&(mutex->h)) != 0)
-		{
-			if (performance_time_now() >= time_out)
-				return false;
-
-			thread_yield();
-		}
-		return true;
-	#endif
+		// Use std::timed_mutex::try_lock_for with chrono duration
+		auto timeout = std::chrono::milliseconds(wait_time_ms);
+		return mutex->h.try_lock_for(timeout);
 	}
 #endif
 }
@@ -293,133 +272,127 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 void mutex_unlock(mutex_t m)
 {
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
+	if (mutex == nullptr) return;
 
 #ifdef CY_SYS_WINDOWS
 	::ReleaseMutex(mutex->h);
 #else
-	pthread_mutex_unlock(&(mutex->h));
+	mutex->h.unlock();
 #endif
 }
 
 //-------------------------------------------------------------------------------------
-#ifndef CY_SYS_WINDOWS
-struct signal_s
+struct signal_data_s
 {
-	pthread_mutex_t mutex;
-	pthread_cond_t	cond;
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	HANDLE h;
+#else
+	std::mutex mutex;
+	std::condition_variable cond;
 	atomic_int32_t  predicate;
-};
 #endif
+};
 
 //-------------------------------------------------------------------------------------
 signal_t signal_create(void)
 {
-#ifdef CY_SYS_WINDOWS
-	return ::CreateEvent(0, FALSE, FALSE, 0);
+	signal_data_s* sig = new signal_data_s();
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	sig->h = ::CreateEventW(0, FALSE, FALSE, 0);
 #else
-	signal_s *sig = (signal_s*)CY_MALLOC(sizeof(*sig));
 	sig->predicate = 0;
-	pthread_mutex_init(&(sig->mutex), 0);
-	pthread_cond_init(&(sig->cond), 0);
-	return (signal_t)sig;
 #endif
+	return static_cast<signal_t>(sig);
 }
 
 //-------------------------------------------------------------------------------------
 void signal_destroy(signal_t s)
 {
-#ifdef CY_SYS_WINDOWS
-	::CloseHandle(s);
-#else
-	signal_s* sig = (signal_s*)s;
-	pthread_cond_destroy(&(sig->cond));
-	pthread_mutex_destroy(&(sig->mutex));
-	CY_FREE(sig);
+	signal_data_s* sig = static_cast<signal_data_s*>(s);
+	if (sig == nullptr) return;
+
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	::CloseHandle(sig->h);
 #endif
+	delete sig;
 }
 
 //-------------------------------------------------------------------------------------
 void signal_wait(signal_t s)
 {
-#ifdef CY_SYS_WINDOWS
-	::WaitForSingleObject(s, INFINITE);
+	signal_data_s* sig = static_cast<signal_data_s*>(s);
+	if (sig == nullptr) return;
+
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	::WaitForSingleObject(sig->h, INFINITE);
 #else
-	signal_s* sig = (signal_s*)s;
-	pthread_mutex_lock(&(sig->mutex));
-	while (0==sig->predicate.load()) {
-		pthread_cond_wait(&(sig->cond), &(sig->mutex));
-	}
-	sig->predicate = 0;
-	pthread_mutex_unlock(&(sig->mutex));
+	std::unique_lock<std::mutex> lock(sig->mutex);
+	sig->cond.wait(lock, [sig] { 
+		int32_t expected = 1;
+		return sig->predicate.compare_exchange_strong(expected, 0);
+	});
 #endif
 }
-
-//-------------------------------------------------------------------------------------
-#ifndef CY_SYS_WINDOWS
-bool _signal_unlock_wait(signal_s* sig, int32_t ms)
-{
-	const uint64_t kNanoSecondsPerSecond = 1000ll * 1000ll * 1000ll;
-
-	if (sig->predicate.load() == 1) { //It's light!
-		sig->predicate = 0;
-		return true;
-	}
-
-	//need wait...
-	if (ms == 0) return  false;	//zero-timeout event state check optimization
-
-	timeval tv;
-	gettimeofday(&tv, 0);
-	uint64_t nanoseconds = ((uint64_t)tv.tv_sec) * kNanoSecondsPerSecond + (uint64_t)ms * (uint64_t)1000ull * (uint64_t)1000ull + ((uint64_t)tv.tv_usec) * 1000;
-
-	timespec ts;
-	ts.tv_sec = (time_t)(nanoseconds / kNanoSecondsPerSecond);
-	ts.tv_nsec = (long int)(nanoseconds - ((uint64_t)ts.tv_sec) * kNanoSecondsPerSecond);
-	
-	//wait...
-	while(0 == sig->predicate.load()) {
-		if (pthread_cond_timedwait(&(sig->cond), &(sig->mutex), &ts) != 0)
-			return false; //time out
-	}
-
-	sig->predicate = 0;
-	return true;
-}
-#endif
 
 //-------------------------------------------------------------------------------------
 bool signal_timewait(signal_t s, int32_t ms)
 {
-#ifdef CY_SYS_WINDOWS
-	return (WAIT_OBJECT_0 == ::WaitForSingleObject(s, (DWORD)ms));
+	signal_data_s* sig = static_cast<signal_data_s*>(s);
+	if (sig == nullptr) return false;
+
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	return (WAIT_OBJECT_0 == ::WaitForSingleObject(sig->h, (DWORD)ms));
 #else
-	signal_s* sig = (signal_s*)s;
-	if (ms == 0) {
-		if (EBUSY == pthread_mutex_trylock(&(sig->mutex)))
-			return false;
+	if (ms <= 0)
+	{
+		//try to atomically consume predicate without locking.
+		int32_t expected = 1;
+		if (sig->predicate.compare_exchange_strong(expected, 0)) 
+		{
+			return true;
+		}
+		return false;
 	}
-	else {
-		pthread_mutex_lock(&(sig->mutex));
+	else
+	{
+		// attempt to atomically consume predicate first to avoid
+		// taking the mutex if the signal is already set.
+		int32_t expected = 1;
+		if (sig->predicate.compare_exchange_strong(expected, 0)) 
+		{
+			return true;
+		}
+
+		std::unique_lock<std::mutex> lock(sig->mutex);
+		auto timeout = std::chrono::milliseconds(ms);
+		bool result = sig->cond.wait_for(lock, timeout, [sig] {
+			int32_t expected2 = 1;
+			return sig->predicate.compare_exchange_strong(expected2, 0);
+		});
+
+		//if (result)
+		//{
+		//	sig->predicate = 0;
+		//}
+		return result;
 	}
-
-	bool ret = _signal_unlock_wait(sig, ms);
-
-	pthread_mutex_unlock(&(sig->mutex));
-	return ret;
 #endif
 }
 
 //-------------------------------------------------------------------------------------
 void signal_notify(signal_t s)
 {
-#ifdef CY_SYS_WINDOWS
-	::SetEvent(s);
+	signal_data_s* sig = static_cast<signal_data_s*>(s);
+	if (sig == nullptr) return;
+
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	::SetEvent(sig->h);
 #else
-	signal_s* sig = (signal_s*)s;
-	pthread_mutex_lock(&(sig->mutex));
-	sig->predicate = 1;
-	pthread_cond_signal(&(sig->cond));
-	pthread_mutex_unlock(&(sig->mutex));
+	{
+		std::lock_guard<std::mutex> lock(sig->mutex);
+		sig->predicate = 1;
+	}
+	sig->cond.notify_one();
 #endif
 }
 

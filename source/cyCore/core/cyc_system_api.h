@@ -6,7 +6,8 @@ Copyright(C) thecodeway.com
 #include <cyclone_config.h>
 
 #ifndef CY_SYS_WINDOWS
-#include <pthread.h>
+#include <mutex>
+#include <condition_variable>
 #endif
 
 typedef void* thread_t;
@@ -88,12 +89,7 @@ struct auto_mutex
 //----------------------
 // signal/semaphore functions
 //----------------------
-
-#ifdef CY_SYS_WINDOWS
-typedef HANDLE	signal_t;
-#else
-typedef void*	signal_t;
-#endif
+typedef void* signal_t;
 
 //// create a signal
 signal_t signal_create(void);

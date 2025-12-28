@@ -36,19 +36,11 @@ add_executable(cyt_unit
 
 set_property(TARGET cyt_unit PROPERTY FOLDER "test/unit")
 
-if(CY_SYS_WINDOWS)
-target_link_libraries(cyt_unit
-	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
-)
-
-else()
-
-target_link_libraries(cyt_unit
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
+if(CY_SYS_ANDROID)
+	list(APPEND CY_SYSTEM_LIBRARIES log)
 endif()
+
+target_link_libraries(cyt_unit
+	cyclone
+	${CY_SYSTEM_LIBRARIES}
+)

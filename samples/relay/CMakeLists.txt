@@ -29,41 +29,17 @@ set_property(TARGET relay_local PROPERTY FOLDER "samples/relay")
 set_property(TARGET relay_server PROPERTY FOLDER "samples/relay")
 set_property(TARGET relay_pipe PROPERTY FOLDER "samples/relay")
 
-if(CY_SYS_WINDOWS)
 target_link_libraries(relay_local
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
 
 target_link_libraries(relay_server
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
 
 target_link_libraries(relay_pipe
 	cyclone
-	ws2_32.lib
-	shlwapi.lib
-	winmm.lib
+	${CY_SYSTEM_LIBRARIES}
 )
-else()
-
-target_link_libraries(relay_local
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-target_link_libraries(relay_server
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-
-target_link_libraries(relay_pipe
-	cyclone
-	${PTHREAD_LIBRARIES}
-)
-endif()
