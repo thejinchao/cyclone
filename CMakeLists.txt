@@ -74,6 +74,7 @@ endif()
 ########
 set(CY_SYSTEM_LIBRARIES "")
 if(CY_SYS_LINUX)
+	set(CY_SYSTEM_LIBRARIES pthread)
 elseif(CY_SYS_WINDOWS)
 	set(CY_SYSTEM_LIBRARIES ws2_32.lib shlwapi.lib winmm.lib)
 elseif(CY_SYS_MACOS)
