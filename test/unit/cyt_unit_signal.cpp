@@ -81,9 +81,9 @@ TEST_CASE("Signal timeout precision test", "[Signal][Timing]")
 
 	// Test different timeout values
 	int32_t timeouts[] = { 10, 50, 100, 500 };
-	const int32_t timeout_count = sizeof(timeouts) / sizeof(timeouts[0]);
+	const size_t timeout_count = sizeof(timeouts) / sizeof(timeouts[0]);
 
-	for (int32_t i = 0; i < timeout_count; i++) {
+	for (size_t i = 0; i < timeout_count; i++) {
 		int32_t timeout = timeouts[i];
 
 		// Consume any existing signal
