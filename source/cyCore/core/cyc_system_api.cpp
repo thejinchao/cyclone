@@ -328,8 +328,7 @@ void signal_wait(signal_t s)
 #else
 	std::unique_lock<std::mutex> lock(sig->mutex);
 	sig->cond.wait(lock, [sig] { 
-		int32_t expected = 1;
-		return sig->predicate.compare_exchange_strong(expected, 0);
+		return sig->predicate.exchange(0)==1;
 	});
 #endif
 }
@@ -343,39 +342,21 @@ bool signal_timewait(signal_t s, int32_t ms)
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	return (WAIT_OBJECT_0 == ::WaitForSingleObject(sig->h, (DWORD)ms));
 #else
-	if (ms <= 0)
-	{
-		//try to atomically consume predicate without locking.
-		int32_t expected = 1;
-		if (sig->predicate.compare_exchange_strong(expected, 0)) 
-		{
-			return true;
-		}
-		return false;
-	}
-	else
-	{
-		// attempt to atomically consume predicate first to avoid
-		// taking the mutex if the signal is already set.
-		int32_t expected = 1;
-		if (sig->predicate.compare_exchange_strong(expected, 0)) 
-		{
-			return true;
-		}
 
+	// attempt to atomically consume predicate first to avoid
+	// taking the mutex if the signal is already set.
+	if (sig->predicate.exchange(0) == 1) return true;
+
+	// if ms>0, wait with timeout
+	if (ms > 0)
+	{
 		std::unique_lock<std::mutex> lock(sig->mutex);
 		auto timeout = std::chrono::milliseconds(ms);
-		bool result = sig->cond.wait_for(lock, timeout, [sig] {
-			int32_t expected2 = 1;
-			return sig->predicate.compare_exchange_strong(expected2, 0);
+		return sig->cond.wait_for(lock, timeout, [sig] {
+			return sig->predicate.exchange(0)==1;
 		});
-
-		//if (result)
-		//{
-		//	sig->predicate = 0;
-		//}
-		return result;
 	}
+	return false;
 #endif
 }
 
