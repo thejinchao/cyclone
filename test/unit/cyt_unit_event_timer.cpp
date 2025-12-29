@@ -116,7 +116,7 @@ static void _multiTimerThreadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Timer test for EventLooper", "[EventLooper][Timer]")
+TEST_CASE("EventLooper timer test", "[EventLooper][Timer]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -208,7 +208,7 @@ TEST_CASE("Timer test for EventLooper", "[EventLooper][Timer]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("MultiTimer test for EventLooper", "[EventLooper][MultiTimer]")
+TEST_CASE("EventLooper multi timer test", "[EventLooper][MultiTimer]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

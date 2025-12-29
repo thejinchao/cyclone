@@ -7,7 +7,7 @@ using namespace cyclone;
 
 namespace {
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for Pipe", "[Pipe]")
+TEST_CASE("Pipe basic test", "[Pipe][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -36,7 +36,7 @@ TEST_CASE("Basic test for Pipe", "[Pipe]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Overflow test for Pipe", "[Pipe]")
+TEST_CASE("Pipe overflow test", "[Pipe][Overflow]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -148,7 +148,7 @@ void _pop_function(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("MultiThread test for Pipe", "[Pipe]")
+TEST_CASE("Pipe multi thread test", "[Pipe][MultiThread]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

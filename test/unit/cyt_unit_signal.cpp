@@ -5,7 +5,7 @@
 using namespace cyclone;
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for Signal", "[Signal]")
+TEST_CASE("Signal basic test", "[Signal][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -73,7 +73,7 @@ TEST_CASE("Basic test for Signal", "[Signal]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Signal timeout precision test", "[Signal][Timing]")
+TEST_CASE("Signal timeout precision test", "[Signal][Timeout]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -169,7 +169,7 @@ static void _competitorThreadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Multithread competitor test for Signal", "[Signal][Competitor]")
+TEST_CASE("Signal multi thread competitor test", "[Signal][Competitor]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -282,7 +282,7 @@ static void _pingPongThreadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Multithread pingpong test for Signal", "[Signal][PingPong]")
+TEST_CASE("Signal multi thread pingpong test", "[Signal][PingPong]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

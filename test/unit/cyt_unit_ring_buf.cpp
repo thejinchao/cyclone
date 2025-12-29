@@ -37,7 +37,7 @@ void _fillRandom(uint8_t* mem, size_t len)
 		REQUIRE_FALSE(rb.full()); 
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for RingBuf", "[RingBuf]")
+TEST_CASE("RingBuf basic test", "[RingBuf][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -501,7 +501,7 @@ TEST_CASE("Basic test for RingBuf", "[RingBuf]")
 
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Socket test for RingBuf", "[RingBuf]")
+TEST_CASE("RingBuf socket test", "[RingBuf][Socket]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -622,8 +622,3 @@ TEST_CASE("Socket test for RingBuf", "[RingBuf]")
 }
 
 }
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-

@@ -5,7 +5,7 @@ using namespace cyclone;
 
 namespace {
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for LockFreeQueue", "[LockFreeQueue]")
+TEST_CASE("LockFreeQueue basic test", "[LockFreeQueue][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -224,7 +224,7 @@ public:
 };
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("MultiThread test for LockFreeQueue", "[LockFreeQueue]")
+TEST_CASE("LockFreeQueue multi thread test", "[LockFreeQueue][MultiThread]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

@@ -36,7 +36,7 @@ uint32_t* _makeHead(uint16_t size, uint16_t id, uint32_t& head_for_check)
 	REQUIRE_EQ(nullptr, packet.get_packet_content()); 
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for Packet", "[Packet]")
+TEST_CASE("Packet basic test", "[Packet]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

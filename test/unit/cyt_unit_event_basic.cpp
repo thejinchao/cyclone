@@ -8,7 +8,7 @@ using namespace cyclone;
 namespace {
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for EventLooper", "[EventLooper]")
+TEST_CASE("EventLooper basic test", "[EventLooper][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

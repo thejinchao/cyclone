@@ -7,7 +7,7 @@
 using namespace cyclone;
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("MinMaxValue test for Signal", "[Statistics]")
+TEST_CASE("Statistics MinMaxValue test", "[Statistics][MinMaxValue]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -111,7 +111,7 @@ TEST_CASE("MinMaxValue test for Signal", "[Statistics]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("PeriodValue test for Signal", "[Statistics]")
+TEST_CASE("Statistics PeriodValue test", "[Statistics][PeriodValue]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

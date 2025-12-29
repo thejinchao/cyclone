@@ -15,7 +15,7 @@ void _fillRandom(uint8_t* mem, size_t len)
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for Adler32", "[Adler32]")
+TEST_CASE("Crypto algorithm(Adler32) basic test", "[Crypt][Adler32]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -48,7 +48,7 @@ TEST_CASE("Basic test for Adler32", "[Adler32]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Random test for Adler32", "[Adler32]")
+TEST_CASE("Crypto algorithm(Adler32) random test", "[Crypt][Adler32]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -76,7 +76,7 @@ TEST_CASE("Random test for Adler32", "[Adler32]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Random test for DHExchange", "[DHExchange]")
+TEST_CASE("Crypto algorithm(DHExchange) test", "[Crypt][DHExchange]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -106,7 +106,7 @@ TEST_CASE("Random test for DHExchange", "[DHExchange]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for XorShift128", "[XorShift128]")
+TEST_CASE("Crypto algorithm(XorShift128) test", "[Crypt][XorShift128]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -169,7 +169,7 @@ TEST_CASE("Basic test for XorShift128", "[XorShift128]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for Rijndael", "[Rijndael]")
+TEST_CASE("Crypto algorithm(Rijndael) test", "[Crypt][Rijndael]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

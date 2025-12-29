@@ -25,7 +25,7 @@ using namespace cyclone;
 		REQUIRE_FALSE(rq.empty()); \
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("FixedCapcity test for RingQueue", "[RingQueue]")
+TEST_CASE("RingQueue fixed capcity test", "[RingQueue][FixedCapcity]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -321,7 +321,7 @@ TEST_CASE("FixedCapcity test for RingQueue", "[RingQueue]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("AutoResize test for RingQueue", "[RingQueue]")
+TEST_CASE("RingQueue auto resize test", "[RingQueue][AutoResize]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

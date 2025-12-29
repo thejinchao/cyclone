@@ -6,7 +6,7 @@ using namespace cyclone;
 namespace {
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Basic test for System", "[System]")
+TEST_CASE("System basic test", "[System][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -88,7 +88,7 @@ public:
 };
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Mutex test for System", "[System]")
+TEST_CASE("System mutex test", "[System][Mutex]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -246,7 +246,7 @@ TEST_CASE("Mutex test for System", "[System]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Atomic test for System", "[System]")
+TEST_CASE("System atomic test", "[System][Atomic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 

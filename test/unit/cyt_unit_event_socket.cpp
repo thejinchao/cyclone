@@ -143,7 +143,7 @@ static void _writeThreadFunction(void* param)
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("ReadAndCloseSocket test for EventLooper", "[EventLooper]")
+TEST_CASE("EventLooper read and close test", "[EventLooper][Read]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -286,7 +286,7 @@ TEST_CASE("ReadAndCloseSocket test for EventLooper", "[EventLooper]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("WriteSocket test for EventLooper", "[EventLooper]")
+TEST_CASE("EventLooper write test", "[EventLooper][Write]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
