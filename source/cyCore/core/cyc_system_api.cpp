@@ -198,7 +198,7 @@ void thread_yield(void)
 //-------------------------------------------------------------------------------------
 struct mutex_data_s
 {
-#ifdef CY_SYS_WINDOWS
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	HANDLE h;
 #else
 	std::timed_mutex h;
@@ -210,7 +210,7 @@ mutex_t mutex_create(void)
 {
 	mutex_data_s* mutex = new mutex_data_s;
 
-#ifdef CY_SYS_WINDOWS
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	mutex->h = ::CreateMutexA(NULL, FALSE, nullptr);
 	if (mutex->h == NULL) {
 		delete mutex;
@@ -226,7 +226,7 @@ void mutex_destroy(mutex_t m)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return;
 
-#ifdef CY_SYS_WINDOWS
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	::CloseHandle(mutex->h);
 	mutex->h = NULL;
 #endif
@@ -239,7 +239,7 @@ void mutex_lock(mutex_t m)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return;
 
-#ifdef CY_SYS_WINDOWS
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	::WaitForSingleObject(mutex->h, INFINITE);
 #else
 	mutex->h.lock();
@@ -252,7 +252,7 @@ bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return false;
 
-#ifdef CY_SYS_WINDOWS
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	return WAIT_OBJECT_0 == ::WaitForSingleObject(mutex->h, wait_time_ms);
 #else
 	if (wait_time_ms <= 0)
@@ -274,7 +274,7 @@ void mutex_unlock(mutex_t m)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return;
 
-#ifdef CY_SYS_WINDOWS
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
 	::ReleaseMutex(mutex->h);
 #else
 	mutex->h.unlock();
