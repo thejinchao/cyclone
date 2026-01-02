@@ -16,16 +16,16 @@ struct AutoPrintTestCaseName
 	{
 		char buffer[64];
 		if (microseconds < 1000ll) {
-			sprintf(buffer, "%" PRId64 " us", microseconds);
+			snprintf(buffer, 64, "%" PRId64 " us", microseconds);
 		}
 		else if (microseconds < 1000ll * 1000ll) {
-			sprintf(buffer, "%.2f ms", static_cast<float>(microseconds) / 1000.0f);
+			snprintf(buffer, 64, "%.2f ms", static_cast<float>(microseconds) / 1000.0f);
 		}
 		else if (microseconds < 60ll * 1000ll * 1000ll) {
-			sprintf(buffer, "%.2f s", static_cast<float>(microseconds) / (1000.0f * 1000.0f));
+			snprintf(buffer, 64, "%.2f s", static_cast<float>(microseconds) / (1000.0f * 1000.0f));
 		}
 		else {
-			sprintf(buffer, "%.2f min", static_cast<float>(microseconds) / (60.0f * 1000.0f * 1000.0f));
+			snprintf(buffer, 64, "%.2f min", static_cast<float>(microseconds) / (60.0f * 1000.0f * 1000.0f));
 		}
 		return std::string(buffer);
 	}
