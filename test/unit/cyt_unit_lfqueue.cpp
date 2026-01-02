@@ -155,8 +155,7 @@ private:
 	void _pushFunction(ThreadData* threadData) {
 		uint32_t nextValue = m_currentValue++;
 		while (nextValue <= m_topValue) {
-			REQUIRE_GE(nextValue, 1u);
-			REQUIRE_LE(nextValue, m_topValue);
+			REQUIRE_RANGE(nextValue, 1u, m_topValue);
 			while (!(m_queue->push(nextValue))) {
 				sys_api::thread_yield();
 			}
@@ -175,8 +174,7 @@ private:
 			bool pop_result = m_queue->pop(pop_value);
 
 			if (pop_result) {
-				REQUIRE_GE(pop_value, 1u);
-				REQUIRE_LE(pop_value, m_topValue);
+				REQUIRE_RANGE(pop_value, 1u, m_topValue);
 				REQUIRE_FALSE(m_result[pop_value].test_and_set());
 				threadData->workCounts++;
 			}

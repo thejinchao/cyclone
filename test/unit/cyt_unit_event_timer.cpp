@@ -141,8 +141,7 @@ TEST_CASE("EventLooper timer test", "[EventLooper][Timer]")
 		int64_t end_time = sys_api::performance_time_now();
 
 		REQUIRE_EQ(1, data.counts.load());
-		REQUIRE_GE(end_time - begin_time, (data.freq - MAX_TIMER_ERROR) * 1000ll);
-		REQUIRE_LE(end_time - begin_time, (data.freq + MAX_TIMER_ERROR) * 1000ll);
+		REQUIRE_RANGE(end_time - begin_time, (data.freq - MAX_TIMER_ERROR) * 1000ll, (data.freq + MAX_TIMER_ERROR) * 1000ll);
 		sys_api::thread_join(thread);
 	}
 
@@ -165,12 +164,10 @@ TEST_CASE("EventLooper timer test", "[EventLooper][Timer]")
 		int32_t current_index = data.counts.load();
 
 		sys_api::signal_notify(data.break_signal);
-		REQUIRE_GE(current_index, repeat_times);
-		REQUIRE_LE(current_index, repeat_times+1);
+		REQUIRE_RANGE(current_index, repeat_times, repeat_times + 1);
 		sys_api::thread_join(thread);
 		int64_t end_time = sys_api::performance_time_now();
-		REQUIRE_GE(end_time - begin_time, sleep_time * 1000ll);
-		REQUIRE_LE(end_time - begin_time, (int64_t)(sleep_time + data.freq + MAX_TIMER_ERROR) * 1000ll);
+		REQUIRE_RANGE(end_time - begin_time, sleep_time * 1000ll, (int64_t)(sleep_time + data.freq + MAX_TIMER_ERROR) * 1000ll);
 	}
 
 	//timer then pause/resume
@@ -245,9 +242,7 @@ TEST_CASE("EventLooper multi timer test", "[EventLooper][MultiTimer]")
 			MultiTimerData& timer = data.timers[i];
 
 			CAPTURE(timer.freq, timer.counts, sleep_time, sleep_time / timer.freq);
-
-			REQUIRE_GE(timer.counts, sleep_time / timer.freq - 1);
-			REQUIRE_LE(timer.counts, sleep_time / timer.freq + 1);
+			REQUIRE_RANGE(timer.counts, sleep_time / timer.freq - 1, sleep_time / timer.freq + 1);
 
 			if (i == disable_timer_index) {
 				disabled_timer_counts = timer.counts;
@@ -272,8 +267,7 @@ TEST_CASE("EventLooper multi timer test", "[EventLooper][MultiTimer]")
 			}
 			else {
 				CAPTURE(timer.freq, timer.counts, timer.freq * timer.counts, sleep_time * 2, 2 * sleep_time / timer.freq);
-				REQUIRE_GE(timer.counts, (uint32_t)(2 * sleep_time / timer.freq - 1));
-				REQUIRE_LE(timer.counts, (uint32_t)(2 * sleep_time / timer.freq + 1));
+				REQUIRE_RANGE(timer.counts, (uint32_t)(2 * sleep_time / timer.freq - 1), (uint32_t)(2 * sleep_time / timer.freq + 1));
 			}
 		}
 

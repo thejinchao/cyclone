@@ -67,7 +67,7 @@ TEST_CASE("Signal basic test", "[Signal][Basic]")
 	int64_t begin_time = sys_api::performance_time_now();
 	REQUIRE_FALSE(sys_api::signal_timewait(signal, 100));
 	int64_t end_time = sys_api::performance_time_now();
-	REQUIRE_RANCE(end_time - begin_time, 100 * 1000, 120 * 1000);
+	REQUIRE_RANGE(end_time - begin_time, 100 * 1000, 120 * 1000);
 
 	sys_api::signal_destroy(signal);
 }
@@ -98,7 +98,7 @@ TEST_CASE("Signal timeout precision test", "[Signal][Timeout]")
 		int32_t min_time = static_cast<int32_t>(static_cast<float>(timeout) * 0.8f);
 		int32_t max_time = static_cast<int32_t>(static_cast<float>(timeout) * 1.2f) + 10;
 		CAPTURE(timeout, elapsed);
-		REQUIRE_RANCE(elapsed, min_time, max_time);
+		REQUIRE_RANGE(elapsed, min_time, max_time);
 	}
 
 	sys_api::signal_destroy(signal);

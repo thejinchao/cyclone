@@ -198,8 +198,8 @@ TEST_CASE("EventLooper read and close test", "[EventLooper][Read]")
 			REQUIRE_TRUE(data.socketPairs[i]->rb.empty());
 		}
 
-		REQUIRE_GE(data.looper->get_loop_counts(), 1ull);
-		REQUIRE_LE(data.looper->get_loop_counts(), data.active_counts + 1); //read event(s) + inner pipe register event
+		//read event(s) + inner pipe register event
+		REQUIRE_RANGE(data.looper->get_loop_counts(), 1ull, data.active_counts + 1);
 
 		//quit...
 		data.looper->push_stop_request();
@@ -267,8 +267,8 @@ TEST_CASE("EventLooper read and close test", "[EventLooper][Read]")
 			}
 		}
 
-		REQUIRE_GE(data.looper->get_loop_counts(), 1ull);
-		REQUIRE_LE(data.looper->get_loop_counts(), data.close_counts + 1); //close event(s) + inner pipe register event
+		//close event(s) + inner pipe register event
+		REQUIRE_RANGE(data.looper->get_loop_counts(), 1ull, data.close_counts + 1);
 
 		//quit...
 		data.looper->push_stop_request();
@@ -319,8 +319,7 @@ TEST_CASE("EventLooper write test", "[EventLooper][Write]")
 		sys_api::thread_join(thread);
 
 		for (size_t i = 0; i < data.socketPairs.size(); i++) {
-			REQUIRE_GE(data.socketPairs[i]->write_counts.load(), loop_counts - 1);
-			REQUIRE_LE(data.socketPairs[i]->write_counts.load(), loop_counts);
+			REQUIRE_RANGE(data.socketPairs[i]->write_counts.load(), loop_counts - 1, loop_counts);
 			delete data.socketPairs[i];
 		}
 		data.socketPairs.clear();

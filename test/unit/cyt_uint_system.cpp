@@ -120,8 +120,7 @@ TEST_CASE("System mutex test", "[System][Mutex]")
 	int64_t end_time = sys_api::performance_time_now();
 	int32_t time_spend = (int32_t)(end_time - begin_time) / 1000;
 
-	REQUIRE_GE(time_spend, 100);
-	REQUIRE_LE(time_spend, 200);
+	REQUIRE_RANGE(time_spend, 100, 200);
 
 	sys_api::thread_join(t1);
 	REQUIRE_EQ(another_thread.m_lock_status.load(), 2); //should unlock in other thread
@@ -170,8 +169,7 @@ TEST_CASE("System mutex test", "[System][Mutex]")
 	end_time = sys_api::performance_time_now();
 	time_spend = (int32_t)(end_time - begin_time) / 1000;
 
-	REQUIRE_GE(time_spend, 0);
-	REQUIRE_LE(time_spend, 50);
+	REQUIRE_RANGE(time_spend, 0, 50);
 
 	//run several work thread to wait unlock
 	size_t work_thread_counts = (size_t)sys_api::get_cpu_counts();

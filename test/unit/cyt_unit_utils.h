@@ -6,8 +6,44 @@
 #define REQUIRE_GT(a, b)			REQUIRE((a) > (b))
 #define REQUIRE_LE(a, b)			REQUIRE((a) <= (b))
 #define REQUIRE_GE(a, b)			REQUIRE((a) >= (b))
-#define REQUIRE_RANCE(a, min, max)	REQUIRE(((a) >= (min) && (a)<=(max)))
+#define REQUIRE_RANGE(a, min, max)	REQUIRE((a) >= (min)); REQUIRE((a)<=(max));
 #define REQUIRE_TRUE(a)				REQUIRE((a))
 #define REQUIRE_STREQ(a, b)			REQUIRE_THAT((a), Catch::Matchers::Equals(b))
-#define PRINT_CURRENT_TEST_NAME()	printf("%s\n", Catch::getCurrentContext().getResultCapture()->getCurrentTestName().c_str())
 
+struct AutoPrintTestCaseName
+{
+	std::string printTime(int64_t microseconds)
+	{
+		char buffer[64];
+		if (microseconds < 1000ll) {
+			sprintf(buffer, "%" PRId64 " us", microseconds);
+		}
+		else if (microseconds < 1000ll * 1000ll) {
+			sprintf(buffer, "%.2f ms", static_cast<float>(microseconds) / 1000.0f);
+		}
+		else if (microseconds < 60ll * 1000ll * 1000ll) {
+			sprintf(buffer, "%.2f s", static_cast<float>(microseconds) / (1000.0f * 1000.0f));
+		}
+		else {
+			sprintf(buffer, "%.2f min", static_cast<float>(microseconds) / (60.0f * 1000.0f * 1000.0f));
+		}
+		return std::string(buffer);
+	}
+	AutoPrintTestCaseName()
+	{
+		printf("[ Begin      ]%s\n",
+			Catch::getCurrentContext().getResultCapture()->getCurrentTestName().c_str()
+		);
+		begin_time = cyclone::sys_api::performance_time_now();
+	}
+	~AutoPrintTestCaseName()
+	{
+		int64_t duration = cyclone::sys_api::performance_time_now() - begin_time;
+		printf("[       Done ]%s(%s)\n",
+			Catch::getCurrentContext().getResultCapture()->getCurrentTestName().c_str(),
+			printTime(duration).c_str()
+		);
+	}
+	int64_t begin_time = 0;
+};
+#define PRINT_CURRENT_TEST_NAME()	AutoPrintTestCaseName autoPrintTestCaseName;
