@@ -32,40 +32,42 @@ class TestLockThread
 public:
 	atomic_int32_t m_lock_status;
 	sys_api::mutex_t m_mutex;
+	sys_api::signal_t m_signal;
 
 	void test_lock(void*)
 	{
 		m_lock_status = 0;
-		sys_api::mutex_lock(m_mutex);
+		sys_api::mutex_lock(m_mutex);  //block here and wait main thread to unlock
+		m_lock_status = 1;
+		sys_api::signal_wait(m_signal);
+		sys_api::mutex_unlock(m_mutex);
+		m_lock_status = 2;
+	}
+	
+	void test_try_lock_failed(void*)
+	{
+		m_lock_status = 0;
+		REQUIRE_FALSE(sys_api::mutex_try_lock(m_mutex));
+		m_lock_status = 1;
+	}
+	
+	void test_try_lock_success(void*)
+	{
+		m_lock_status = 0;
+		REQUIRE_TRUE(sys_api::mutex_try_lock(m_mutex));
 		m_lock_status = 1;
 		sys_api::thread_sleep(1000);
 		sys_api::mutex_unlock(m_mutex);
 		m_lock_status = 2;
 	}
 
-	void test_lock_time_out(void* param)
-	{
-		int32_t wait_time_ms = *((int32_t*)param);
-		m_lock_status = 0;
-		bool got = sys_api::mutex_try_lock(m_mutex, wait_time_ms);
-		m_lock_status = got ? 1 : 2;
-
-		if (got == 1) {
-			sys_api::thread_sleep(wait_time_ms+100);
-			sys_api::mutex_unlock(m_mutex);
-		}
-	}
-
-	void test_lock_on_time(void*)
+	void test_lock_wait(void*)
 	{
 		m_lock_status = 0;
-		bool got = sys_api::mutex_try_lock(m_mutex, 0);
-		m_lock_status = got ? 1 : 2;
-		sys_api::thread_sleep(1000);
-		sys_api::mutex_unlock(m_mutex);
-		m_lock_status = 3;
+		sys_api::mutex_lock(m_mutex);
+		m_lock_status = 1;
 	}
-
+	
 	void test_pass_ball(void* param)
 	{
 		std::pair<bool, int32_t>* ball = (std::pair<bool, int32_t>*)(param);
@@ -83,9 +85,30 @@ public:
 	}
 	
 public:
-	TestLockThread() : m_lock_status(0), m_mutex(0) { }
-	TestLockThread(sys_api::mutex_t m) : m_lock_status(0), m_mutex(m) {  }
+	TestLockThread() : m_lock_status(0), m_mutex(nullptr), m_signal(nullptr) { }
+	TestLockThread(sys_api::mutex_t m, sys_api::signal_t s) : m_lock_status(0), m_mutex(m), m_signal(s) {  }
 };
+
+//-------------------------------------------------------------------------------------
+TEST_CASE("System mutex basic test", "[System][Mutex][Basic]")
+{
+	PRINT_CURRENT_TEST_NAME();
+
+	sys_api::mutex_t mutex = sys_api::mutex_create();
+
+	// Test that all functions handle nullptr safely(These should not crash and should return safely)
+	sys_api::mutex_lock(nullptr);
+	REQUIRE_FALSE(sys_api::mutex_try_lock(nullptr));
+	sys_api::mutex_unlock(nullptr);
+	sys_api::mutex_destroy(nullptr);
+
+	//lock and unlock
+	sys_api::mutex_lock(mutex);
+	sys_api::mutex_lock(mutex);
+	REQUIRE_TRUE(sys_api::mutex_try_lock(mutex));
+	sys_api::mutex_unlock(mutex);
+	sys_api::mutex_destroy(mutex);
+}
 
 //-------------------------------------------------------------------------------------
 TEST_CASE("System mutex test", "[System][Mutex]")
@@ -93,13 +116,13 @@ TEST_CASE("System mutex test", "[System][Mutex]")
 	PRINT_CURRENT_TEST_NAME();
 
 	sys_api::mutex_t m = sys_api::mutex_create();
-
+	sys_api::signal_t s = sys_api::signal_create();
 	//-------------------------
 	//lock in main thread
 	sys_api::mutex_lock(m);
 
 	//test lock in other thread
-	TestLockThread another_thread(m);
+	TestLockThread another_thread(m, s);
 	thread_t t1 = sys_api::thread_create(std::bind(&TestLockThread::test_lock, &another_thread, std::placeholders::_1), nullptr, nullptr);
 
 	//wait 0.5 sec
@@ -107,41 +130,28 @@ TEST_CASE("System mutex test", "[System][Mutex]")
 	REQUIRE_EQ(another_thread.m_lock_status.load(), 0);
 
 	//free in main thread
-	sys_api::mutex_unlock(m);
-	sys_api::thread_sleep(500);
+	sys_api::mutex_unlock(m); //make other thread to continue
+	sys_api::thread_sleep(100); //wait other thread to lock
 	REQUIRE_EQ(another_thread.m_lock_status.load(), 1); //should be locked in other thread
 
-	//try lock in main thread
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), false);
+	//try lock in main thread(should fail)
+	REQUIRE_FALSE(sys_api::mutex_try_lock(m));
 
-	//try lock in main thread with time out
-	int64_t begin_time = sys_api::performance_time_now();
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 100), false);
-	int64_t end_time = sys_api::performance_time_now();
-	int32_t time_spend = (int32_t)(end_time - begin_time) / 1000;
-
-	REQUIRE_RANGE(time_spend, 100, 200);
-
+	sys_api::signal_notify(s); //make other thread to continue
 	sys_api::thread_join(t1);
 	REQUIRE_EQ(another_thread.m_lock_status.load(), 2); //should unlock in other thread
 
 	//--------------------
 	//lock in main thread
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_EQ(sys_api::mutex_try_lock(m), true);
 
 	//test lock time out in other thread
 	another_thread.m_lock_status = 0;
-	int32_t wait_time_ms = 1000;
-	thread_t t2 = sys_api::thread_create(std::bind(&TestLockThread::test_lock_time_out, &another_thread, std::placeholders::_1), &wait_time_ms, nullptr);
+	thread_t t2 = sys_api::thread_create(std::bind(&TestLockThread::test_try_lock_failed, &another_thread, std::placeholders::_1), nullptr, nullptr);
 
-	//wait 0.5 sec
-	sys_api::thread_sleep(500);
-	REQUIRE_EQ(another_thread.m_lock_status.load(), 0);
-
-	//wait 1 sec
-	sys_api::thread_sleep(1000);
-	REQUIRE_EQ(another_thread.m_lock_status.load(), 2); //other thread should stopped
+	//other thread should stopped
 	sys_api::thread_join(t2);
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 1); 
 
 	//unlock in main thread
 	sys_api::mutex_unlock(m);
@@ -149,67 +159,32 @@ TEST_CASE("System mutex test", "[System][Mutex]")
 	//--------------------------
 	//test lock time out in other thread
 	another_thread.m_lock_status = 0;
-	thread_t t3 = sys_api::thread_create(std::bind(&TestLockThread::test_lock_on_time, &another_thread, std::placeholders::_1), nullptr, nullptr);
+	thread_t t3 = sys_api::thread_create(std::bind(&TestLockThread::test_try_lock_success, &another_thread, std::placeholders::_1), nullptr, nullptr);
 
 	//wait 0.5 sec
 	sys_api::thread_sleep(500);
 	REQUIRE_EQ(another_thread.m_lock_status.load(), 1); //should be locked in other thread
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), false);
+	REQUIRE_FALSE(sys_api::mutex_try_lock(m));
 
 	sys_api::thread_sleep(1000);
-	REQUIRE_EQ(another_thread.m_lock_status.load(), 3); //should unlock in other thread
+	REQUIRE_EQ(another_thread.m_lock_status.load(), 2); //should unlock in other thread
 	sys_api::thread_join(t3);
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_TRUE(sys_api::mutex_try_lock(m));
 	sys_api::mutex_unlock(m);
-
-	//-------------------------------
-	//lock in main thread 
-	begin_time = sys_api::performance_time_now();
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 100), true);
-	end_time = sys_api::performance_time_now();
-	time_spend = (int32_t)(end_time - begin_time) / 1000;
-
-	REQUIRE_RANGE(time_spend, 0, 50);
 
 	//run several work thread to wait unlock
-	size_t work_thread_counts = (size_t)sys_api::get_cpu_counts();
+	int32_t work_thread_counts = sys_api::get_cpu_counts();
 	TestLockThread* work_thread = new TestLockThread[work_thread_counts];
-	thread_t* work_thread_id = new thread_t[work_thread_counts];
-
-	wait_time_ms = 1000;
-	for (size_t i = 0; i < work_thread_counts; i++) {
-		work_thread[i].m_mutex = m;
-		work_thread_id[i] = sys_api::thread_create(std::bind(&TestLockThread::test_lock_time_out, &(work_thread[i]), std::placeholders::_1), &wait_time_ms, nullptr);
-	}
-
-	//unlock in main thread
-	sys_api::mutex_unlock(m);
-
-	// join all thread
-	int32_t got_counts = 0, did_not_got_counts = 0;
-	for (size_t i = 0; i < work_thread_counts; i++) {
-		sys_api::thread_join(work_thread_id[i]);
-
-		REQUIRE_TRUE(work_thread[i].m_lock_status.load() == 1 || work_thread[i].m_lock_status.load() == 2);
-
-		if (work_thread[i].m_lock_status == 1)
-			got_counts++;
-
-		if (work_thread[i].m_lock_status == 2)
-			did_not_got_counts++;
-	}
-
-	REQUIRE_EQ(got_counts, 1);
-	REQUIRE_EQ((size_t)(got_counts + did_not_got_counts), work_thread_counts);
+	thread_t* work_thread_handle = new thread_t[work_thread_counts];
 
 	//------------------------------
 	//lock in main thread
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_TRUE(sys_api::mutex_try_lock(m));
 
 	std::pair<bool, int32_t> the_ball(false, 0);
-	for (size_t i = 0; i < work_thread_counts; i++) {
+	for (int32_t i = 0; i < work_thread_counts; i++) {
 		work_thread[i].m_mutex = m;
-		work_thread_id[i] = sys_api::thread_create(std::bind(&TestLockThread::test_pass_ball, &(work_thread[i]), std::placeholders::_1), &the_ball, nullptr);
+		work_thread_handle[i] = sys_api::thread_create(std::bind(&TestLockThread::test_pass_ball, &(work_thread[i]), std::placeholders::_1), &the_ball, nullptr);
 	}
 
 	int32_t* result = new int32_t[work_thread_counts];
@@ -218,29 +193,29 @@ TEST_CASE("System mutex test", "[System][Mutex]")
 	//unlock in main thread
 	sys_api::mutex_unlock(m);
 
-	for (size_t i = 0; i < work_thread_counts; i++) {
-		sys_api::thread_join(work_thread_id[i]);
+	for (int32_t i = 0; i < work_thread_counts; i++) {
+		sys_api::thread_join(work_thread_handle[i]);
 
 		int32_t ball_number = work_thread[i].m_lock_status.load();
-		REQUIRE_TRUE(ball_number >= 0 || (size_t)ball_number < work_thread_counts);
+		REQUIRE_RANGE(ball_number, 0, work_thread_counts);
 
 		result[ball_number] += 1;
 	}
-	for (size_t i = 0; i < work_thread_counts; i++) {
+	for (int32_t i = 0; i < work_thread_counts; i++) {
 		REQUIRE_EQ(result[i], 1);
 	}
 
 	//should unlock status now
-	REQUIRE_EQ(sys_api::mutex_try_lock(m, 0), true);
+	REQUIRE_TRUE(sys_api::mutex_try_lock(m));
 	sys_api::mutex_unlock(m);
 
+	delete[] result;
+	delete[] work_thread;
+	delete[] work_thread_handle;
 
 	//-----------------------------------
 	//clean
 	sys_api::mutex_destroy(m);
-	delete[] result;
-	delete[] work_thread;
-	delete[] work_thread_id;
 }
 
 //-------------------------------------------------------------------------------------

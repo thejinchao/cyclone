@@ -77,22 +77,41 @@ void thread_yield(void);
 //----------------------
 typedef void* mutex_t;
 
-/// create a mutex
+/// Create a mutex object. The mutex is implemented to be non-reentrant but
+/// tolerant of reentry calls from the same thread: if the owning thread calls
+/// `mutex_lock` or `mutex_try_lock` again, those calls will return immediately
+/// (lock becomes a no-op / try_lock returns true) and will not increment any
+/// internal count. Only one corresponding `mutex_unlock` is required to
+/// actually release the underlying lock. The function is cross-platform.
 mutex_t mutex_create(void);
 
-/// destroy a mutex
+/// Destroy a mutex object. The mutex must not be owned by any thread when
+/// destroyed; this function asserts if the mutex is still held (i.e. will
+/// trigger a debug assertion when `mutex` is locked). After destruction the
+/// handle becomes invalid.
 void mutex_destroy(mutex_t m);
 
-/// lock mutex(wait other owner unlock infinity time)
+/// Acquire the mutex. If another thread owns the mutex this call blocks until
+/// the underlying lock is available. If the calling thread already owns the
+/// mutex, the call returns immediately (no reentrancy counting is performed).
 void mutex_lock(mutex_t m);
 
-/// lock mutex, wait other owner unlock some time (milliseconds), return false mean timeout
-bool mutex_try_lock(mutex_t m, int32_t wait_time);
+/// Try to acquire the mutex without blocking. Returns true if the calling
+/// thread became the owner (either by acquiring the underlying lock or
+/// because it already owned the mutex). Returns false if another thread owns
+/// the mutex. Note: there is no timed wait variant — this try is always
+/// immediate.
+bool mutex_try_lock(mutex_t m);
 
-/// unlock mutex
+/// Release the mutex. The calling thread must be the owner; otherwise an
+/// assertion is triggered. For the implementation used here a single
+/// `mutex_unlock` releases the underlying lock even if the owning thread had
+/// previously called `mutex_lock` multiple times (reentrant calls were
+/// treated as no-ops).
 void mutex_unlock(mutex_t m);
 
-/// auto lock
+/// Simple RAII helper for mutexes. Acquires the mutex on construction and
+/// releases it on destruction. Matches the behavior of `mutex_lock`/`mutex_unlock`.
 struct auto_mutex
 {
 	auto_mutex(mutex_t m) : _m(m) { mutex_lock(_m); }

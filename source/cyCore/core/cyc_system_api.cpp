@@ -21,6 +21,7 @@ Copyright(C) thecodeway.com
 #include <time.h>
 #include <chrono>
 #include <mutex>
+#include <thread>
 
 namespace cyclone
 {
@@ -214,10 +215,11 @@ void thread_yield(void)
 struct mutex_data_s
 {
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	HANDLE h;
+	CRITICAL_SECTION cs;
 #else
-	std::timed_mutex h;
+	std::mutex mu;
 #endif
+	std::atomic<thread_id_t> owner;
 };
 
 //-------------------------------------------------------------------------------------
@@ -226,12 +228,9 @@ mutex_t mutex_create(void)
 	mutex_data_s* mutex = new mutex_data_s;
 
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	mutex->h = ::CreateMutexA(NULL, FALSE, nullptr);
-	if (mutex->h == NULL) {
-		delete mutex;
-		return nullptr;
-	}
+	::InitializeCriticalSection(&(mutex->cs));
 #endif
+	mutex->owner.store(0);
 	return mutex;
 }
 
@@ -241,9 +240,10 @@ void mutex_destroy(mutex_t m)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return;
 
+	assert(mutex->owner.load() == 0); //make sure no one is holding the mutex
+
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	::CloseHandle(mutex->h);
-	mutex->h = NULL;
+	::DeleteCriticalSection(&(mutex->cs));
 #endif
 	delete mutex;
 }
@@ -254,33 +254,38 @@ void mutex_lock(mutex_t m)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return;
 
+	thread_id_t current_tid = thread_get_current_id();
+	if (current_tid == mutex->owner.load()) return; //already owned by current thread
+
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	::WaitForSingleObject(mutex->h, INFINITE);
+	::EnterCriticalSection(&(mutex->cs));
 #else
-	mutex->h.lock();
+	mutex->mu.lock();
 #endif
+	mutex->owner.store(current_tid);
 }
 
 //-------------------------------------------------------------------------------------
-bool mutex_try_lock(mutex_t m, int32_t wait_time_ms)
+bool mutex_try_lock(mutex_t m)
 {
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return false;
 
+	thread_id_t current_tid = thread_get_current_id();
+	if (current_tid == mutex->owner.load()) return true; //already owned by current thread
+
+	bool locked = false;
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	return WAIT_OBJECT_0 == ::WaitForSingleObject(mutex->h, wait_time_ms);
+	// TryEnterCriticalSection returns non-zero if it was able to enter the critical section
+	locked = ::TryEnterCriticalSection(&(mutex->cs));
 #else
-	if (wait_time_ms <= 0)
-	{
-		return mutex->h.try_lock();
-	}
-	else
-	{
-		// Use std::timed_mutex::try_lock_for with chrono duration
-		auto timeout = std::chrono::milliseconds(wait_time_ms);
-		return mutex->h.try_lock_for(timeout);
-	}
+	// try_lock with no wait time
+	locked = mutex->mu.try_lock();
 #endif
+	if(locked) {
+		mutex->owner.store(current_tid);
+	}
+	return locked;
 }
 
 //-------------------------------------------------------------------------------------
@@ -289,10 +294,20 @@ void mutex_unlock(mutex_t m)
 	mutex_data_s* mutex = static_cast<mutex_data_s*>(m);
 	if (mutex == nullptr) return;
 
+	thread_id_t current_tid = thread_get_current_id();
+	if (mutex->owner.load() != current_tid)
+	{
+		// current thread does not own the mutex
+		assert(false);
+		return;
+	}
+
+	// successfully released ownership
+	mutex->owner.store(0);
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	::ReleaseMutex(mutex->h);
+	::LeaveCriticalSection(&(mutex->cs));
 #else
-	mutex->h.unlock();
+	mutex->mu.unlock();
 #endif
 }
 
