@@ -82,22 +82,38 @@ struct thread_data_s
 static thread_local thread_data_s* s_thread_data = nullptr;
 
 //-------------------------------------------------------------------------------------
+thread_id_t _get_current_native_thread_id()
+{
+#ifdef CY_SYS_WINDOWS
+	return static_cast<thread_id_t>(::GetCurrentThreadId());
+#elif defined(CY_SYS_LINUX) || defined(CY_SYS_ANDROID)
+	return static_cast<thread_id_t>(::syscall(SYS_gettid));
+#elif defined(CY_SYS_MACOS)
+	return static_cast<thread_id_t>(pthread_mach_thread_np(pthread_self()));
+#else
+	// Fallback to std::thread::id hash(unsupport system, should nevel happen)
+	return static_cast<thread_id_t>(std::hash<std::thread::id>()(std::this_thread::get_id()));
+#endif
+}
+
+//-------------------------------------------------------------------------------------
 thread_id_t thread_get_current_id(void)
 {
-	return s_thread_data == 0 ? std::this_thread::get_id() : s_thread_data->tid;
+	return s_thread_data == 0 ? _get_current_native_thread_id() : s_thread_data->tid;
 }
 
 //-------------------------------------------------------------------------------------
 thread_id_t thread_get_id(thread_t t)
 {
 	thread_data_s* data = (thread_data_s*)t;
-	return data->tid;
+	return data ? data->tid : thread_get_current_id();
 }
 
 //-------------------------------------------------------------------------------------
 void _thread_entry(thread_data_s* data)
 {
 	s_thread_data = data;
+	data->tid = _get_current_native_thread_id();
 	signal_wait(data->resume_signal);
 	signal_destroy(data->resume_signal);
 	data->resume_signal = 0;
@@ -131,7 +147,6 @@ thread_t _thread_create(thread_function func, void* param, const char* name, boo
 	data->resume_signal = signal_create();
 	data->exit_signal = signal_create();
 	data->thandle = std::thread(_thread_entry, data);
-	data->tid = data->thandle.get_id();
 
 	//detached thread
 	if (data->detached) data->thandle.detach();
