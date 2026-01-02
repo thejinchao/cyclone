@@ -105,32 +105,37 @@ struct auto_mutex
 //----------------------
 typedef void* signal_t;
 
-//// create a signal
+/// Create an auto-reset signal (wake one waiter). Returns a handle that
+/// must be destroyed with `signal_destroy`.
 signal_t signal_create(void);
 
-//// destroy a signal
+/// Destroy a signal object. The signal must not be waited on when destroyed.
 void signal_destroy(signal_t s);
 
-//// wait a signal infinite
+/// Wait for the signal. If the signal is set, the call returns immediately
+/// and consumes the signal (auto-reset). Otherwise blocks until notified.
 void signal_wait(signal_t s);
 
-//// wait a signal in [t] millisecond(second*1000), return true immediately if the signal is lighted, if false if timeout or other error
+/// Wait for the signal for up to `ms` milliseconds. Returns true if the
+/// signal was received (consumed), false on timeout or error.
 bool signal_timewait(signal_t s, int32_t ms);
 
-//// light the signal
+/// Notify (set) the signal. This will wake a single waiting thread.
 void signal_notify(signal_t s);
 
 //----------------------
 // time functions
 //----------------------
 
-//// get UTC time in microseconds(second*1000*1000) from Epoch(00:00:00 January 1, 1970)
+/// Return current UTC time in microseconds(second*1000*1000) since Unix epoch (1970-01-01).
 int64_t utc_time_now(void);
 
-/// get local time in format string(strftime)
+/// Format local time using `strftime`-style `format` into `time_dest`.
+/// `max_size` is the size of the destination buffer.
 void local_time_now(char* time_dest, size_t max_size, const char* format);
 
-/// get high performance time, return microseconds(second*1000*1000) from the first call to this function
+/// Return a high-resolution performance counter value. The return value is
+/// microseconds(second*1000*1000) elapsed since the first call to this function (monotonic).
 int64_t performance_time_now(void);
 
 //----------------------
