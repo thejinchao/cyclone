@@ -120,13 +120,13 @@ struct auto_mutex
 };
 
 //----------------------
-// signal/semaphore functions
+// signal functions
 //----------------------
 typedef void* signal_t;
 
 /// Create an auto-reset signal (wake one waiter). Returns a handle that
 /// must be destroyed with `signal_destroy`.
-signal_t signal_create(void);
+signal_t signal_create(bool manual_reset=false);
 
 /// Destroy a signal object. The signal must not be waited on when destroyed.
 void signal_destroy(signal_t s);
@@ -142,6 +142,7 @@ bool signal_timewait(signal_t s, int32_t ms);
 /// Notify (set) the signal. This will wake a single waiting thread.
 void signal_notify(signal_t s);
 
+void signal_reset(signal_t s);
 //----------------------
 // time functions
 //----------------------

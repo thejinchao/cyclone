@@ -321,14 +321,16 @@ struct signal_data_s
 	std::condition_variable cond;
 	atomic_int32_t  predicate;
 #endif
+	bool manual_reset;
 };
 
 //-------------------------------------------------------------------------------------
-signal_t signal_create(void)
+signal_t signal_create(bool manual_reset)
 {
 	signal_data_s* sig = new signal_data_s();
+	sig->manual_reset = manual_reset;
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	sig->h = ::CreateEventW(0, FALSE, FALSE, 0);
+	sig->h = ::CreateEventW(0, manual_reset?TRUE:FALSE, FALSE, 0);
 #else
 	sig->predicate = 0;
 #endif
@@ -358,7 +360,7 @@ void signal_wait(signal_t s)
 #else
 	std::unique_lock<std::mutex> lock(sig->mutex);
 	sig->cond.wait(lock, [sig] { 
-		return sig->predicate.exchange(0)==1;
+		return (sig->manual_reset) ? (sig->predicate.load() == 1) : (sig->predicate.exchange(0)==1);
 	});
 #endif
 }
@@ -375,7 +377,14 @@ bool signal_timewait(signal_t s, int32_t ms)
 
 	// attempt to atomically consume predicate first to avoid
 	// taking the mutex if the signal is already set.
-	if (sig->predicate.exchange(0) == 1) return true;
+	if (sig->manual_reset)
+	{
+		if (sig->predicate.load() == 1) return true;
+	}
+	else
+	{
+		if (sig->predicate.exchange(0) == 1) return true;
+	}
 
 	// if ms>0, wait with timeout
 	if (ms > 0)
@@ -383,7 +392,7 @@ bool signal_timewait(signal_t s, int32_t ms)
 		std::unique_lock<std::mutex> lock(sig->mutex);
 		auto timeout = std::chrono::milliseconds(ms);
 		return sig->cond.wait_for(lock, timeout, [sig] {
-			return sig->predicate.exchange(0)==1;
+			return (sig->manual_reset) ? (sig->predicate.load() == 1) : (sig->predicate.exchange(0)==1);
 		});
 	}
 	return false;
@@ -403,7 +412,29 @@ void signal_notify(signal_t s)
 		std::lock_guard<std::mutex> lock(sig->mutex);
 		sig->predicate = 1;
 	}
-	sig->cond.notify_one();
+	if (sig->manual_reset)
+	{
+		sig->cond.notify_all();
+	}
+	else
+	{
+		sig->cond.notify_one();
+	}
+#endif
+}
+
+//-------------------------------------------------------------------------------------
+void signal_reset(signal_t s)
+{
+	signal_data_s* sig = static_cast<signal_data_s*>(s);
+	if (sig == nullptr) return;
+#ifdef CY_USE_NATIVE_WINDOWS_EVENT
+	::ResetEvent(sig->h);
+#else
+	{
+		std::lock_guard<std::mutex> lock(sig->mutex);
+		sig->predicate = 0;
+	}
 #endif
 }
 

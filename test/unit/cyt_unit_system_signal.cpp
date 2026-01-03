@@ -5,7 +5,7 @@
 using namespace cyclone;
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Signal basic test", "[Signal][Basic]")
+TEST_CASE("Signal auto-reset basic test", "[Signal][Basic]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
@@ -16,8 +16,8 @@ TEST_CASE("Signal basic test", "[Signal][Basic]")
 	REQUIRE_FALSE(sys_api::signal_timewait(nullptr, 100));
 	REQUIRE_FALSE(sys_api::signal_timewait(nullptr, 0));
 
-	//create signal
-	sys_api::signal_t signal = sys_api::signal_create();
+	//create signal(auto reset)
+	sys_api::signal_t signal = sys_api::signal_create(false);
 
 	//wait
 	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
@@ -73,35 +73,93 @@ TEST_CASE("Signal basic test", "[Signal][Basic]")
 }
 
 //-------------------------------------------------------------------------------------
-TEST_CASE("Signal timeout precision test", "[Signal][Timeout]")
+TEST_CASE("Signal manual-reset basic test", "[Signal][Basic][Manual]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	sys_api::signal_t signal = sys_api::signal_create();
+	//create signal(auto reset)
+	sys_api::signal_t signal = sys_api::signal_create(true);
 
-	// Test different timeout values
-	int32_t timeouts[] = { 10, 50, 100, 500 };
-	const size_t timeout_count = sizeof(timeouts) / sizeof(timeouts[0]);
+	//wait
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 1));
 
-	for (size_t i = 0; i < timeout_count; i++) {
-		int32_t timeout = timeouts[i];
+	//notify, wait and timewait and reset
+	sys_api::signal_notify(signal);
+	sys_api::signal_wait(signal);
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 1));
+	sys_api::signal_reset(signal);
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 1));
 
-		// Consume any existing signal
-		sys_api::signal_timewait(signal, 0);
+	//notify once and time_wait twice
+	sys_api::signal_notify(signal);
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 0));
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 0));
+	sys_api::signal_reset(signal);
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
 
-		int64_t begin_time = sys_api::performance_time_now();
-		REQUIRE_FALSE(sys_api::signal_timewait(signal, timeout));
-		int64_t end_time = sys_api::performance_time_now();
-		int64_t elapsed = (end_time - begin_time) / 1000; // Convert to milliseconds
 
-		// Allow 20% tolerance + 10ms overhead
-		int32_t min_time = static_cast<int32_t>(static_cast<float>(timeout) * 0.8f);
-		int32_t max_time = static_cast<int32_t>(static_cast<float>(timeout) * 1.2f) + 10;
-		CAPTURE(timeout, elapsed);
-		REQUIRE_RANGE(elapsed, min_time, max_time);
+	//notify twice and time_wait twice
+	sys_api::signal_notify(signal);
+	sys_api::signal_notify(signal); // Multiple notify (it's binary event)
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 0));
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 0));
+	sys_api::signal_reset(signal);
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
+
+	// Multiple notify calls (binary signal, should not accumulate)
+	for (int i = 0; i < 10; i++) {
+		sys_api::signal_notify(signal);
 	}
+	// Only one wait should succeed (signal is binary)
+	REQUIRE_TRUE(sys_api::signal_timewait(signal, 0));
+	sys_api::signal_reset(signal);
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 0));
+
+	//time_wait
+	sys_api::signal_reset(signal); //make it unsignaled
+	int64_t begin_time = sys_api::performance_time_now();
+	REQUIRE_FALSE(sys_api::signal_timewait(signal, 100));
+	int64_t end_time = sys_api::performance_time_now();
+	REQUIRE_RANGE(end_time - begin_time, 100 * 1000, 120 * 1000);
 
 	sys_api::signal_destroy(signal);
+}
+
+//-------------------------------------------------------------------------------------
+TEST_CASE("Signal wait timeout test", "[Signal][Timeout]")
+{
+	PRINT_CURRENT_TEST_NAME();
+
+	for (int32_t m = 0; m < 2; m++) 
+	{
+		sys_api::signal_t signal = sys_api::signal_create(m==0?true:false);
+
+		// Test different timeout values
+		int32_t timeouts[] = { 10, 50, 100, 500 };
+		const size_t timeout_count = sizeof(timeouts) / sizeof(timeouts[0]);
+
+		for (size_t i = 0; i < timeout_count; i++) 
+		{
+			int32_t timeout = timeouts[i];
+
+			// Consume any existing signal
+			sys_api::signal_timewait(signal, 0);
+
+			int64_t begin_time = sys_api::performance_time_now();
+			REQUIRE_FALSE(sys_api::signal_timewait(signal, timeout));
+			int64_t end_time = sys_api::performance_time_now();
+			int64_t elapsed = (end_time - begin_time) / 1000; // Convert to milliseconds
+
+			// Allow 20% tolerance + 10ms overhead
+			int32_t min_time = static_cast<int32_t>(static_cast<float>(timeout) * 0.8f);
+			int32_t max_time = static_cast<int32_t>(static_cast<float>(timeout) * 1.2f) + 10;
+			CAPTURE(timeout, elapsed);
+			REQUIRE_RANGE(elapsed, min_time, max_time);
+		}
+
+		sys_api::signal_destroy(signal);
+	}
 }
 
 //-------------------------------------------------------------------------------------
@@ -109,26 +167,31 @@ TEST_CASE("Signal rapid notify and wait", "[Signal][Stress]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	sys_api::signal_t signal = sys_api::signal_create();
+	for (int32_t m = 0; m < 2; m++)
+	{
+		sys_api::signal_t signal = sys_api::signal_create(m==0?true:false);
 
-	const int32_t iterations = 1000;
-	int32_t success_count = 0;
+		const int32_t iterations = 1000;
+		int32_t success_count = 0;
 
-	// Rapid notify/wait cycle
-	for (int i = 0; i < iterations; i++) {
-		sys_api::signal_notify(signal);
-		if (sys_api::signal_timewait(signal, 0)) {
-			success_count++;
+		// Rapid notify/wait cycle
+		for (int32_t i = 0; i < iterations; i++) 
+		{
+			sys_api::signal_notify(signal);
+			if (sys_api::signal_timewait(signal, 0)) {
+				success_count++;
+			}
+			if (m == 0)sys_api::signal_reset(signal); // Reset after first iteration to ensure proper state
 		}
+
+		// All should succeed (notify before wait)
+		REQUIRE_EQ(iterations, success_count);
+
+		// Final wait should timeout
+		REQUIRE_FALSE(sys_api::signal_timewait(signal, 10));
+
+		sys_api::signal_destroy(signal);
 	}
-
-	// All should succeed (notify before wait)
-	REQUIRE_EQ(iterations, success_count);
-
-	// Final wait should timeout
-	REQUIRE_FALSE(sys_api::signal_timewait(signal, 10));
-
-	sys_api::signal_destroy(signal);
 }
 
 //-------------------------------------------------------------------------------------
@@ -145,8 +208,7 @@ static void _competitorThreadFunction(void* param)
 {
 	CompetitorThreadData* data = (CompetitorThreadData*)param;
 
-	while (data->quit_signal->load() == false)
-	{
+	do{
 		if (data->wait_time >= 0)
 		{
 			//busy wait
@@ -164,7 +226,7 @@ static void _competitorThreadFunction(void* param)
 			sys_api::signal_wait(data->signal);
 		}
 		data->goal_counts->fetch_add(1);
-	}
+	} while (data->quit_signal->load() == false);
 	delete data;
 }
 
@@ -173,79 +235,102 @@ TEST_CASE("Signal multi thread competitor test", "[Signal][Competitor]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	const int32_t k_thread_counts = 10;
+	const int32_t k_thread_counts = sys_api::get_cpu_counts() < 16 ? 16 : sys_api::get_cpu_counts();
 	const int32_t k_test_counts = 16;
-	thread_t p_thread_array[k_thread_counts];
+	thread_t* p_thread_array = new thread_t[k_thread_counts];
 
-	for (int32_t type = 0; type < 4; type++)
+	for (int32_t m = 0; m < 2; m++)
 	{
-		sys_api::signal_t signal = sys_api::signal_create();
-		atomic_bool_t quit_signal(false);
-		atomic_int32_t goal_counts(0);
-
-		//create competitor threads(normal wait)
-		for (int32_t i = 0; i < k_thread_counts; i++)
+		for (int32_t type = 0; type < 4; type++)
 		{
-			CompetitorThreadData* data = new CompetitorThreadData();
-			data->signal = signal;
-			data->goal_counts = &goal_counts;
-			data->quit_signal = &quit_signal;
+			sys_api::signal_t signal = sys_api::signal_create(m==0?true:false);
+			atomic_bool_t quit_signal(false);
+			atomic_int32_t goal_counts(0);
 
-			switch (type)
+			//create competitor threads(normal wait)
+			for (int32_t i = 0; i < k_thread_counts; i++)
 			{
-			case 0:// type=0: normal wait, 
-				data->wait_time = -1;
-				break;
-			case 1:// type=1: busy wait, 
-				data->wait_time = 0;
-				break;
-			case 2:// type=2: wait 100ms, 
-				data->wait_time = 100;
-				break;
-			case 3:// type=3: mix
-			{
-				int percent = rand() % 100;
-				if (percent < 33)
+				CompetitorThreadData* data = new CompetitorThreadData();
+				data->signal = signal;
+				data->goal_counts = &goal_counts;
+				data->quit_signal = &quit_signal;
+
+				switch (type)
+				{
+				case 0:// type=0: normal wait, 
 					data->wait_time = -1;
-				else if (percent < 66)
+					break;
+				case 1:// type=1: busy wait, 
 					data->wait_time = 0;
-				else
+					break;
+				case 2:// type=2: wait 100ms, 
 					data->wait_time = 100;
+					break;
+				case 3:// type=3: mix
+				{
+					int percent = rand() % 100;
+					if (percent < 33)
+						data->wait_time = -1;
+					else if (percent < 66)
+						data->wait_time = 0;
+					else
+						data->wait_time = 100;
+				}
+				break;
+				}
+
+				p_thread_array[i] = sys_api::thread_create(_competitorThreadFunction, data, nullptr);
 			}
-			break;
+
+			if (m == 0)
+			{
+				quit_signal = true;
+
+				REQUIRE_EQ(goal_counts.load(), 0);
+				sys_api::signal_notify(signal); //wake all threads
+
+				//wait all threads got the signal and finished
+				for (int32_t i = 0; i < k_thread_counts; i++)
+				{
+					sys_api::thread_join(p_thread_array[i]);
+				}
+				REQUIRE_EQ(goal_counts.load(), k_thread_counts);
+			}
+			else
+			{
+				for (int32_t i = 0; i < k_test_counts; i++)
+				{
+					REQUIRE_EQ(goal_counts.load(), i);
+
+					//notify one thread
+					sys_api::signal_notify(signal);
+
+					//wait oneof threads got the signal
+					sys_api::thread_sleep(10);
+					REQUIRE_EQ(goal_counts.load(), i + 1);
+				}
+
+				//stop all threads
+				goal_counts = 0;
+				quit_signal = true;
+				while (goal_counts.load() < k_thread_counts)
+				{
+					sys_api::signal_notify(signal);
+				}
+
+				//wait for all threads to finish
+				for (int32_t i = 0; i < k_thread_counts; i++)
+				{
+					sys_api::thread_join(p_thread_array[i]);
+				}
+				REQUIRE_EQ(k_thread_counts, goal_counts.load());
 			}
 
-			p_thread_array[i] = sys_api::thread_create(_competitorThreadFunction, data, nullptr);
+			sys_api::signal_destroy(signal);
 		}
-
-		for (int32_t i = 0; i < k_test_counts; i++)
-		{
-			REQUIRE_EQ(goal_counts.load(), i);
-
-			//notify one thread
-			sys_api::signal_notify(signal);
-
-			//wait oneof threads got the signal
-			sys_api::thread_sleep(100);
-			REQUIRE_EQ(goal_counts.load(), i + 1);
-		}
-
-		//stop all threads
-		goal_counts = 0;
-		quit_signal = true;
-		while (goal_counts.load() < k_thread_counts)
-		{
-			sys_api::signal_notify(signal);
-		}
-
-		//wait for all threads to finish
-		for (int32_t i = 0; i < k_thread_counts; i++)
-		{
-			sys_api::thread_join(p_thread_array[i]);
-		}
-		REQUIRE_EQ(k_thread_counts, goal_counts.load());
-		sys_api::signal_destroy(signal);
 	}
+
+	delete[] p_thread_array;
 }
 
 //-------------------------------------------------------------------------------------
@@ -286,11 +371,11 @@ TEST_CASE("Signal multi thread pingpong test", "[Signal][PingPong]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	const int32_t k_thread_counts = sys_api::get_cpu_counts() < 2 ? 2 : sys_api::get_cpu_counts();
+	const int32_t k_thread_counts = sys_api::get_cpu_counts() < 16 ? 16 : sys_api::get_cpu_counts();
 	const int32_t k_ping_counts = 100;
 
-	sys_api::signal_t signal_ping = sys_api::signal_create();
-	sys_api::signal_t signal_pong = sys_api::signal_create();
+	sys_api::signal_t signal_ping = sys_api::signal_create(false);
+	sys_api::signal_t signal_pong = sys_api::signal_create(false);
 	atomic_bool_t quit_signal(false);
 	atomic_int32_t ready_counts(0);
 
