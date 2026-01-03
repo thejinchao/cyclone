@@ -19,12 +19,12 @@ set(cyt_unit_sources
 	cyt_unit_crypt.cpp
 	cyt_unit_ring_buf.cpp
 	cyt_unit_pipe.cpp
-	cyt_unit_signal.cpp
 	cyt_event_fortest.h
 	cyt_unit_event_basic.cpp
 	cyt_unit_event_timer.cpp
 	cyt_unit_event_socket.cpp
-	cyt_uint_system.cpp
+	cyt_unit_system.cpp
+	cyt_unit_system_signal.cpp
 	cyt_unit_packet.cpp
 	cyt_unit_statistics.cpp
 	cyt_unit_ring_queue.cpp
