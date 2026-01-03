@@ -25,6 +25,7 @@ set(cyt_unit_sources
 	cyt_unit_event_socket.cpp
 	cyt_unit_system.cpp
 	cyt_unit_system_signal.cpp
+	cyt_unit_system_mutex.cpp
 	cyt_unit_packet.cpp
 	cyt_unit_statistics.cpp
 	cyt_unit_ring_queue.cpp
