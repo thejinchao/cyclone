@@ -124,25 +124,41 @@ struct auto_mutex
 //----------------------
 typedef void* signal_t;
 
-/// Create an auto-reset signal (wake one waiter). Returns a handle that
-/// must be destroyed with `signal_destroy`.
+/// Create a signal object (an event-like primitive).
+/// If `manual_reset` is true the signal is a manual-reset event: after
+/// `signal_notify` the signal stays in the signaled state until `signal_reset`
+/// is called. If `manual_reset` is false (the default) the signal is an
+/// auto-reset event: a single waiter consumes the signal and it is reset
+/// automatically.
+/// The created signal is initially non-signaled.
 signal_t signal_create(bool manual_reset=false);
 
-/// Destroy a signal object. The signal must not be waited on when destroyed.
+/// Destroy a signal object. The signal must not be used after destruction.
 void signal_destroy(signal_t s);
 
-/// Wait for the signal. If the signal is set, the call returns immediately
-/// and consumes the signal (auto-reset). Otherwise blocks until notified.
+/// Wait for the signal. If the signal is already signaled this call returns
+/// immediately. For auto-reset signals the wait consumes the signal (the
+/// first waiter resets it to non-signaled). For manual-reset signals the
+/// wait does not reset the signal.
 void signal_wait(signal_t s);
 
 /// Wait for the signal for up to `ms` milliseconds. Returns true if the
-/// signal was received (consumed), false on timeout or error.
+/// signal was observed (and consumed for auto-reset signals), false on timeout
+/// or error. If `ms` is zero this function checks the signal state and
+/// returns immediately.
 bool signal_timewait(signal_t s, int32_t ms);
 
-/// Notify (set) the signal. This will wake a single waiting thread.
+/// Set (notify) the signal. For manual-reset signals the state becomes
+/// signaled and all waiting threads are woken. For auto-reset signals the
+/// state becomes signaled and a single waiter is woken (or the state remains
+/// signaled until a waiter consumes it if no waiter exists at the time of
+/// notification).
 void signal_notify(signal_t s);
 
+/// Reset a manual-reset signal to the non-signaled state. For auto-reset
+/// signals this is a no-op (they are reset automatically when consumed).
 void signal_reset(signal_t s);
+
 //----------------------
 // time functions
 //----------------------
