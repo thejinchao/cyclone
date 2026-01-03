@@ -94,7 +94,7 @@ TEST_CASE("System atomic stress test", "[System][Atomic][Stress]")
 
 	const int32_t k_thread_counts = sys_api::get_cpu_counts() < 16 ? 16 : sys_api::get_cpu_counts();
 
-	atomic_int32_t a(0xFACEC0DE);
+	atomic_int32_t a(42);
 
 	AtomicTestThreadData threadData;
 	threadData.begin_signal = sys_api::signal_create(true);
@@ -118,7 +118,7 @@ TEST_CASE("System atomic stress test", "[System][Atomic][Stress]")
 		sys_api::thread_join(fetchSubThread[i]);
 	}
 
-	REQUIRE_EQ(threadData.a->load(), 0xFACEC0DE);
+	REQUIRE_EQ(threadData.a->load(), 42);
 	
 	delete[] fetchAddThread;
 	delete[] fetchSubThread;
