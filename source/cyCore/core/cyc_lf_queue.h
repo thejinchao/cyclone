@@ -18,6 +18,9 @@ template <typename ELEM_T, uint32_t Q_SIZE = 65536>  //default 2^16, it must be 
 class LockFreeQueue
 {
 public:
+	static_assert((Q_SIZE& (Q_SIZE - 1)) == 0, "Q_SIZE must be a power of 2");
+	static_assert(Q_SIZE > 0, "Q_SIZE must be greater than 0");
+
 	//returns the current number of items in the queue
 	//It tries to take a snapshot of the size of the queue, but in busy environments
 	//this function might return bogus values. 
