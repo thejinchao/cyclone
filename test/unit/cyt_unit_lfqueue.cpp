@@ -1,9 +1,10 @@
 #include <cy_core.h>
 #include "cyt_unit_utils.h"
 
+#include <array>
+
 using namespace cyclone;
 
-namespace {
 //-------------------------------------------------------------------------------------
 TEST_CASE("LockFreeQueue basic test", "[LockFreeQueue][Basic]")
 {
@@ -50,6 +51,7 @@ TEST_CASE("LockFreeQueue basic test", "[LockFreeQueue][Basic]")
 }
 
 //-------------------------------------------------------------------------------------
+template<int32_t PUSH_THREADS, int32_t POP_THREADS, int32_t TOP_VALUE>
 class MultiThreadPushPop
 {
 public:
@@ -58,166 +60,122 @@ public:
 	struct ThreadData
 	{
 		MultiThreadPushPop* globalData;
-		sys_api::signal_t	complete;
-		char				name[32];
-		size_t				workCounts;
+		thread_t 			threadHandle;
+		uint32_t			threadID;
 	};
 
-	void pushAndPop(void) {
-		m_queue = new UIntQueue();
-		m_result = new std::atomic_flag[m_topValue + 1];
-		for (uint32_t i = 0; i <= m_topValue; i++) {
-			m_result[i].clear();
-		}
-
-		ThreadData** pushThreadData = new ThreadData*[m_pushThreads];
-		ThreadData** popThreadData = new ThreadData*[m_popThreads];
-
-		for (int32_t i = 0; i < m_pushThreads; i++) {
-			pushThreadData[i] = new ThreadData();
-			pushThreadData[i]->globalData = this;
-			pushThreadData[i]->workCounts = 0;
-			pushThreadData[i]->complete = sys_api::signal_create();
-			snprintf(pushThreadData[i]->name, 32, "push%02d", i);
-		}
-		for (int32_t i = 0; i < m_popThreads; i++) {
-			popThreadData[i] = new ThreadData();
-			popThreadData[i]->globalData = this;
-			popThreadData[i]->workCounts = 0;
-			popThreadData[i]->complete = sys_api::signal_create();
-			snprintf(popThreadData[i]->name, 32, "pop%02d", i);
-		}
-
-		if (m_pushFirst) {
-			for (int32_t i = 0; i < m_pushThreads; i++) {
-				sys_api::thread_create_detached(MultiThreadPushPop::pushFunction, pushThreadData[i], pushThreadData[i]->name);
-			}
-
-			for (int32_t i = 0; i < m_popThreads; i++) {
-				sys_api::thread_create_detached(MultiThreadPushPop::popFunction, popThreadData[i], popThreadData[i]->name);
-			}
-		}
-		else {
-			for (int32_t i = 0; i < m_popThreads; i++) {
-				sys_api::thread_create_detached(MultiThreadPushPop::popFunction, popThreadData[i], popThreadData[i]->name);
-			}
-
-			for (int32_t i = 0; i < m_pushThreads; i++) {
-				sys_api::thread_create_detached(MultiThreadPushPop::pushFunction, pushThreadData[i], pushThreadData[i]->name);
-			}
-		}
-
-		//wait all push thread
-		for (int32_t i = 0; i < m_pushThreads; i++) {
-			sys_api::signal_wait(pushThreadData[i]->complete);
-		}	
-		m_noMoreData = true;
-
-
-		//wait all pop thread
-		for (int32_t i = 0; i < m_popThreads; i++) {
-			sys_api::signal_wait(popThreadData[i]->complete);
-		}
-
-		//check result
-		for (uint32_t i = 1; i <= m_topValue; i++) {
-			REQUIRE_TRUE(m_result[i].test_and_set());
-		}
-
-		//free memory
-		for (int32_t i = 0; i < m_pushThreads; i++) {
-			delete pushThreadData[i];
-		}
-		for (int32_t i = 0; i < m_popThreads; i++) {
-			delete popThreadData[i];
-		}
-		delete[] pushThreadData;
-		delete[] popThreadData;
-		delete[] m_result;
-		delete m_queue;
-	}
-
-	static void pushFunction(void* param)
-	{
-		ThreadData* threadData = (ThreadData*)param;
-		MultiThreadPushPop* pThis = threadData->globalData;
-		pThis->_pushFunction(threadData);
-	}
-
-	static void popFunction(void* param)
-	{
-		ThreadData* threadData = (ThreadData*)param;
-		MultiThreadPushPop* pThis = threadData->globalData;
-		pThis->_popFunction(threadData);
-	}
-
 private:
-	void _pushFunction(ThreadData* threadData) {
-		uint32_t nextValue = m_currentValue++;
-		while (nextValue <= m_topValue) {
-			REQUIRE_RANGE(nextValue, 1u, m_topValue);
-			while (!(m_queue->push(nextValue))) {
-				sys_api::thread_yield();
-			}
+	UIntQueue*			m_queue;
+	std::array<std::atomic_flag, TOP_VALUE+1> m_result;
 
-			threadData->workCounts++;
-			nextValue = m_currentValue++;
-		}
-
-		//Complete
-		sys_api::signal_notify(threadData->complete);
-	}
-
-	void _popFunction(ThreadData* threadData) {
-		for (;;) {
-			uint32_t pop_value;
-			bool pop_result = m_queue->pop(pop_value);
-
-			if (pop_result) {
-				REQUIRE_RANGE(pop_value, 1u, m_topValue);
-				REQUIRE_FALSE(m_result[pop_value].test_and_set());
-				threadData->workCounts++;
-			}
-			else {
-				if (m_noMoreData) break;
-
-				//minor wait when queue is empty
-				sys_api::thread_yield();
-			}
-		}
-		//Complete
-		sys_api::signal_notify(threadData->complete);
-	}
-
-private:
-	UIntQueue*	m_queue;
-	std::atomic_flag* m_result;
-
-	const uint32_t m_topValue;
-	atomic_uint32_t m_currentValue;
-
-	int32_t m_pushThreads;
-	int32_t m_popThreads;
-
-	const bool m_pushFirst;
-
-	atomic_bool_t m_noMoreData;
+	atomic_bool_t		m_noMoreData;
+	sys_api::signal_t	m_beginSignal;
 
 public:
-	MultiThreadPushPop(uint32_t topValue, int32_t pushThreads, int32_t popThreads, bool pushFirst)
+	MultiThreadPushPop()
 		: m_queue(0)
-		, m_result(0)
-		, m_topValue(topValue)
-		, m_currentValue(1)
-		, m_pushThreads(pushThreads)
-		, m_popThreads(popThreads)
-		, m_pushFirst(pushFirst)
 		, m_noMoreData(false)
+		, m_beginSignal(nullptr)
 	{
 	}
 
 	~MultiThreadPushPop()
 	{
+	}
+
+public:
+	void pushAndPop(void) {
+		m_queue = new UIntQueue();
+		for (uint32_t i = 0; i <= TOP_VALUE; i++) {
+			m_result[i].clear();
+		}
+		m_beginSignal = sys_api::signal_create(true);
+		m_noMoreData = false;
+
+		std::array< ThreadData, PUSH_THREADS> pushThreadData;
+		std::array< ThreadData, POP_THREADS> popThreadData;
+
+		for (int32_t i = 0; i < PUSH_THREADS; i++) {
+			pushThreadData[i].globalData = this;
+			pushThreadData[i].threadID = i;
+			pushThreadData[i].threadHandle = sys_api::thread_create(
+				std::bind(&MultiThreadPushPop::pushFunction, this, std::placeholders::_1), &(pushThreadData[i]), nullptr);
+		}
+		for (int32_t i = 0; i < POP_THREADS; i++) {
+			popThreadData[i].globalData = this;
+			popThreadData[i].threadID = i;
+			popThreadData[i].threadHandle = sys_api::thread_create(
+				std::bind(&MultiThreadPushPop::popFunction, this, std::placeholders::_1), &(popThreadData[i]), nullptr);
+		}
+
+		//begin work
+		sys_api::signal_notify(m_beginSignal);
+
+		//wait all push thread
+		for (int32_t i = 0; i < PUSH_THREADS; i++) 
+		{
+			sys_api::thread_join(pushThreadData[i].threadHandle);
+		}	
+		m_noMoreData = true;
+
+		//wait all pop thread
+		for (int32_t i = 0; i < POP_THREADS; i++) 
+		{
+			sys_api::thread_join(popThreadData[i].threadHandle);
+		}
+
+		//check result
+		for (uint32_t i = 1; i <= TOP_VALUE; i++) 
+		{
+			REQUIRE_TRUE(m_result[i].test_and_set());
+		}
+
+		//free memory
+		sys_api::signal_destroy(m_beginSignal);
+		delete m_queue;
+	}
+
+private:
+	void pushFunction(void* param)
+	{
+		ThreadData* threadData = (ThreadData*)param;
+		sys_api::signal_wait(m_beginSignal);
+
+		uint32_t nextValue = threadData->threadID+1;
+		for(;;)
+		{
+			if (nextValue > TOP_VALUE) break;
+
+			REQUIRE_RANGE(nextValue, 1u, TOP_VALUE);
+			while (!(m_queue->push(nextValue))) {
+				sys_api::thread_yield();
+			}
+			nextValue += PUSH_THREADS;
+		};
+	}
+
+	void popFunction(void* param)
+	{
+		sys_api::signal_wait(m_beginSignal);
+
+		for (;;)
+		{
+			uint32_t pop_value;
+			bool pop_result = m_queue->pop(pop_value);
+
+			if (pop_result) 
+			{
+				REQUIRE_RANGE(pop_value, 1u, TOP_VALUE);
+				REQUIRE_FALSE(m_result[pop_value].test_and_set());
+			}
+			else 
+			{
+				if (m_noMoreData.load()) break;
+
+				//minor wait when queue is empty
+				sys_api::thread_yield();
+			}
+		}
 	}
 };
 
@@ -226,23 +184,196 @@ TEST_CASE("LockFreeQueue multi thread test", "[LockFreeQueue][MultiThread]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	MultiThreadPushPop test1(100u, 1, 1, true);
+	//single-producer single-consumer
+	MultiThreadPushPop<1, 1, 100> test1;
 	test1.pushAndPop();
 	
-	MultiThreadPushPop test2(100, 1, 1, false);
+	//multi-producer single-consumer
+	MultiThreadPushPop<3, 1, 1000> test2;
 	test2.pushAndPop();
-	
-	MultiThreadPushPop test3(100000u, 3, 5, true);
+
+	//single-producer multi-consumer
+	MultiThreadPushPop<1, 3, 1000> test3;
 	test3.pushAndPop();
 
-	MultiThreadPushPop test4(100000u, 3, 5, false);
+	//multi-producer multi-consumer
+	MultiThreadPushPop<5, 3, 100000> test4;
 	test4.pushAndPop();
 
-	MultiThreadPushPop test5(100000u, 5, 2, false);
+	//multi-producer multi-consumer
+	MultiThreadPushPop<3, 5, 100000> test5;
 	test5.pushAndPop();
-
-	MultiThreadPushPop test6(100000u, 5, 2, false);
-	test6.pushAndPop();
 }
 
+TEST_CASE("LockFreeQueue high contention stress test", "[LockFreeQueue][Stress]")
+{
+	PRINT_CURRENT_TEST_NAME();
+
+	const int32_t QUEUE_SIZE = 256;
+	typedef LockFreeQueue<uint64_t, QUEUE_SIZE> UInt64Queue;
+	UInt64Queue queue;
+
+	const int32_t THREAD_COUNT = 16;
+	const int32_t OPERATIONS_PER_THREAD = 50000;
+	std::atomic<uint64_t> push_count(0);
+	std::atomic<uint64_t> pop_count(0);
+	std::atomic<uint64_t> push_failures(0);
+	std::atomic<uint64_t> pop_failures(0);
+	sys_api::signal_t start_flag = sys_api::signal_create(true);
+	std::vector<thread_t> threads;
+
+	// create work thread
+	for (int32_t i = 0; i < THREAD_COUNT; i++) 
+	{
+		threads.emplace_back( sys_api::thread_create( [&](void*) 
+		{
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_int_distribution<> dis(0, 99);
+
+			sys_api::signal_wait(start_flag);
+
+			for (int32_t j = 0; j < OPERATIONS_PER_THREAD; j++) {
+				// 70% push, 30% pop
+				if (dis(gen) < 70) {
+					uint64_t value = push_count.fetch_add(1);
+					if (!queue.push(value)) {
+						push_failures.fetch_add(1);
+						push_count.fetch_sub(1);
+					}
+				}
+				else {
+					uint64_t val;
+					if (queue.pop(val)) {
+						pop_count.fetch_add(1);
+					}
+					else {
+						pop_failures.fetch_add(1);
+					}
+				}
+			}
+		}, nullptr, nullptr));
+	}
+
+	//begin work
+	sys_api::signal_notify(start_flag);
+	
+	//wait all thread done
+	for (auto& t : threads) 
+	{
+		sys_api::thread_join(t);
+	}
+
+	// cleanup the remaining data
+	uint64_t val;
+	while (queue.pop(val)) 
+	{
+		pop_count.fetch_add(1);
+	}
+
+	REQUIRE_EQ(push_count.load(), pop_count.load());
+}
+
+TEST_CASE("LockFreeQueue different data types", "[LockFreeQueue][Types]")
+{
+	PRINT_CURRENT_TEST_NAME();
+
+	// int64_t
+	{
+		LockFreeQueue<int64_t, 64> queue;
+		REQUIRE_TRUE(queue.push(INT64_MAX));
+		int64_t val;
+		REQUIRE_TRUE(queue.pop(val));
+		REQUIRE_EQ(INT64_MAX, val);
+	}
+
+	// double
+	{
+		LockFreeQueue<double, 64> queue;
+		double test_val = 3.141592653589793;
+		REQUIRE_TRUE(queue.push(test_val));
+		double val;
+		REQUIRE_TRUE(queue.pop(val));
+		REQUIRE_EQ(test_val, val);
+	}
+
+	// struct
+	{
+		struct TestStruct {
+			int32_t a;
+			int32_t b;
+			double c;
+		};
+		static_assert(std::is_trivial<TestStruct>::value, "TestStruct must be trivial");
+
+		LockFreeQueue<TestStruct, 64> queue;
+		TestStruct ts = { 123, 456, 789.0 };
+		REQUIRE_TRUE(queue.push(ts));
+		TestStruct val;
+		REQUIRE_TRUE(queue.pop(val));
+		REQUIRE_EQ(123, val.a);
+		REQUIRE_EQ(456, val.b);
+		REQUIRE_EQ(789.0, val.c);
+	}
+}
+
+TEST_CASE("LockFreeQueue interleaved operations", "[LockFreeQueue][Interleaved]")
+{
+	PRINT_CURRENT_TEST_NAME();
+
+	const int32_t QUEUE_SIZE = 1024;
+	typedef LockFreeQueue<int32_t, QUEUE_SIZE> IntQueue;
+	IntQueue queue;
+
+	const int32_t THREAD_COUNT = 4;
+	const int32_t OPERATIONS = 10000;
+	std::atomic<int32_t> success_count(0);
+	sys_api::signal_t start_flag = sys_api::signal_create(true);
+	std::vector<thread_t> threads;
+
+	for (int32_t i = 0; i < THREAD_COUNT; i++) 
+	{
+		threads.emplace_back(sys_api::thread_create([&](void*)
+		{
+			sys_api::signal_wait(start_flag);
+
+			// push and pop interleaved
+			for (int32_t j = 0; j < OPERATIONS; j++) 
+			{
+				if (j % 2 == 0) 
+				{
+					if (queue.push(i * OPERATIONS + j)) 
+					{
+						success_count.fetch_add(1);
+					}
+				}
+				else 
+				{
+					int32_t val;
+					if (queue.pop(val)) 
+					{
+						success_count.fetch_add(1);
+					}
+				}
+			}
+			}, nullptr, nullptr));
+	}
+
+	//begin work
+	sys_api::signal_notify(start_flag);
+
+	//wait all thread done
+	for (auto& t : threads)
+	{
+		sys_api::thread_join(t);
+	}
+
+	// clean the remain data
+	int32_t val;
+	while (queue.pop(val)) 
+	{
+		success_count.fetch_add(1);
+	}
+
+	REQUIRE_RANGE(success_count.load(), OPERATIONS * THREAD_COUNT - 10, OPERATIONS * THREAD_COUNT + 10);
 }
