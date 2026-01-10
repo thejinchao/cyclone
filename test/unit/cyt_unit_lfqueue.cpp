@@ -31,23 +31,26 @@ TEST_CASE("LockFreeQueue basic test", "[LockFreeQueue][Basic]")
 	REQUIRE_TRUE(have_data);
 	REQUIRE_EQ(0ll, queue.size());
 
-	for (int32_t i = 0; i < QUEUE_SIZE-1; i++) {
-		push_ret = queue.push(i);
-		REQUIRE_TRUE(push_ret);
-		REQUIRE_EQ(size_t(i+1), queue.size());
-	}
+	for (int32_t t = 0; t < 10; t++) 
+	{
+		for (int32_t i = 0; i < QUEUE_SIZE - 1; i++) {
+			push_ret = queue.push(i);
+			REQUIRE_TRUE(push_ret);
+			REQUIRE_EQ(size_t(i + 1), queue.size());
+		}
 
-	REQUIRE_EQ(size_t(QUEUE_SIZE-1), queue.size());
-	push_ret = queue.push(QUEUE_SIZE);
-	REQUIRE_FALSE(push_ret);
+		REQUIRE_EQ(size_t(QUEUE_SIZE - 1), queue.size());
+		push_ret = queue.push(QUEUE_SIZE);
+		REQUIRE_FALSE(push_ret);
 
-	for (int32_t i = 0; i < QUEUE_SIZE-1; i++) {
-		have_data = queue.pop(pop_num);
-		REQUIRE_TRUE(have_data);
-		REQUIRE_EQ(i, pop_num);
-		REQUIRE_EQ(size_t(QUEUE_SIZE-i-2), queue.size());
+		for (int32_t i = 0; i < QUEUE_SIZE - 1; i++) {
+			have_data = queue.pop(pop_num);
+			REQUIRE_TRUE(have_data);
+			REQUIRE_EQ(i, pop_num);
+			REQUIRE_EQ(size_t(QUEUE_SIZE - i - 2), queue.size());
+		}
+		REQUIRE_EQ(0ll, queue.size());
 	}
-	REQUIRE_EQ(0ll, queue.size());
 }
 
 //-------------------------------------------------------------------------------------
