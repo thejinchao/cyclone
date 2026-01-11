@@ -19,19 +19,19 @@ static const dhkey_t INVERT_P = { { 159, 0 } };
 static const dhkey_t G = { { 5, 0 } };
 
 /*--------------------------------------------------------------------------*/
-static int INLINE
+static int inline
 _u128_is_zero(const dhkey_t& key) {
 	return (key.dq.low == 0 && key.dq.high == 0);
 }
 
 /*--------------------------------------------------------------------------*/
-static int INLINE
+static int inline
 _u128_is_odd(const dhkey_t& key) {
 	return (key.dq.low & 1);
 }
 
 /*--------------------------------------------------------------------------*/
-static void INLINE 
+static void inline
 _u128_lshift(dhkey_t* key) {
 	uint64_t t = (key->dq.low >> 63) & 1;
 	key->dq.high = (key->dq.high << 1) | t;
@@ -39,7 +39,7 @@ _u128_lshift(dhkey_t* key) {
 }
 
 /*--------------------------------------------------------------------------*/
-static void INLINE
+static void inline
 _u128_rshift(dhkey_t* key) {
 	uint64_t t = (key->dq.high & 1) << 63;
 	key->dq.high = key->dq.high >> 1;
@@ -47,7 +47,7 @@ _u128_rshift(dhkey_t* key) {
 }
 
 /*--------------------------------------------------------------------------*/
-static int INLINE
+static int inline
 _u128_compare(const dhkey_t& a, const dhkey_t& b) {
 	if (a.dq.high > b.dq.high) return 1;
 	else if (a.dq.high == b.dq.high) {
@@ -59,7 +59,7 @@ _u128_compare(const dhkey_t& a, const dhkey_t& b) {
 }
 
 /*--------------------------------------------------------------------------*/
-static void INLINE
+static void inline
 _u128_add(dhkey_t* r, const dhkey_t& a, const dhkey_t& b) {
 	uint64_t overflow = 0;
 	uint64_t low = a.dq.low + b.dq.low;
@@ -72,7 +72,7 @@ _u128_add(dhkey_t* r, const dhkey_t& a, const dhkey_t& b) {
 }
 
 /*--------------------------------------------------------------------------*/
-static void INLINE
+static void inline
 _u128_add_i(dhkey_t* r, const dhkey_t& a, const uint64_t& b) {
 	uint64_t overflow = 0;
 	uint64_t low = a.dq.low + b;
@@ -85,7 +85,7 @@ _u128_add_i(dhkey_t* r, const dhkey_t& a, const uint64_t& b) {
 }
 
 /*--------------------------------------------------------------------------*/
-static void INLINE
+static void inline
 _u128_sub(dhkey_t* r, const dhkey_t& a, const dhkey_t& b) {
 	dhkey_t invert_b;
 	invert_b.dq.low = ~b.dq.low;

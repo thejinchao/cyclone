@@ -44,7 +44,7 @@ public:
 	bool m_bGotFileInfo;
 	int64_t m_beginDownloadTime;
 	int64_t m_endDownloadTime;
-	PeriodValue<size_t, true> m_downloadSpeed;
+	PeriodValue<size_t> m_downloadSpeed;
 
 	enum ThreadStatus
 	{

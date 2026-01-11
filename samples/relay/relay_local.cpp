@@ -101,10 +101,10 @@ private:
 	bool m_enable_statistics;
 
 	std::atomic<int64_t> m_up_total;
-	PeriodValue<int32_t, true> m_up_statistics;
+	PeriodValue<int32_t> m_up_statistics;
 
 	std::atomic<int64_t> m_down_total;
-	PeriodValue<int32_t, true> m_down_statistics;
+	PeriodValue<int32_t> m_down_statistics;
 
 public:
 	//-------------------------------------------------------------------------------------

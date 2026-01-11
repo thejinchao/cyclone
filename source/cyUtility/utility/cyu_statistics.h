@@ -17,18 +17,31 @@ struct MinMaxValue
 {
 	void update(const T& value) 
 	{
-		atomic_greater_exchange(m_max, value, value);
-		atomic_smaller_exchange(m_min, value, value);
+		//update max value
+		for(;;)
+		{
+			T maxValue = m_max.load(std::memory_order_relaxed);
+			if (value <= maxValue) break;
+			if (m_max.compare_exchange_weak(maxValue, value, std::memory_order_release, std::memory_order_relaxed)) break;
+		}
+
+		//update min value
+		for(;;)
+		{
+			T minValue = m_min.load(std::memory_order_relaxed);
+			if (value >= minValue) break;
+			if (m_min.compare_exchange_weak(minValue, value, std::memory_order_release, std::memory_order_relaxed)) break;
+		}
 	}
 
 	T min(void) const 
 	{
-		return m_min.load();
+		return m_min.load(std::memory_order_relaxed);
 	}
 
 	T max(void) const 
 	{
-		return m_max.load();
+		return m_max.load(std::memory_order_relaxed);
 	}
 
 public:
@@ -53,27 +66,13 @@ private:
 
 // PeriodValue:
 // More concerned about the performance of a variable in a certain period of time(in millisecond)
-template<typename T, bool WithLock = true, T ZeroValue=0>
+template<typename T>
 struct PeriodValue
 {
 public:
-	struct AutoLock {
-		AutoLock(sys_api::mutex_t l) : _lock(l){
-			if CONSTEXPR(WithLock) {
-				sys_api::mutex_lock(_lock);
-			}
-		}
-		~AutoLock() {
-			if CONSTEXPR(WithLock) {
-				sys_api::mutex_unlock(_lock);
-			}
-		}
-		sys_api::mutex_t _lock;
-	};
-public:
 	void push(const T& value, int64_t cur_performance_time=0)
 	{
-		AutoLock lock(m_lock);
+		sys_api::auto_mutex lock(m_lock);
 
 		if (cur_performance_time == 0) {
 			cur_performance_time = sys_api::performance_time_now() / 1000ll;
@@ -97,16 +96,16 @@ public:
 
 	std::pair<T, int32_t> sum_and_counts(int64_t cur_performance_time = 0) const
 	{
-		AutoLock lock(m_lock);
+		sys_api::auto_mutex lock(m_lock);
 
 		if (cur_performance_time == 0) {
 			cur_performance_time = sys_api::performance_time_now() / 1000ll;
 		}
 
 		_update(cur_performance_time);
-		if (m_valueQueue.empty()) return std::make_pair(ZeroValue, 0);
+		if (m_valueQueue.empty()) return std::make_pair(T(0), 0);
 
-		T sum = ZeroValue;
+		T sum = T(0);
 		int32_t counts=0;
 		m_valueQueue.walk([&sum, &counts](size_t index, const ValuePair& v) -> bool {
 			sum += v.second;
@@ -127,16 +126,12 @@ public:
 		, m_valueQueue(0) //not fixed size
 		, m_lock(nullptr)
 	{
-		if CONSTEXPR(WithLock) {
-			m_lock = sys_api::mutex_create();
-		}
+		m_lock = sys_api::mutex_create();
 	}
 
 	~PeriodValue()
 	{
-		if CONSTEXPR(WithLock) {
-			sys_api::mutex_destroy(m_lock);
-		}
+		sys_api::mutex_destroy(m_lock);
 	}
 
 private:

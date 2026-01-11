@@ -115,7 +115,7 @@ TEST_CASE("Statistics PeriodValue test", "[Statistics][PeriodValue]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	typedef PeriodValue<int32_t, true> IntPeriodValue;
+	typedef PeriodValue<int32_t> IntPeriodValue;
 
 	{
 		IntPeriodValue v;

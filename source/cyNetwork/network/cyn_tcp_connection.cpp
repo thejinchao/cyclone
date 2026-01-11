@@ -334,7 +334,7 @@ void TcpConnection::start_read_statistics(int32_t period_time)
 
 	//already start
 	if (m_read_statistics) return;
-	m_read_statistics = new PeriodValue <size_t, true>(period_time);
+	m_read_statistics = new PeriodValue <size_t>(period_time);
 }
 
 //-------------------------------------------------------------------------------------
@@ -344,7 +344,7 @@ void TcpConnection::start_write_statistics(int32_t period_time)
 
 	//already start
 	if (m_write_statistics) return;
-	m_write_statistics = new PeriodValue <size_t, true>(period_time);
+	m_write_statistics = new PeriodValue <size_t>(period_time);
 }
 
 //-------------------------------------------------------------------------------------

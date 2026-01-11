@@ -83,10 +83,6 @@ Copyright(C) thecodeway.com
 	#include <arpa/inet.h>
 #endif
 
-#if defined (__LP64__) || defined (__64BIT__) || defined (_LP64) || (__WORDSIZE == 64) || defined(_WIN64)
-	#define CY_64BIT 1
-#endif
-
 #ifdef CY_SYS_WINDOWS
 	#undef min
 	#undef max
@@ -111,15 +107,6 @@ Copyright(C) thecodeway.com
 #ifndef MAX_PATH
 	#define MAX_PATH	(260)
 #endif
-
-#ifdef CY_SYS_WINDOWS
-#define INLINE inline
-#else
-#define INLINE __inline
-#endif
-
-//wait c++17 support
-#define CONSTEXPR 
 
 class noncopyable
 {  

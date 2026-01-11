@@ -144,7 +144,9 @@ void WorkThread::join(void)
 //-------------------------------------------------------------------------------------
 void WorkThread::_wakeup(void)
 {
-	if (atomic_compare_exchange(m_is_queue_empty, true, false)) {
+	bool expected = true;
+	if (m_is_queue_empty.compare_exchange_strong(expected, false, std::memory_order_release, std::memory_order_relaxed))
+	{
 		int8_t dummy = 0;
 		m_pipe.write((const char*)&dummy, sizeof(dummy));
 	}
