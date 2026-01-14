@@ -59,6 +59,18 @@ check_function_exists(pipe2				CY_HAVE_PIPE2)
 check_function_exists(kqueue			CY_HAVE_KQUEUE)
 check_function_exists(timerfd_create	CY_HAVE_TIMERFD)
 
+########
+#get version
+########
+file(READ source/cyclone_config.h.in config_h)
+if (NOT config_h MATCHES "CYCLONE_VERSION[ \t]+([0-9]+)([0-9][0-9])([0-9][0-9])")
+  message(FATAL_ERROR "Cannot get CYCLONE_VERSION from cyclone_config.h.in.")
+endif ()
+math(EXPR CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1})
+math(EXPR CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
+math(EXPR CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
+set(CYCLONE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+message(STATUS "Cyclone Version: ${CYCLONE_VERSION}")
 
 ########
 #compiler flag

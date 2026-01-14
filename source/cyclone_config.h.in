@@ -83,6 +83,9 @@ Copyright(C) thecodeway.com
 	#include <arpa/inet.h>
 #endif
 
+// The version in the form major * 10000 + minor * 100 + patch.
+#define CYCLONE_VERSION		10000		//1.0.0
+
 #ifdef CY_SYS_WINDOWS
 	#undef min
 	#undef max
