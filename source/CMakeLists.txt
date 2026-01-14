@@ -157,9 +157,38 @@ add_library(cyclone
 	${CY_UTILITY_SOURCE_FILES}
 )
 
+set_target_properties(cyclone PROPERTIES
+  VERSION ${CYCLONE_VERSION} SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR}
+  DEBUG_POSTFIX "${CYCLONE_DEBUG_POSTFIX}"
+)
+
 ########
 #INSTALL
 ########
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(version_config ${PROJECT_BINARY_DIR}/cyclone-config-version.cmake)
+set(project_config ${PROJECT_BINARY_DIR}/cyclone-config.cmake)
+set(targets_export_name cyclone-targets)
+set(CYCLONE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/cyclone)
+
+# generate the version, config and target files into the build directory.
+write_basic_package_version_file(
+	${version_config}
+	VERSION ${CYCLONE_VERSION}
+	COMPATIBILITY AnyNewerVersion
+)
+
+# generate the project config file.
+configure_package_config_file(
+	${PROJECT_SOURCE_DIR}/cmake/cyclone-config.cmake.in
+	${project_config}
+	INSTALL_DESTINATION ${CYCLONE_CMAKE_INSTALL_DIR}
+	PATH_VARS CMAKE_INSTALL_PREFIX 
+)
+
+# install the library and headers.
 install(FILES ${CY_AUTO_CONFIG_FILE}
 	DESTINATION include)
 	
@@ -169,14 +198,23 @@ install(DIRECTORY cyCore/ cyEvent/ cyNetwork/ cyCrypt/ cyUtility/
 	PATTERN "*.h"
 	PATTERN "internal" EXCLUDE)
 
-if (MSVC)
+install(TARGETS cyclone 
+	EXPORT ${targets_export_name}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
-install(FILES $<TARGET_FILE:cyclone> 
-	DESTINATION lib/$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>)
-	
-else()
+# imported targets.
+export(TARGETS cyclone NAMESPACE cyclone::
+	FILE ${PROJECT_BINARY_DIR}/${targets_export_name}.cmake
+)
 
-install(TARGETS cyclone
-	DESTINATION lib)
+# install version, config and target files.
+install(
+	FILES ${project_config} ${version_config}
+	DESTINATION ${CYCLONE_CMAKE_INSTALL_DIR}
+)
 
-endif()
+install(EXPORT ${targets_export_name}
+	DESTINATION ${CYCLONE_CMAKE_INSTALL_DIR}
+	NAMESPACE cyclone::
+)

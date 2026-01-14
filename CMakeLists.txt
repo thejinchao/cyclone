@@ -2,7 +2,7 @@
 #Copyright(C) thecodeway.com
 #
 
-cmake_minimum_required (VERSION 2.8...3.14)
+cmake_minimum_required (VERSION 3.14)
 
 project(cyclone)
 
@@ -112,6 +112,8 @@ set(CY_ENABLE_LOG TRUE)
 set(CY_AUTO_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/source)
 set(CY_AUTO_CONFIG_FILE ${CY_AUTO_INCLUDE_PATH}/cyclone_config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/cyclone_config.h.in ${CY_AUTO_CONFIG_FILE})
+
+set(CYCLONE_DEBUG_POSTFIX d CACHE STRING "Debug library postfix.")
 
 ########
 #sub dictionary

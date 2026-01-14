@@ -1,0 +1,26 @@
+@PACKAGE_INIT@
+
+# Use the install prefix provided by configure_package_config_file
+set(CYCLONE_INSTALL_PREFIX "@PACKAGE_CMAKE_INSTALL_PREFIX@")
+
+# Set Cyclone include directories
+set(CYCLONE_INCLUDE_DIRS "${CYCLONE_INSTALL_PREFIX}/include")
+
+# Set system libraries based on platform
+set(CYCLONE_SYSTEM_LIBRARIES "@CY_SYSTEM_LIBRARIES@")
+
+
+if (NOT TARGET cyclone::cyclone)
+	include(${CMAKE_CURRENT_LIST_DIR}/@targets_export_name@.cmake)
+
+	set_target_properties(cyclone::cyclone PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES "${CYCLONE_INCLUDE_DIRS}"
+		INTERFACE_LINK_LIBRARIES "${CYCLONE_SYSTEM_LIBRARIES}"
+	)
+endif ()
+
+check_required_components(cyclone)
+
+# Set variables for backward compatibility
+set(CYCLONE_FOUND TRUE)
+set(CYCLONE_VERSION "@CYCLONE_VERSION@")
