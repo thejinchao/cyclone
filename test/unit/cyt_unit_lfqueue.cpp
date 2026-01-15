@@ -157,7 +157,7 @@ private:
 		};
 	}
 
-	void popFunction(void* param)
+	void popFunction(void*)
 	{
 		sys_api::signal_wait(m_beginSignal);
 

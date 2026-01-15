@@ -137,7 +137,7 @@ TEST_CASE("Crypto algorithm(XorShift128) test", "[Crypto][XorShift128]")
 	size_t text_len = strlen(plain_text);
 
 	char buf[128] = { 0 };
-	strncpy(buf, plain_text, text_len);
+	memcpy(buf, plain_text, text_len);
 
 	//encrypt with special seed
 	seed.seed0 = 0xFACEDEADDEADFACEull;
@@ -160,7 +160,8 @@ TEST_CASE("Crypto algorithm(XorShift128) test", "[Crypto][XorShift128]")
 		seed_decrypt.seed0 = seed_encrypt.seed0;
 		seed_decrypt.seed1 = seed_encrypt.seed1;
 
-		strncpy(buf, plain_text, text_len);
+		memcpy(buf, plain_text, text_len);
+
 		xorshift128((uint8_t*)buf, text_len, seed_encrypt);
 		xorshift128((uint8_t*)buf, text_len, seed_decrypt);
 		REQUIRE_THAT(plain_text, Catch::Matchers::Equals(buf));

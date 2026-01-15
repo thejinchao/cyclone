@@ -5,7 +5,11 @@
 
 using namespace cyclone;
 
-namespace {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4127)
+#endif
+
 //-------------------------------------------------------------------------------------
 void _fillRandom(uint8_t* mem, size_t len)
 {
@@ -620,5 +624,6 @@ TEST_CASE("RingBuf socket test", "[RingBuf][Socket]")
 		REQUIRE_EQ(0, memcmp(rb_rcv.normalize(), buffer1 + RingBuf::kDefaultCapacity - TEST_WRAP_SIZE * 2, TEST_WRAP_SIZE * 4));
 	}
 }
-
-}
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

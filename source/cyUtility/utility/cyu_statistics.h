@@ -107,7 +107,7 @@ public:
 
 		T sum = T(0);
 		int32_t counts=0;
-		m_valueQueue.walk([&sum, &counts](size_t index, const ValuePair& v) -> bool {
+		m_valueQueue.walk([&sum, &counts](size_t /*index*/, const ValuePair& v) -> bool {
 			sum += v.second;
 			counts++;
 			return true;

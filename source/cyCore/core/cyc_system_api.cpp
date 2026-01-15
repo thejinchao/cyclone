@@ -44,7 +44,7 @@ void process_get_module_name(char* module_name, size_t max_size)
 #ifdef CY_SYS_WINDOWS
 	char process_path_name[MAX_PATH] = { 0 };
 	::GetModuleFileName(::GetModuleHandle(0), process_path_name, MAX_PATH);
-	strncpy(module_name, ::PathFindFileNameA(process_path_name), max_size);
+	strncpy_s(module_name, max_size, ::PathFindFileNameA(process_path_name), max_size);
 #else
 
 	#ifdef CY_SYS_MACOS

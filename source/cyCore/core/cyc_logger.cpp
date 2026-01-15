@@ -3,6 +3,7 @@ Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
 #include "cyc_logger.h"
+#include <fstream>
 
 #ifdef CY_SYS_WINDOWS
 #include <Shlwapi.h>
@@ -154,15 +155,10 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		thefile.logpath_created = true;
 	}
 
-	FILE* fp = fopen(thefile.file_path_name.c_str(), "a");
-	if (fp == 0) {
-		//create the log file first
-		fp = fopen(thefile.file_path_name.c_str(), "w");
-	}
-	if (fp == 0) return;
+	std::ofstream logFile(thefile.file_path_name.c_str(), std::ios::app);
 
 	char timebuf[32] = { 0 };
-	sys_api::local_time_now(timebuf, 32, "%Y_%m_%d-%H:%M:%S");
+	sys_api::local_time_now(timebuf, 32, "%Y_%m_%d-%H:%M:%S ");
 
 	static const int32_t STATIC_BUF_LENGTH = 2048;
 
@@ -188,12 +184,11 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	}
 	va_end(ptr);
 
-	fprintf(fp, "%s %s [%s] %s\n",
-		timebuf, 
-		thefile.level_name[level],
-		sys_api::thread_get_current_name(),
-		p);
-	fclose(fp);
+	logFile << timebuf
+		<< thefile.level_name[level] << " [" 
+		<< sys_api::thread_get_current_name() << "] " 
+		<< p << std::endl;
+	logFile.close();
 
 	//print to stand output last
 	fprintf(level >= L_ERROR ? stderr : stdout, "%s %s [%s] %s\n",
@@ -206,7 +201,5 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 		CY_FREE(p);
 	}
 }
-
-
 
 }
