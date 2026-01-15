@@ -135,8 +135,8 @@ public:
 private:
 	MinMaxValue <size_t> m_readbuf_minmax_size;
 	MinMaxValue <size_t> m_writebuf_minmax_size;
-	PeriodValue <size_t>* m_read_statistics;
-	PeriodValue <size_t>* m_write_statistics;
+	PeriodValue <ssize_t>* m_read_statistics;
+	PeriodValue <ssize_t>* m_write_statistics;
 
 public:
 	TcpConnection(int32_t id, socket_t sfd, Looper* looper, Owner* owner);

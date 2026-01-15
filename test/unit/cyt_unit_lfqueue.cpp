@@ -64,12 +64,12 @@ public:
 	{
 		MultiThreadPushPop* globalData;
 		thread_t 			threadHandle;
-		uint32_t			threadID;
+		uint32_t			threadIndex;
 	};
 
 private:
 	UIntQueue*			m_queue;
-	std::array<std::atomic_flag, TOP_VALUE+1> m_result;
+	std::array<std::atomic_flag, (size_t)(TOP_VALUE+1)> m_result;
 
 	atomic_bool_t		m_noMoreData;
 	sys_api::signal_t	m_beginSignal;
@@ -95,18 +95,18 @@ public:
 		m_beginSignal = sys_api::signal_create(true);
 		m_noMoreData = false;
 
-		std::array< ThreadData, PUSH_THREADS> pushThreadData;
-		std::array< ThreadData, POP_THREADS> popThreadData;
+		std::array< ThreadData, (size_t)PUSH_THREADS> pushThreadData;
+		std::array< ThreadData, (size_t)POP_THREADS> popThreadData;
 
-		for (int32_t i = 0; i < PUSH_THREADS; i++) {
+		for (size_t i = 0; i < PUSH_THREADS; i++) {
 			pushThreadData[i].globalData = this;
-			pushThreadData[i].threadID = i;
+			pushThreadData[i].threadIndex = static_cast<uint32_t>(i);
 			pushThreadData[i].threadHandle = sys_api::thread_create(
 				std::bind(&MultiThreadPushPop::pushFunction, this, std::placeholders::_1), &(pushThreadData[i]), nullptr);
 		}
-		for (int32_t i = 0; i < POP_THREADS; i++) {
+		for (size_t i = 0; i < POP_THREADS; i++) {
 			popThreadData[i].globalData = this;
-			popThreadData[i].threadID = i;
+			popThreadData[i].threadIndex = static_cast<uint32_t>(i);
 			popThreadData[i].threadHandle = sys_api::thread_create(
 				std::bind(&MultiThreadPushPop::popFunction, this, std::placeholders::_1), &(popThreadData[i]), nullptr);
 		}
@@ -115,20 +115,20 @@ public:
 		sys_api::signal_notify(m_beginSignal);
 
 		//wait all push thread
-		for (int32_t i = 0; i < PUSH_THREADS; i++) 
+		for (size_t i = 0; i < PUSH_THREADS; i++) 
 		{
 			sys_api::thread_join(pushThreadData[i].threadHandle);
 		}	
 		m_noMoreData = true;
 
 		//wait all pop thread
-		for (int32_t i = 0; i < POP_THREADS; i++) 
+		for (size_t i = 0; i < POP_THREADS; i++)
 		{
 			sys_api::thread_join(popThreadData[i].threadHandle);
 		}
 
 		//check result
-		for (uint32_t i = 1; i <= TOP_VALUE; i++) 
+		for (size_t i = 1; i <= TOP_VALUE; i++)
 		{
 			REQUIRE_TRUE(m_result[i].test_and_set());
 		}
@@ -144,7 +144,7 @@ private:
 		ThreadData* threadData = (ThreadData*)param;
 		sys_api::signal_wait(m_beginSignal);
 
-		uint32_t nextValue = threadData->threadID+1;
+		uint32_t nextValue = threadData->threadIndex + 1;
 		for(;;)
 		{
 			if (nextValue > TOP_VALUE) break;

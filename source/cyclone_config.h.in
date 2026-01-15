@@ -1,8 +1,8 @@
 ﻿/*
 Copyright(C) thecodeway.com
 */
-#ifndef _CYCLONE_CONFIG_H_
-#define _CYCLONE_CONFIG_H_
+#ifndef CYCLONE_CONFIG_H
+#define CYCLONE_CONFIG_H
 
 #cmakedefine CY_HAVE_UNISTD_H 1
 #cmakedefine CY_HAVE_INTTYPES_H 1
@@ -121,5 +121,4 @@ private:
     const noncopyable& operator=(const noncopyable&) = delete;  
 };
 
-#endif
-
+#endif //CYCLONE_CONFIG_H

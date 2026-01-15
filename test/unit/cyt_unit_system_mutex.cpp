@@ -184,12 +184,12 @@ TEST_CASE("System mutex multithread passball test", "[System][Mutex][MultiThread
 	REQUIRE_TRUE(sys_api::mutex_try_lock(m));
 
 	//run several work thread
-	const int32_t k_thread_counts = sys_api::get_cpu_counts() < 16 ? 16 : sys_api::get_cpu_counts();
+	const size_t k_thread_counts = sys_api::get_cpu_counts() < 16 ? 16 : static_cast<size_t>(sys_api::get_cpu_counts());
 	TestLockThread* work_thread = new TestLockThread[k_thread_counts];
 	thread_t* work_thread_handle = new thread_t[k_thread_counts];
 
 	std::pair<bool, int32_t> the_ball(false, 0);
-	for (int32_t i = 0; i < k_thread_counts; i++) {
+	for (size_t i = 0; i < k_thread_counts; i++) {
 		work_thread[i].m_mutex = m;
 		work_thread_handle[i] = sys_api::thread_create(std::bind(&TestLockThread::test_pass_ball, &(work_thread[i]), std::placeholders::_1), &the_ball, nullptr);
 	}
@@ -200,15 +200,15 @@ TEST_CASE("System mutex multithread passball test", "[System][Mutex][MultiThread
 	//unlock in main thread
 	sys_api::mutex_unlock(m);
 
-	for (int32_t i = 0; i < k_thread_counts; i++) {
+	for (size_t i = 0; i < k_thread_counts; i++) {
 		sys_api::thread_join(work_thread_handle[i]);
 
 		int32_t ball_number = work_thread[i].m_lock_status.load();
-		REQUIRE_RANGE(ball_number, 0, k_thread_counts);
+		REQUIRE_RANGE(ball_number, 0, static_cast<int32_t>(k_thread_counts));
 
 		result[ball_number] += 1;
 	}
-	for (int32_t i = 0; i < k_thread_counts; i++) {
+	for (size_t i = 0; i < k_thread_counts; i++) {
 		REQUIRE_EQ(result[i], 1);
 	}
 

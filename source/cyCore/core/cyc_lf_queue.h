@@ -110,7 +110,7 @@ private:
 	// Pool head uses TaggedIndex (tag + index) to mitigate ABA on the free list.
 	std::atomic<TaggedIndex> m_poolHead;
 	// Fixed-size node pool storage.
-	Node m_nodePool[Q_SIZE];
+	Node m_nodePool[size_t(Q_SIZE)];
 
 public:
 	// Construct the queue and initialize the pool and the queue sentinel node.

@@ -89,13 +89,13 @@ private:
 		if (m_workingCounts.load()==0) return;
 
 		std::string speedStatus;
-		for(int32_t i=0; i<(int32_t)m_threadContext.size(); i++) {
+		for(size_t i=0; i<m_threadContext.size(); i++) {
 			ThreadContext* ctx = (ThreadContext*)m_threadContext[i];
 
 			float speed = ctx->sendSpeed.load();
 
 			char temp[256] = { 0 };
-			std::snprintf(temp, 256, "[%d]%s/s ", i, string_util::size_to_string(speed).c_str());
+			std::snprintf(temp, 256, "[%zd]%s/s ", i, string_util::size_to_string(speed).c_str());
 			speedStatus += temp;
 		}
 
@@ -119,7 +119,7 @@ private:
 	void _onWorkThreadTimer(int32_t index)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
-		ThreadContext& ctx = *(m_threadContext[index]);
+		ThreadContext& ctx = *(m_threadContext[(size_t)index]);
 
 		if (ctx.status == TS_Sending && ctx.conn) {
 			const auto& writeStatistics = ctx.conn->get_write_statistics();
