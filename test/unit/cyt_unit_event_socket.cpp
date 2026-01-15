@@ -85,7 +85,7 @@ static void _readThreadFunction(void* param)
 	for (size_t i = 0; i < data->socketPairs.size(); i++) {
 		SocketPair* sp = data->socketPairs[i];
 
-		sp->event_id = looper->register_event(sp->m_fd[0], Looper::kRead, sp, _onRead, 0);
+		sp->event_id = looper->register_event(sp->m_fd[0], Looper::kRead, sp, _onRead, nullptr);
 	}
 
 	sys_api::signal_notify(data->ready_signal);
@@ -128,7 +128,7 @@ static void _writeThreadFunction(void* param)
 
 	for (size_t i = 0; i < data->socketPairs.size(); i++) {
 		SocketPair* sp = data->socketPairs[i];
-		sp->event_id = looper->register_event(sp->m_fd[0], Looper::kWrite, sp, 0, _onWrite);
+		sp->event_id = looper->register_event(sp->m_fd[0], Looper::kWrite, sp, nullptr, _onWrite);
 	}
 
 	sys_api::signal_notify(data->ready_signal);

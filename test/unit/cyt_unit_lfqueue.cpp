@@ -76,7 +76,7 @@ private:
 
 public:
 	MultiThreadPushPop()
-		: m_queue(0)
+		: m_queue(nullptr)
 		, m_noMoreData(false)
 		, m_beginSignal(nullptr)
 	{

@@ -45,7 +45,7 @@ bool Pipe::construct_socket_pipe(pipe_port_t handles[2])
 			break;
 		if (!socket_api::connect(handles[1], serv_addr)) 
 			break;
-		if ((handles[0] = socket_api::accept(s, 0)) == INVALID_SOCKET) 
+		if ((handles[0] = socket_api::accept(s, nullptr)) == INVALID_SOCKET) 
 			break;
 		if (!socket_api::set_nonblock(handles[0], true))
 			break;

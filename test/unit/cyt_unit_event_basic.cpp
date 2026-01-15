@@ -18,7 +18,7 @@ TEST_CASE("EventLooper basic test", "[EventLooper][Basic]")
 	const auto& channels = looper.get_channel_buf();
 	CHECK_CHANNEL_SIZE(0, 0, 0);
 
-	Looper::event_id_t id = looper.register_timer_event(1, 0, 0);
+	Looper::event_id_t id = looper.register_timer_event(1, nullptr, nullptr);
 	CHECK_CHANNEL_SIZE(default_channel_counts, 1, default_channel_counts - 1);
 
 	looper.disable_all(id);
@@ -35,11 +35,11 @@ TEST_CASE("EventLooper basic test", "[EventLooper][Basic]")
 
 	std::vector<Looper::event_id_t> id_buffer;
 	for (size_t i = 0; i < default_channel_counts; i++) {
-		id_buffer.push_back(looper.register_timer_event(1, 0, 0));
+		id_buffer.push_back(looper.register_timer_event(1, nullptr, nullptr));
 		CHECK_CHANNEL_SIZE(default_channel_counts, i+1, default_channel_counts - i - 1);
 	}
 
-	id_buffer.push_back(looper.register_timer_event(1, 0, 0));
+	id_buffer.push_back(looper.register_timer_event(1, nullptr, nullptr));
 	CHECK_CHANNEL_SIZE(default_channel_counts * 2, default_channel_counts + 1, default_channel_counts - 1);
 
 	looper.disable_all(id_buffer[id_buffer.size()-1]);

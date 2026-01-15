@@ -122,7 +122,7 @@ void TcpServer::stop(void)
 
 	//shutdown all connection
 	for (auto work : m_work_thread_pool){
-		work->send_thread_message(TcpServerWorkThread::ShutdownCmd::ID, 0, 0);
+		work->send_thread_message(TcpServerWorkThread::ShutdownCmd::ID, 0, nullptr);
 	}
 }
 

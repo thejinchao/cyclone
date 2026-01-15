@@ -65,11 +65,11 @@ void Looper_select::_poll(
 #ifdef CY_SYS_WINDOWS
 			0,
 			&m_work_read_fd_set, &m_work_write_fd_set, &m_work_expt_fd_set, 
-			block ? 0 : &time_out);
+			block ? nullptr : &time_out);
 #else
 			(int)(m_max_fd + 1), 
-			&m_work_read_fd_set, &m_work_write_fd_set, 0, 
-			block ? 0 : &time_out);
+			&m_work_read_fd_set, &m_work_write_fd_set, nullptr, 
+			block ? nullptr : &time_out);
 #endif
 	}
 	else 

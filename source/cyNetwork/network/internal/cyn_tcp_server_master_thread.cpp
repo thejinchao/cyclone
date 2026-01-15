@@ -129,7 +129,7 @@ bool TcpServerMasterThread::_on_thread_start(void)
 			Looper::kRead,
 			this,
 			std::bind(&TcpServerMasterThread::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-			0);
+			nullptr);
 
 		//begin listen
 		socket_api::listen(sfd);
@@ -213,7 +213,7 @@ void TcpServerMasterThread::_on_accept_event(Looper::event_id_t id, socket_t fd,
 	if (m_server->m_shutdown_ing.load() > 0) return;
 
 	//call accept and create peer socket		
-	socket_t connfd = socket_api::accept(fd, 0);
+	socket_t connfd = socket_api::accept(fd, nullptr);
 	if (connfd == INVALID_SOCKET)
 	{
 		//log error		

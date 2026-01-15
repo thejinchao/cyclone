@@ -168,7 +168,7 @@ void disk_log(LOG_LEVEL level, const char* message, ...)
 	int len = vsnprintf(p, STATIC_BUF_LENGTH, message, ptr);
 	if (len < 0) {
 		va_start(ptr, message);
-		len = vsnprintf(0, 0, message, ptr);
+		len = vsnprintf(nullptr, 0, message, ptr);
 		if (len > 0) {
 			p = (char*)CY_MALLOC((size_t)(len + 1));
 			va_start(ptr, message);

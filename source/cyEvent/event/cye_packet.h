@@ -82,7 +82,7 @@ public:
 	void* operator new(size_t);
 	void operator delete(void*);
 
-	static Packet* alloc_packet(const Packet* other = 0);
+	static Packet* alloc_packet(const Packet* other = nullptr);
 	static void free_packet(Packet*);
 };
 

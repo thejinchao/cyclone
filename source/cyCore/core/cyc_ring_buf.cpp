@@ -154,7 +154,7 @@ size_t RingBuf::peek(size_t off, void* dst, size_t count) const
 	size_t bytes_used = size();
 	if (off > bytes_used) return 0;
 	if (off + count > bytes_used) count = bytes_used - off;
-	if (count == 0 || dst == 0) return 0;
+	if (count == 0 || dst == nullptr) return 0;
 
 	char* cdst = (char*)dst;
 	size_t read_off = (m_read+off)%m_end;

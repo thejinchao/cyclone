@@ -43,7 +43,7 @@ void process_get_module_name(char* module_name, size_t max_size)
 {
 #ifdef CY_SYS_WINDOWS
 	char process_path_name[MAX_PATH] = { 0 };
-	::GetModuleFileName(::GetModuleHandle(0), process_path_name, MAX_PATH);
+	::GetModuleFileName(::GetModuleHandle(nullptr), process_path_name, MAX_PATH);
 	strncpy_s(module_name, max_size, ::PathFindFileNameA(process_path_name), max_size);
 #else
 
@@ -58,7 +58,7 @@ void process_get_module_name(char* module_name, size_t max_size)
 	#endif
 	
 	const char* process_name = strrchr(process_path_name, '/');
-	if (process_name != 0) process_name++;
+	if (process_name != nullptr) process_name++;
 	else process_name = "unknown";
 
 	strncpy(module_name, process_name, max_size);
@@ -100,7 +100,7 @@ thread_id_t _get_current_native_thread_id()
 //-------------------------------------------------------------------------------------
 thread_id_t thread_get_current_id(void)
 {
-	return s_thread_data == 0 ? _get_current_native_thread_id() : s_thread_data->tid;
+	return s_thread_data == nullptr ? _get_current_native_thread_id() : s_thread_data->tid;
 }
 
 //-------------------------------------------------------------------------------------
@@ -117,10 +117,10 @@ void _thread_entry(thread_data_s* data)
 	data->tid = _get_current_native_thread_id();
 	signal_wait(data->resume_signal);
 	signal_destroy(data->resume_signal);
-	data->resume_signal = 0;
+	data->resume_signal = nullptr;
 	
 	//set random seed
-	srand((uint32_t)::time(0));
+	srand((uint32_t)::time(nullptr));
 
 	//run thread function
 	if (data->entry_func) {
@@ -330,7 +330,7 @@ signal_t signal_create(bool manual_reset)
 	signal_data_s* sig = new signal_data_s();
 	sig->manual_reset = manual_reset;
 #ifdef CY_USE_NATIVE_WINDOWS_EVENT
-	sig->h = ::CreateEventW(0, manual_reset?TRUE:FALSE, FALSE, 0);
+	sig->h = ::CreateEventW(nullptr, manual_reset?TRUE:FALSE, FALSE, nullptr);
 #else
 	sig->predicate = 0;
 #endif
@@ -457,7 +457,7 @@ int64_t utc_time_now(void)
 	const int64_t kMicroSecondsPerSecond = 1000ll * 1000ll;
 
 	struct timeval tv;
-	gettimeofday(&tv, 0);
+	gettimeofday(&tv, nullptr);
 	int64_t seconds = tv.tv_sec;
 	return seconds * kMicroSecondsPerSecond + tv.tv_usec;
 #endif
@@ -466,7 +466,7 @@ int64_t utc_time_now(void)
 //-------------------------------------------------------------------------------------
 void local_time_now(char* time_dest, size_t max_size, const char* format)
 {
-	time_t local_time = time(0);
+	time_t local_time = time(nullptr);
 	struct tm tm_now;
 #ifdef CY_SYS_WINDOWS
 	localtime_s(&tm_now, &local_time);

@@ -69,7 +69,7 @@ uint32_t adler32(uint32_t adler, const uint8_t* buf, size_t len)
     unsigned n;
 	
 	/* initial Adler-32 value */
-	if (buf == 0 || len == 0)
+	if (buf == nullptr || len == 0)
 		return INITIAL_ADLER;
 	
 	/* split Adler-32 into component sums */

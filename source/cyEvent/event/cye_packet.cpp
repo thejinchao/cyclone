@@ -45,8 +45,8 @@ Packet::Packet()
 	: m_head_size(0)
 	, m_memory_buf(nullptr)
 	, m_memory_size(0)
-	, m_packet_size(0)
-	, m_packet_id(0)
+	, m_packet_size(nullptr)
+	, m_packet_id(nullptr)
 	, m_content(nullptr)
 {
 
@@ -69,8 +69,8 @@ void Packet::clean(void)
 	}
 	m_memory_buf = nullptr;
 	m_memory_size = 0;
-	m_packet_size = 0;
-	m_packet_id = 0;
+	m_packet_size = nullptr;
+	m_packet_id = nullptr;
 	m_content = nullptr;
 }
 

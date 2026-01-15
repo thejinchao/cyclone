@@ -23,7 +23,7 @@ Looper::Looper()
 	, m_active_channel_counts(0)
 	, m_loop_counts(0)
 	, m_current_thread(sys_api::thread_get_current_id())
-	, m_inner_pipe(0)
+	, m_inner_pipe(nullptr)
 	, m_inner_pipe_touched(0)
 	, m_quit_cmd(0)
 {
@@ -94,13 +94,13 @@ Looper::event_id_t Looper::register_timer_event(uint32_t milliSeconds,
 	channel.active = false;
 	channel.timer = true;
 	channel.on_read = _on_timer_event_callback;
-	channel.on_write = 0;
+	channel.on_write = nullptr;
 
 #ifdef CY_SYS_WINDOWS
 	channel.fd = timer->pipe.get_read_port();
 
 	//create windows timer queue
-	if (!CreateTimerQueueTimer(&(timer->htimer), 0, _on_windows_timer, timer, milliSeconds, milliSeconds, WT_EXECUTEINTIMERTHREAD)) {
+	if (!CreateTimerQueueTimer(&(timer->htimer), nullptr, _on_windows_timer, timer, milliSeconds, milliSeconds, WT_EXECUTEINTIMERTHREAD)) {
 		//error...
 		CY_LOG(L_FATAL, "CreateTimerQueueTimer Failed");
         delete timer;
@@ -161,7 +161,7 @@ void Looper::delete_event(event_id_t id)
 	if (channel.timer) {
 		timer_s* timer = (timer_s*)channel.param;
 #ifdef CY_SYS_WINDOWS
-		::DeleteTimerQueueTimer(0, timer->htimer, INVALID_HANDLE_VALUE);
+		::DeleteTimerQueueTimer(nullptr, timer->htimer, INVALID_HANDLE_VALUE);
 #elif defined(CY_HAVE_TIMERFD)
 		socket_api::close_socket(channel.fd);
 #endif
@@ -265,7 +265,7 @@ void Looper::loop(void)
 	//register inner pipe first
 	Pipe inner_pipe;
 	m_inner_pipe = &inner_pipe;
-	Looper::event_id_t inner_event_id = register_event(m_inner_pipe->get_read_port(), kRead, this, _on_inner_pipe_touched, 0);
+	Looper::event_id_t inner_event_id = register_event(m_inner_pipe->get_read_port(), kRead, this, _on_inner_pipe_touched, nullptr);
 
 	channel_list readList;
 	channel_list writeList;
@@ -285,7 +285,7 @@ void Looper::loop(void)
 		for (size_t i = 0; i < readList.size(); i++)
 		{
 			channel_s* c = &(m_channelBuffer[readList[i]]);
-			if (c->on_read == 0 || (c->event & kRead) == 0) continue;
+			if (c->on_read == nullptr || (c->event & kRead) == 0) continue;
 
 			c->on_read(c->id, c->fd, kRead, c->param);
 
@@ -297,7 +297,7 @@ void Looper::loop(void)
 		for (size_t i = 0; i < writeList.size(); i++)
 		{
 			channel_s* c = &(m_channelBuffer[writeList[i]]);
-			if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
+			if (c->on_write == nullptr || (c->event & kWrite) == 0) continue;
 
 			c->on_write(c->id, c->fd, kWrite, c->param);
 
@@ -316,7 +316,7 @@ void Looper::loop(void)
 void Looper::step(void)
 {
 	assert(sys_api::thread_get_current_id() == m_current_thread);
-	assert(m_inner_pipe==0);
+	assert(m_inner_pipe==nullptr);
 	if (is_quit_pending()) return;
 
 	channel_list readList;
@@ -332,7 +332,7 @@ void Looper::step(void)
 	for (size_t i = 0; i < readList.size(); i++)
 	{
 		channel_s* c = &(m_channelBuffer[readList[i]]);
-		if (c->on_read == 0 || (c->event & kRead) == 0) continue;
+		if (c->on_read == nullptr || (c->event & kRead) == 0) continue;
 
 		c->on_read(c->id, c->fd, kRead, c->param);
 
@@ -342,7 +342,7 @@ void Looper::step(void)
 	for (size_t i = 0; i < writeList.size(); i++)
 	{
 		channel_s* c = &(m_channelBuffer[writeList[i]]);
-		if (c->on_write == 0 || (c->event & kWrite) == 0) continue;
+		if (c->on_write == nullptr || (c->event & kWrite) == 0) continue;
 
 		c->on_write(c->id, c->fd, kWrite, c->param);
 
@@ -432,7 +432,7 @@ void Looper::_on_timer_event_callback(event_id_t id, socket_t fd, event_t event,
 //-------------------------------------------------------------------------------------
 void Looper::_touch_inner_pipe(void)
 {
-	if (m_inner_pipe==0) return;
+	if (m_inner_pipe == nullptr) return;
 
 	//just touch once!
 	if (m_inner_pipe_touched.exchange(1) != 0) return;

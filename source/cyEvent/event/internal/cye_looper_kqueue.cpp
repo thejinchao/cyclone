@@ -66,13 +66,13 @@ void Looper_kqueue::_poll(
         }
         channel_s* channel = &(m_channelBuffer[(uint32_t)(uintptr_t)ev.udata]);
         
-        if ((ev.filter==EVFILT_READ||ev.filter==EVFILT_TIMER) && channel->active && channel->on_read != 0)
+        if ((ev.filter==EVFILT_READ||ev.filter==EVFILT_TIMER) && channel->active && channel->on_read != nullptr)
         {
             //read event
             readChannelList.push_back(channel->id);
         }
         
-        if ((ev.filter ==EVFILT_WRITE) && channel->active && channel->on_write != 0)
+        if ((ev.filter ==EVFILT_WRITE) && channel->active && channel->on_write != nullptr)
         {
             //write event
             writeChannelList.push_back(channel->id);

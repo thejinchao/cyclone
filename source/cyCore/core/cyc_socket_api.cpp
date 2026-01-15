@@ -183,9 +183,9 @@ bool inet_ntop(const struct in_addr& a, char *dst, socklen_t size)
 	AUTO_INIT_WIN_SOCKET();
 	in_addr t;
 	memcpy(&t, &a, sizeof(t));
-	if (::InetNtop(AF_INET, &t, dst, size) == 0)
+	if (::InetNtop(AF_INET, &t, dst, size) == nullptr)
 #else
-	if (::inet_ntop(AF_INET, &a, dst, size) == 0)
+	if (::inet_ntop(AF_INET, &a, dst, size) == nullptr)
 #endif
 	{
 		CY_LOG(L_FATAL, "socket_api::inet_ntop, err=%d", get_lasterror());
@@ -334,7 +334,7 @@ int get_socket_error(socket_t sockfd)
 socket_t accept(socket_t s, struct sockaddr_in* addr)
 {
 	socklen_t addrlen = static_cast<socklen_t>(sizeof(sockaddr_in));
-	socket_t connfd = ::accept(s, (struct sockaddr *)addr, addr ? (&addrlen) : 0);
+	socket_t connfd = ::accept(s, (struct sockaddr *)addr, (addr ? (&addrlen) : nullptr));
 
 	if (connfd == INVALID_SOCKET)
 	{

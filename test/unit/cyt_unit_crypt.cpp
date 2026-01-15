@@ -19,8 +19,8 @@ TEST_CASE("Crypto algorithm(Adler32) basic test", "[Crypto][Adler32]")
 {
 	PRINT_CURRENT_TEST_NAME();
 
-	REQUIRE_EQ(INITIAL_ADLER, adler32(0, 0, 0));
-	REQUIRE_EQ(INITIAL_ADLER, adler32(0xFFFFFFFFul, 0, 0));
+	REQUIRE_EQ(INITIAL_ADLER, adler32(0, nullptr, 0));
+	REQUIRE_EQ(INITIAL_ADLER, adler32(0xFFFFFFFFul, nullptr, 0));
 
 	const char* hello = "Hello,World!";
 	uint32_t adler = adler32(INITIAL_ADLER, (const uint8_t*)hello, strlen(hello));

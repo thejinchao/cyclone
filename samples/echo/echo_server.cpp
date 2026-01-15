@@ -49,7 +49,7 @@ void onPeerMessage(TcpServer* server, int32_t thread_index, TcpConnectionPtr con
 	if (strcmp(temp, "shutdown") == 0) {
 		sys_api::thread_create_detached([server](void*) {
 			server->stop();
-		}, 0, nullptr);
+		}, nullptr, nullptr);
 		return;
 	}
 

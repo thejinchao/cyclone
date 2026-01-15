@@ -63,7 +63,7 @@ TcpConnectionPtr TcpServerWorkThread::get_connection(int32_t connection_id)
 	assert(is_in_workthread());
 
 	ConnectionMap::iterator it = m_connections.find(connection_id);
-	if (it == m_connections.end()) return 0;
+	if (it == m_connections.end()) return nullptr;
 	return it->second;
 }
 

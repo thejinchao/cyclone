@@ -54,7 +54,7 @@ void WorkThread::_work_thread(void* param)
 
 	//register pipe read event
 	m_looper->register_event(m_pipe.get_read_port(), Looper::kRead, this,
-		std::bind(&WorkThread::_on_message, this), 0);
+		std::bind(&WorkThread::_on_message, this), nullptr);
 
 	// set work thread ready signal
 	thread_param->_ready = 1;

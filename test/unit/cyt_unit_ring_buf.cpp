@@ -140,7 +140,7 @@ TEST_CASE("RingBuf basic test", "[RingBuf][Basic]")
 	{
 		RingBuf rb;
 		rb.memcpy_into(text_pattern, text_length);
-		REQUIRE_EQ(0ul, rb.memcpy_out(0, 0));
+		REQUIRE_EQ(0ul, rb.memcpy_out(nullptr, 0));
 
 		CHECK_RINGBUF_SIZE(rb, text_length, RingBuf::kDefaultCapacity);
 	}

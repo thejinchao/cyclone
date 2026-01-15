@@ -30,7 +30,7 @@ public:
 		m_server_port = server_port;
 
 		//start client thread
-		sys_api::thread_create_detached(std::bind(&EchoClient::clientThread, this), 0, "client");
+		sys_api::thread_create_detached(std::bind(&EchoClient::clientThread, this), nullptr, "client");
 		CY_LOG(L_DEBUG, "connect to %s:%d...", server_ip.c_str(), server_port);
 
 		//wait connect completed

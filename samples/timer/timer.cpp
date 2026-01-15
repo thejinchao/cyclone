@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 
 	int32_t counts = 0;
 
-	uint32_t id1 = looper->register_timer_event(1000-1, 0, [&counts] (uint32_t id, void*)  {
+	uint32_t id1 = looper->register_timer_event(1000-1, nullptr, [&counts] (uint32_t id, void*)  {
 		CY_LOG(L_INFO, "timer%d:counts=%d", id, ++counts);
 	});
 	uint32_t id2 = looper->register_timer_event(3000, looper, _timerFunction);
