@@ -7,6 +7,11 @@
 
 using namespace cyclone;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4127)
+#endif
+
 //-------------------------------------------------------------------------------------
 #define CHECK_RINQUEUE_EMPTY(rq, c) \
 	REQUIRE_EQ(0ul, rq.size()); \
@@ -677,3 +682,7 @@ TEST_CASE("RingQueue auto resize test", "[RingQueue][AutoResize]")
 		}
 	}
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
