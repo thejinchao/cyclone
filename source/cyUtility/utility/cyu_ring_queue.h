@@ -89,7 +89,7 @@ public:
 		while (pos != m_read) {
 			pos = _prev(pos);
 			if (!walk_func(index--, m_vector[pos])) return;
-		};
+		}
 	}
 
 private:

@@ -10,7 +10,7 @@ namespace cyclone
 
 enum LOG_LEVEL
 {
-	L_TRACE,
+	L_TRACE = 0,
 	L_DEBUG,
 	L_INFO,
 	L_WARN,

@@ -354,7 +354,7 @@ bool getsockname(socket_t s, struct sockaddr_in& addr)
 		Therefore, a buffer size of at least 32 bytes must be specified for the local and remote addresses.
 	*/
 	const socklen_t ADDR_BUF_SIZE_NEEDED = static_cast<socklen_t>(sizeof(sockaddr_in) + 64);
-	char addr_buf[ADDR_BUF_SIZE_NEEDED] = { 0 };
+	alignas(sockaddr) char addr_buf[ADDR_BUF_SIZE_NEEDED] = { 0 };
 	socklen_t addr_buf_size = ADDR_BUF_SIZE_NEEDED;
 
 	if (SOCKET_ERROR == ::getsockname(s, (struct sockaddr*)addr_buf, &addr_buf_size))

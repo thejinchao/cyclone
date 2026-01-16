@@ -119,8 +119,8 @@ const char* get_log_filename(void)
 //-------------------------------------------------------------------------------------
 void set_log_threshold(LOG_LEVEL level)
 {
-	assert(level >= 0 && level <= L_MAXIMUM_LEVEL);
-	if (level < 0 || level > L_MAXIMUM_LEVEL)return;
+	assert(level <= L_MAXIMUM_LEVEL);
+	if (level > L_MAXIMUM_LEVEL)return;
 
 	DiskLogFile& thefile = _get_disk_log();
 	sys_api::auto_mutex guard(thefile.lock);
@@ -131,8 +131,8 @@ void set_log_threshold(LOG_LEVEL level)
 //-------------------------------------------------------------------------------------
 void disk_log(LOG_LEVEL level, const char* message, ...)
 {
-	assert(level >= 0 && level < L_MAXIMUM_LEVEL);
-	if (level < 0 || level >= L_MAXIMUM_LEVEL)return;
+	assert(level < L_MAXIMUM_LEVEL);
+	if (level >= L_MAXIMUM_LEVEL)return;
 
 	DiskLogFile& thefile = _get_disk_log();
 	sys_api::auto_mutex guard(thefile.lock);

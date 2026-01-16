@@ -58,7 +58,7 @@ void RingBuf::memcpy_into(const void *src, size_t count)
 		resize(size() + count + 1);
 	}
 
-	char* csrc = (char*)src;
+	const char* csrc = (const char*)src;
 
 	//write data
 	size_t nwritten = 0;
