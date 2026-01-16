@@ -19,13 +19,13 @@ struct AutoPrintTestCaseName
 			snprintf(buffer, 64, "%" PRId64 " us", microseconds);
 		}
 		else if (microseconds < 1000ll * 1000ll) {
-			snprintf(buffer, 64, "%.2f ms", static_cast<float>(microseconds) / 1000.0f);
+			snprintf(buffer, 64, "%.2f ms", static_cast<double>(microseconds) / 1000.0);
 		}
 		else if (microseconds < 60ll * 1000ll * 1000ll) {
-			snprintf(buffer, 64, "%.2f s", static_cast<float>(microseconds) / (1000.0f * 1000.0f));
+			snprintf(buffer, 64, "%.2f s", static_cast<double>(microseconds) / (1000.0 * 1000.0));
 		}
 		else {
-			snprintf(buffer, 64, "%.2f min", static_cast<float>(microseconds) / (60.0f * 1000.0f * 1000.0f));
+			snprintf(buffer, 64, "%.2f min", static_cast<double>(microseconds) / (60.0 * 1000.0 * 1000.0));
 		}
 		return std::string(buffer);
 	}

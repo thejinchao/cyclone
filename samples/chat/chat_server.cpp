@@ -12,7 +12,7 @@ using namespace std::placeholders;
 
 enum { OPT_PORT, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
 	{ OPT_HELP, "--help", SO_NONE },	// "--help"

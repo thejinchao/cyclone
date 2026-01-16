@@ -14,7 +14,7 @@ using namespace std::placeholders;
 
 enum { OPT_HOST, OPT_PORT, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_HOST, "-h",     SO_REQ_SEP }, // "-h HOST_IP"
 	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
@@ -379,7 +379,7 @@ public:
 			CY_LOG(L_INFO, "Download speed: %s/s, Size:%s Percent:[%.2f%%]", 
 				string_util::size_to_string(downloadSpeed.first / ((size_t)m_downloadSpeed.get_time_period()/ (size_t)1000)).c_str(),
 				string_util::size_to_string(totalDownloadSize).c_str(),
-				(float)(totalDownloadSize*100 / m_fileSize));
+				static_cast<double>(totalDownloadSize)*100.0 / static_cast<double>(m_fileSize));
 
 			sys_api::thread_sleep(1000);
 		}

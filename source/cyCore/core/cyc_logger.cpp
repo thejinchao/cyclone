@@ -78,6 +78,10 @@ struct DiskLogFile
 		level_name[L_ERROR] = "[E]";
 		level_name[L_FATAL] = "[F]";
 	}
+	~DiskLogFile()
+	{
+		sys_api::mutex_destroy(lock);
+	}
 };
 
 //-------------------------------------------------------------------------------------

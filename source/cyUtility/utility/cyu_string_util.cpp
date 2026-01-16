@@ -10,21 +10,22 @@ std::string size_to_string(float s)
 {
 	char temp[64] = { 0 };
 
-	static const size_t KB = 1024;
-	static const size_t MB = 1024 * 1024;
-	static const size_t GB = 1024 * 1024 * 1024;
+	static const double KB = 1024.0;
+	static const double MB = 1024.0 * 1024.0;
+	static const double GB = 1024.0 * 1024.0 * 1024.0;
+	const double ds = static_cast<double>(s);
 
-	if (s < KB) {
-		std::snprintf(temp, 64, "%.2f ", s);
+	if (ds < KB) {
+		std::snprintf(temp, 64, "%.2f ", ds);
 	}
-	else if (s < MB) {
-		std::snprintf(temp, 64, "%.2f KB", (float)s / (float)(KB));
+	else if (ds < MB) {
+		std::snprintf(temp, 64, "%.2f KB", ds / KB);
 	}
-	else if (s < GB) {
-		std::snprintf(temp, 64, "%.2f MB", (float)s / (float)(MB));
+	else if (ds < GB) {
+		std::snprintf(temp, 64, "%.2f MB", ds / MB);
 	}
 	else {
-		std::snprintf(temp, 64, "%.2f GB", (float)s / (float)(GB));
+		std::snprintf(temp, 64, "%.2f GB", ds / GB);
 	}
 	
 	return std::string(temp);

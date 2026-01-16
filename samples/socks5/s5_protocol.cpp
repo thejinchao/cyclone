@@ -1,5 +1,7 @@
 #include "s5_protocol.h"
 
+using namespace cyclone;
+
 //-------------------------------------------------------------------------------------
 void s5_build_handshake_act(RingBuf& outputBuf)
 {
@@ -110,7 +112,6 @@ int32_t s5_get_connect_request(RingBuf& inputBuf, Address& address, std::string&
 
 	default:	//IP V6 address: X'04'(not supported)
 		return S5ERR_NOTSUPPORT;
-		break;
 	}
 
 	return S5ERR_SUCCESS;

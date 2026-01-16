@@ -37,7 +37,7 @@ public:
 	/// send message(thread safe after connected, NOT thread safe when connecting)
 	void send(const char* buf, size_t len);
 	/// get callback param(thread safe)
-	const void* get_param(void) const { return m_param; }
+	void* get_param(void) const { return m_param; }
 	/// get current connection state(thread safe);
 	TcpConnection::State get_connection_state(void) const;
 	/// Connection Owner type

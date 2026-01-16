@@ -42,8 +42,8 @@ TcpClient::~TcpClient()
 	sys_api::mutex_destroy(m_connection_lock);
 	m_connection_lock = nullptr;
 
-	RELEASE_EVENT(m_looper, m_socket_event_id);
-	RELEASE_EVENT(m_looper, m_retry_timer_id);
+	RELEASE_EVENT(m_looper, m_socket_event_id)
+	RELEASE_EVENT(m_looper, m_retry_timer_id)
 
 	if (m_connection) {
 		assert(m_connection->get_state() == TcpConnection::kDisconnected);
@@ -113,7 +113,7 @@ void TcpClient::_on_connect_status_changed(bool timeout)
 		//connect success!
 		
 		//remove from event system, taked by TcpConnection
-		RELEASE_EVENT(m_looper, m_socket_event_id);
+		RELEASE_EVENT(m_looper, m_socket_event_id)
 
 		//established the connection
 		m_connection = std::make_shared<TcpConnection>(m_id, m_socket, m_looper, this);
@@ -151,8 +151,8 @@ void TcpClient::_abort_connect(uint32_t retry_sleep_ms)
 	assert(sys_api::thread_get_current_id() == m_looper->get_thread_id());
 	assert(get_connection_state() == TcpConnection::kConnecting);
 
-	RELEASE_EVENT(m_looper, m_socket_event_id);
-	RELEASE_EVENT(m_looper, m_retry_timer_id);
+	RELEASE_EVENT(m_looper, m_socket_event_id)
+	RELEASE_EVENT(m_looper, m_retry_timer_id)
 
 	//close current socket
 	socket_api::close_socket(m_socket);
@@ -195,7 +195,7 @@ void TcpClient::_on_retry_connect_timer(Looper::event_id_t id)
 	assert(m_connection == nullptr);
 
 	//remove the timer
-	RELEASE_EVENT(m_looper, m_retry_timer_id);
+	RELEASE_EVENT(m_looper, m_retry_timer_id)
 
 	//connect again
 	if (!connect(m_serverAddr)) {
@@ -236,7 +236,9 @@ void TcpClient::send(const char* buf, size_t len)
 		m_connection->send(buf, len);
 	}
 		break;
-	default:
+
+	case TcpConnection::kDisconnecting:
+	case TcpConnection::kDisconnected:
 		break;
 	}
 	

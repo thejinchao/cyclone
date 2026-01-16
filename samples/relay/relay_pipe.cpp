@@ -10,7 +10,7 @@ using namespace std::placeholders;
 ////////////////////////////////////////////////////////////////////////////////////////////
 enum { OPT_PORT1, OPT_PORT2,  OPT_VERBOSE_MODE, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT1, "-p1",  SO_REQ_SEP },  // "-p1 FIRST_ADDR"
 	{ OPT_PORT2, "-p2",  SO_REQ_SEP },	// "-p2 SECOND_ADDR"
 	{ OPT_VERBOSE_MODE, "-v",  SO_NONE },	// "-v"

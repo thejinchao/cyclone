@@ -14,7 +14,7 @@ using namespace std::placeholders;
 ////////////////////////////////////////////////////////////////////////////////////////////
 enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP },  // "-p LISTEN_PORT"
 	{ OPT_UP_HOST, "-uh",  SO_REQ_SEP }, // "-uh UP_SERVER_HOST"
 	{ OPT_UP_PORT, "-up",  SO_REQ_SEP }, // "-up UP_SERVER_PORT"
@@ -39,11 +39,16 @@ public:
 		: m_id(id)
 		, m_downConnection(downConnection)
 	{
-
 	}
+
+	RelaySession(const RelaySession& other)
+		: m_id(other.m_id)
+		, m_downConnection(other.m_downConnection)
+	{
+	}
+
 	~RelaySession()
 	{
-
 	}
 };
 

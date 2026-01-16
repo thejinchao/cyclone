@@ -197,7 +197,7 @@ TEST_CASE("Signal rapid notify and wait", "[Signal][Stress]")
 //-------------------------------------------------------------------------------------
 struct CompetitorThreadData
 {
-	int32_t wait_time; //<0 means wait infinity
+	int32_t wait_time; // <0 means wait infinity
 	sys_api::signal_t signal;
 	atomic_int32_t* goal_counts;
 	atomic_bool_t* quit_signal;

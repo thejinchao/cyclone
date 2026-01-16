@@ -14,7 +14,7 @@ using namespace std::placeholders;
 ////////////////////////////////////////////////////////////////////////////////////////////
 enum { OPT_PORT, OPT_UP_HOST, OPT_UP_PORT, OPT_VERBOSE_MODE, OPT_ENCRYPT_MODE, OPT_THREADS, OPT_STATISTICS, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP },  // "-p LISTEN_PORT"
 	{ OPT_UP_HOST, "-uh",  SO_REQ_SEP }, // "-uh UP_SERVER_HOST"
 	{ OPT_UP_PORT, "-up",  SO_REQ_SEP }, // "-up UP_SERVER_PORT"
@@ -395,7 +395,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	uint32_t onServerConnected(TcpClientPtr client, TcpConnectionPtr conn, bool success)
 	{
-		RelayPipe* pipe = (RelayPipe*)(client->get_param());
+		const RelayPipe* pipe = (const RelayPipe*)(client->get_param());
 		if (pipe->m_downState != kHandshaked) return 0;
 
 		if (success) {
@@ -439,7 +439,7 @@ private:
 	//-------------------------------------------------------------------------------------
 	void onServerMessage(TcpClientPtr client, TcpConnectionPtr conn)
 	{
-		RelayPipe* pipe = (RelayPipe*)(client->get_param());
+		const RelayPipe* pipe = (const RelayPipe*)(client->get_param());
 		if (pipe->m_downState != kHandshaked) return;
 
 		int32_t id = conn->get_id();

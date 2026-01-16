@@ -5,7 +5,6 @@
 
 using namespace cyclone;
 
-namespace {
 //-------------------------------------------------------------------------------------
 TEST_CASE("Pipe basic test", "[Pipe][Basic]")
 {
@@ -162,6 +161,4 @@ TEST_CASE("Pipe multi thread test", "[Pipe][MultiThread]")
 	//join
 	sys_api::thread_join(pop_thread);
 	sys_api::thread_join(push_thread);
-}
-
 }

@@ -16,7 +16,7 @@ using namespace std::placeholders;
 ////////////////////////////////////////////////////////////////////////////////////////////
 enum { OPT_PORT, OPT_THREADS, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
 	{ OPT_THREADS, "-t",  SO_REQ_SEP }, // "-t THREAD_COUNTS"
 	{ OPT_HELP, "-?",     SO_NONE },	// "-?"
@@ -114,6 +114,16 @@ public:
 		, m_localConnection(localConnection)
 	{
 	}
+	S5Tunnel(const S5Tunnel& other)
+		: m_state(other.m_state)
+		, m_localServer(other.m_localServer)
+		, m_looper(other.m_looper)
+		, m_remoteConnection(other.m_remoteConnection)
+		, m_localConnection(other.m_localConnection)
+		, m_address(other.m_address)
+	{
+
+	}
 	~S5Tunnel() {
 		if (m_remoteConnection) {
             assert(m_remoteConnection.use_count()==1);
@@ -186,7 +196,7 @@ private:
 		S5ThreadContext& threadContext = m_threadContext[(size_t)thread_index];
         
 		threadContext.set_looper(server, looper);
-	};
+	}
 
 	//-------------------------------------------------------------------------------------
 	void onPeerConnected(TcpServer*, int32_t thread_index, TcpConnectionPtr conn)

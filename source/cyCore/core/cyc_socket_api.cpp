@@ -209,9 +209,9 @@ ssize_t write(socket_t s, const char* buf, size_t len)
 ssize_t sendto(socket_t s, const char* buf, size_t len, const struct sockaddr_in& peer_addr)
 {
 #ifdef CY_SYS_WINDOWS
-	ssize_t _len = ::sendto(s, buf, (int32_t)len, 0, (struct sockaddr*)&peer_addr, (int32_t)sizeof(peer_addr));
+	ssize_t _len = ::sendto(s, buf, (int32_t)len, 0, (const struct sockaddr*)&peer_addr, (int32_t)sizeof(peer_addr));
 #else
-	ssize_t _len = ::sendto(s, buf, len, 0, (struct sockaddr*)&peer_addr, (socklen_t)sizeof(peer_addr));
+	ssize_t _len = ::sendto(s, buf, len, 0, (const struct sockaddr*)&peer_addr, (socklen_t)sizeof(peer_addr));
 #endif
 	return _len;
 }

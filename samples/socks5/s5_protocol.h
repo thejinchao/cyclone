@@ -3,8 +3,6 @@
 #include <cy_core.h>
 #include <cy_network.h>
 
-using namespace cyclone;
-
 //all socks5 function return value
 #define S5ERR_SUCCESS			(0)
 #define S5ERR_NEED_MORE_DATA	(-1)
@@ -42,7 +40,7 @@ using namespace cyclone;
 * o  X'FF' NO ACCEPTABLE METHODS
 *
 */
-int32_t s5_get_handshake(RingBuf& inputBuf);
+int32_t s5_get_handshake(cyclone::RingBuf& inputBuf);
 
 /*Build version packet ack in buf
 *
@@ -57,7 +55,7 @@ int32_t s5_get_handshake(RingBuf& inputBuf);
 * +----+--------+
 *
 */
-void s5_build_handshake_act(RingBuf& outputBuf);
+void s5_build_handshake_act(cyclone::RingBuf& outputBuf);
 
 /* Test request packet in buf, and execute the request
 *
@@ -91,7 +89,7 @@ void s5_build_handshake_act(RingBuf& outputBuf);
 *	 order
 *
 */
-int32_t s5_get_connect_request(RingBuf& inputBuf, Address& address, std::string& domain);
+int32_t s5_get_connect_request(cyclone::RingBuf& inputBuf, cyclone::Address& address, std::string& domain);
 
 /*Build request packet ack in buf
 *
@@ -126,4 +124,4 @@ int32_t s5_get_connect_request(RingBuf& inputBuf, Address& address, std::string&
 * o  BND.PORT       server bound port in network octet order
 *
 */
-void s5_build_connect_act(RingBuf& outputBuf, uint8_t reply, const Address& address);
+void s5_build_connect_act(cyclone::RingBuf& outputBuf, uint8_t reply, const cyclone::Address& address);

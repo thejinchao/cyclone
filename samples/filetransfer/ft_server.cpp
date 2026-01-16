@@ -15,7 +15,7 @@ using namespace std::placeholders;
 
 enum { OPT_PORT, OPT_FILE_PATH, OPT_THREADS, OPT_HELP };
 
-CSimpleOptA::SOption g_rgOptions[] = {
+static CSimpleOptA::SOption g_rgOptions[] = {
 	{ OPT_PORT, "-p",     SO_REQ_SEP }, // "-p LISTEN_PORT"
 	{ OPT_FILE_PATH, "-f",  SO_REQ_SEP }, // "-f FILE_PATH"
 	{ OPT_THREADS, "-t",  SO_REQ_SEP }, // "-t THREAD_COUNTS"
