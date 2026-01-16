@@ -45,7 +45,7 @@ public: //call by TcpServer Only
 	//// get connection(NOT thread safe, MUST call in work thread)
 	TcpConnectionPtr get_connection(int32_t connection_id);
 	/// Connection Owner type
-	virtual OWNER_TYPE get_connection_owner_type(void) const { return kServer; }
+	virtual OWNER_TYPE get_connection_owner_type(void) const override { return kServer; }
 
 private:
 	TcpServer*		m_server;

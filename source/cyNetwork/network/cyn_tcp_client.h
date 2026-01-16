@@ -41,7 +41,7 @@ public:
 	/// get current connection state(thread safe);
 	TcpConnection::State get_connection_state(void) const;
 	/// Connection Owner type
-	virtual OWNER_TYPE get_connection_owner_type(void) const { return kClient; }
+	virtual OWNER_TYPE get_connection_owner_type(void) const override { return kClient; }
 
 private:
 	int m_id;

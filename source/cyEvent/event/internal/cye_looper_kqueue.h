@@ -22,10 +22,10 @@ public:
 	virtual void _poll( 
 		channel_list& readChannelList,
 		channel_list& writeChannelList,
-		bool block);
+		bool block) override;
 	/// Changes the interested I/O events.
-	virtual void _update_channel_add_event(channel_s& channel, event_t event);
-	virtual void _update_channel_remove_event(channel_s& channel, event_t event);
+	virtual void _update_channel_add_event(channel_s& channel, event_t event) override;
+	virtual void _update_channel_remove_event(channel_s& channel, event_t event) override;
 
 private:
     typedef std::vector<struct kevent> kevent_list;
@@ -43,7 +43,7 @@ private:
     
 public:
 	Looper_kqueue();
-	virtual ~Looper_kqueue();
+	virtual ~Looper_kqueue() override;
 };
 
 }

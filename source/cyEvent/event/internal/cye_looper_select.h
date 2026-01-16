@@ -15,10 +15,10 @@ protected:
 	virtual void _poll(
 		channel_list& readChannelList,
 		channel_list& writeChannelList,
-		bool block);
+		bool block) override;
 	/// Changes the interested I/O events.
-	virtual void _update_channel_add_event(channel_s& channel, event_t event);
-	virtual void _update_channel_remove_event(channel_s& channel, event_t event);
+	virtual void _update_channel_add_event(channel_s& channel, event_t event) override;
+	virtual void _update_channel_remove_event(channel_s& channel, event_t event) override;
 
 private:
 	fd_set	m_master_read_fd_set;
@@ -46,7 +46,7 @@ private:
 
 public:
 	Looper_select();
-	virtual ~Looper_select();
+	virtual ~Looper_select() override;
 };
 
 }
