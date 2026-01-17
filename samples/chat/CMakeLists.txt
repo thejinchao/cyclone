@@ -8,7 +8,6 @@ include_directories(
 	${CY_SOURCE_EVENT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
 	${CY_SOURCE_UTILITY_PATH}
-	${CY_UTILITY_PATH}/SimpleOpt
 )
 
 add_executable(chat-server chat_server.cpp)

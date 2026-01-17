@@ -9,7 +9,6 @@ include_directories(
 	${CY_SOURCE_CRYPT_PATH}
 	${CY_SOURCE_NETWORK_PATH}
 	${CY_SOURCE_UTILITY_PATH}
-	${CY_UTILITY_PATH}/SimpleOpt
 )
 add_executable(relay_local
     relay_local.cpp
