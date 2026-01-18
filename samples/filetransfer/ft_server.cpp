@@ -95,7 +95,7 @@ private:
 			float speed = ctx->sendSpeed.load();
 
 			char temp[256] = { 0 };
-			std::snprintf(temp, 256, "[%zd]%s/s ", i, string_util::size_to_string(speed).c_str());
+			std::snprintf(temp, 256, "[%zu]%s/s ", i, string_util::size_to_string(speed).c_str());
 			speedStatus += temp;
 		}
 
