@@ -75,10 +75,32 @@ message(STATUS "Cyclone Version: ${CYCLONE_VERSION}")
 ########
 #compiler flag
 ########
-if(MSVC)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-else()
-	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Werror -Wconversion -Wno-unused-parameter	-Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -Wno-sign-conversion")
+
+set(CMAKE_CXX_STANDARD 11)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	message("MSVC detected")
+	add_compile_options(/W4 /WX)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message("GCC detected")
+	add_compile_options(-O2 -Wall -Wextra -Werror 
+		-Wconversion -Wno-unused-parameter -Woverloaded-virtual 
+		-Wpointer-arith -Wshadow -Wwrite-strings -Wsign-conversion
+		-pedantic
+	)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	message("Clang detected")
+	add_compile_options(-O2 -Wall -Wextra -Werror 
+		-Wconversion -Wno-unused-parameter -Woverloaded-virtual 
+		-Wpointer-arith -Wshadow -Wwrite-strings -Wsign-conversion 
+		-Weverything
+		-Wno-c++98-compat -Wno-c++98-compat-pedantic
+		-Wno-unsafe-buffer-usage -Wno-missing-prototypes -Wno-padded
+		-Wno-cast-align -Wno-non-virtual-dtor -Wno-format-nonliteral
+		-Wno-exit-time-destructors -Wno-reserved-identifier
+		-Wno-extra-semi-stmt -Wno-unused-macros -Wno-switch-default -Wno-switch-enum
+		-Wno-weak-vtables -Wno-float-equal -Wno-old-style-cast
+	)
 endif()
 
 ########
@@ -91,14 +113,6 @@ elseif(CY_SYS_WINDOWS)
 	set(CY_SYSTEM_LIBRARIES ws2_32.lib shlwapi.lib winmm.lib)
 elseif(CY_SYS_MACOS)
 elseif(CY_SYS_ANDROID)
-endif()
-
-#defined in $ANDROID_SDK_ROOT/build/cmake/android.toolchain.cmake
-if(CY_SYS_ANDROID)
-unset(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM)
-unset(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY)
-unset(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE)
-unset(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
 endif()
 
 ########
