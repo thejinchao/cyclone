@@ -22,7 +22,7 @@ public:
 	{
 		enum { ID = kCloseConnectionCmdID };
 		int32_t conn_id;
-		int32_t shutdown_ing;
+		bool server_shutdown_ing;
 	};
 
 	struct ShutdownCmd
@@ -30,7 +30,10 @@ public:
 		enum { ID = kShutdownCmdID };
 	};
 
-public: //call by TcpServer Only
+private:
+	//call by TcpServer Only
+	friend class TcpServer;
+
 	//// send message to this work thread (thread safe)
 	void send_thread_message(uint16_t id, uint16_t size, const char* message);
 	void send_thread_message(const Packet* message);
@@ -46,7 +49,6 @@ public: //call by TcpServer Only
 	TcpConnectionPtr get_connection(int32_t connection_id);
 	/// Connection Owner type
 	virtual OWNER_TYPE get_connection_owner_type(void) const override { return kServer; }
-
 private:
 	TcpServer*		m_server;
 	const int32_t	m_index;

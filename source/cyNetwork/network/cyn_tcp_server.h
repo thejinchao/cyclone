@@ -39,6 +39,20 @@ public:
 		EventCallback on_close;
 	};
 	Listener m_listener;
+	
+public:
+	/*
+	* TcpServer state
+	* 
+	*  	 kStopped ---------> kRunning ---------> kStopping
+	*		^				                        |
+	*		|				                        |
+	*		-----------------------------------------
+	*/
+	enum State { kStopped = 0, kRunning, kStopping };
+
+	/// get current state(thread safe)
+	State get_state(void) const;
 
 public:
 	/// add a bind port, return false means too much port has been binded or bind failed
@@ -93,8 +107,8 @@ private:
 	int32_t			m_workthread_counts;
 	atomic_int32_t	m_next_workthread_id;
 
-	atomic_int32_t m_running;
-	atomic_int32_t m_shutdown_ing;
+	// server state
+	std::atomic<State>	m_state;
 
 	enum { kStartConnectionID = 1 };
 	atomic_int32_t m_next_connection_id;

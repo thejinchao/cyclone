@@ -141,7 +141,7 @@ void TcpServerWorkThread::_on_workthread_message(Packet* message)
 		}
 
 		//if all connection is shutdown, and server is in shutdown process, quit the loop
-		if (m_connections.empty() && closeConnectionCmd.shutdown_ing > 0) {
+		if (m_connections.empty() && closeConnectionCmd.server_shutdown_ing) {
 			//push loop quit command
 			m_work_thread->get_looper()->push_stop_request();
 			return;

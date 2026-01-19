@@ -30,7 +30,10 @@ public:
 		size_t index;
 	};
 
-public: //call by TcpServer Only
+private:
+	//call by TcpServer Only
+	friend class TcpServer;
+
 	//// send message to this work thread (thread safe)
 	void send_thread_message(uint16_t id, uint16_t size, const char* message);
 	void send_thread_message(const Packet* message);

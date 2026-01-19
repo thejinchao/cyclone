@@ -210,7 +210,7 @@ void TcpServerMasterThread::_on_accept_event(Looper::event_id_t id, socket_t fd,
 	(void)event;
 
 	//is shutdown in processing?		
-	if (m_server->m_shutdown_ing.load() > 0) return;
+	if (m_server->get_state() != TcpServer::State::kRunning) return;
 
 	//call accept and create peer socket		
 	socket_t connfd = socket_api::accept(fd, nullptr);

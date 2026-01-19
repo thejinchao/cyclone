@@ -16,8 +16,7 @@ TcpServer::TcpServer()
 	: m_master_thread(nullptr)
 	, m_workthread_counts(0)
 	, m_next_workthread_id(0)
-	, m_running(0)
-	, m_shutdown_ing(0)
+	, m_state(kStopped)
 	, m_next_connection_id(kStartConnectionID)  //start from 1
 {
 	m_listener.on_master_thread_start = nullptr;
@@ -36,7 +35,7 @@ TcpServer::TcpServer()
 //-------------------------------------------------------------------------------------
 TcpServer::~TcpServer()
 {
-	assert(m_running.load()==0);
+	assert(get_state() != State::kRunning);
 	if (m_master_thread)
 	{
 		delete m_master_thread;
@@ -45,10 +44,16 @@ TcpServer::~TcpServer()
 }
 
 //-------------------------------------------------------------------------------------
+TcpServer::State TcpServer::get_state(void) const
+{
+	return m_state.load();
+}
+
+//-------------------------------------------------------------------------------------
 bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
 {
 	//is running already?
-	if (m_running > 0) return false;
+	if (get_state() != State::kStopped) return false;
 
 	return m_master_thread->bind_socket(bind_addr, enable_reuse_port);
 }
@@ -64,7 +69,12 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	//is running already?
-	if (m_running.exchange(1) > 0) return false;
+	State expectedState = State::kStopped;
+	if(m_state.compare_exchange_strong(expectedState, State::kRunning)==false)
+	{
+		CY_LOG(L_ERROR, "server is running already");
+		return false;
+	}
 
 	//start work thread pool
 	m_workthread_counts = work_thread_counts;
@@ -90,7 +100,8 @@ Address TcpServer::get_bind_address(size_t index)
 //-------------------------------------------------------------------------------------
 void TcpServer::stop_listen(size_t index)
 {
-	assert(m_running.load()>0 && m_master_thread);
+	assert(get_state() == State::kRunning);
+	assert(m_master_thread);
 	assert(index<m_master_thread->get_bind_socket_size());
 	if (index >= m_master_thread->get_bind_socket_size()) return;
 
@@ -103,17 +114,22 @@ void TcpServer::stop_listen(size_t index)
 //-------------------------------------------------------------------------------------
 void TcpServer::stop(void)
 {
-	//not running?
-	if (m_running == 0) return;
-	//is shutdown in processing?
-	if (m_shutdown_ing.exchange(1) > 0)return;
-
 	//this function can't run in work thread
-	for (auto work : m_work_thread_pool){
-		if (work->is_in_workthread()){
+	for (auto work : m_work_thread_pool) 
+	{
+		if (work->is_in_workthread()) 
+		{
 			CY_LOG(L_ERROR, "you can't stop server in work thread.");
 			return;
 		}
+	}
+
+	//must be running
+	State expectedState = State::kRunning;
+	if(m_state.compare_exchange_strong(expectedState, State::kStopping)==false)
+	{
+		CY_LOG(L_ERROR, "server is not running.");
+		return;
 	}
 
 	//shutdown the the master thread
@@ -121,7 +137,8 @@ void TcpServer::stop(void)
 	m_master_thread->send_thread_message(TcpServerMasterThread::ShutdownCmd::ID, sizeof(shutdownCmd), (const char*)&shutdownCmd);
 
 	//shutdown all connection
-	for (auto work : m_work_thread_pool){
+	for (auto work : m_work_thread_pool)
+	{
 		work->send_thread_message(TcpServerWorkThread::ShutdownCmd::ID, 0, nullptr);
 	}
 }
@@ -155,7 +172,7 @@ void TcpServer::join(void)
 		delete work;
 	}
 	m_work_thread_pool.clear();
-	m_running = 0;
+	m_state = State::kStopped;
 
 	CY_LOG(L_DEBUG, "accept thread stop!");
 }
@@ -167,7 +184,7 @@ void TcpServer::shutdown_connection(TcpConnectionPtr conn)
 
 	TcpServerWorkThread::CloseConnectionCmd closeConnectionCmd;
 	closeConnectionCmd.conn_id = conn->get_id();
-	closeConnectionCmd.shutdown_ing = m_shutdown_ing;
+	closeConnectionCmd.server_shutdown_ing = (get_state()==State::kStopping);
 	work->send_thread_message(TcpServerWorkThread::CloseConnectionCmd::ID, sizeof(closeConnectionCmd), (const char*)&closeConnectionCmd);
 }
 
