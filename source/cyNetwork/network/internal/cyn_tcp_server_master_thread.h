@@ -14,9 +14,24 @@ class TcpServerMasterThread : noncopyable
 public:
 	//accept thread command
 	enum { 
-		kShutdownCmdID = 1, kStopListenCmdID, 
+		kBindSocketCmdID = 1, 
+		kStopBindSocketCmdID,
+		kShutdownCmdID,
 
 		kCustomCmdID_Begin = TcpServer::kCustomMasterThreadCmdID_Begin,
+	};
+
+	struct BindSocketCmd
+	{
+		enum { ID = kBindSocketCmdID };
+		socket_t sfd;
+		Address address;
+	};
+
+	struct StopBindSocketCmd
+	{
+		enum { ID = kStopBindSocketCmdID };
+		Address address;
 	};
 
 	struct ShutdownCmd
@@ -24,41 +39,34 @@ public:
 		enum { ID = kShutdownCmdID };
 	};
 
-	struct StopListenCmd
-	{
-		enum { ID = kStopListenCmdID };
-		size_t index;
-	};
-
 private:
 	//call by TcpServer Only
 	friend class TcpServer;
 
-	//// send message to this work thread (thread safe)
+	// send message to this work thread (thread safe)
 	void send_thread_message(uint16_t id, uint16_t size, const char* message);
 	void send_thread_message(const Packet* message);
 	void send_thread_message(const Packet** message, int32_t counts);
 
-	// add a binded socket(called by TcpServer only!)
-	bool bind_socket(const Address& bind_addr, bool enable_reuse_port);
+	// bind new address
+	bool bind(const Address& addr, bool enable_reuse_port);
+	// stop listen binded address(thread safe)
+	bool stop_bind(const Address& addr);
+	// remove binded address(NOT thread safe, must call in master thread or before master thread running)
+	bool remove_bind_address(const Address& addr);
+
 	// start master thread
 	bool start(void);
-	/// get bind address(called by TcpServer only!)
-	Address get_bind_address(size_t index);
-	/// get bind socket size
-	size_t get_bind_socket_size(void) const {
-		return m_acceptor_sockets.size();
-	}
-
-	//// join work thread(thread safe)
+	// join work thread(thread safe)
 	void join(void);
 
 private:
 	TcpServer*	m_server;
 	WorkThread	m_master_thread;
 
-	typedef std::vector< std::tuple<socket_t, Looper::event_id_t> > SocketVector;
-	SocketVector m_acceptor_sockets;
+	typedef std::list< std::tuple<socket_t, Looper::event_id_t, Address>> SocketList;
+	SocketList m_acceptor_sockets;
+	sys_api::mutex_t m_acceptor_sockets_mutex;
 
 private:
 	/// master thread function start

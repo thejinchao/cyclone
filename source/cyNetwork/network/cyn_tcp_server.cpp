@@ -50,12 +50,28 @@ TcpServer::State TcpServer::get_state(void) const
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpServer::bind(const Address& bind_addr, bool enable_reuse_port)
+bool TcpServer::bind(const Address& addr, bool enable_reuse_port)
 {
-	//is running already?
-	if (get_state() != State::kStopped) return false;
+	if (get_state() == State::kStopping)
+	{
+		//stopping, can't bind any more address
+		CY_LOG(L_ERROR, "server is stopping, can't bind new address");
+		return false;
+	}
+	return m_master_thread->bind(addr, enable_reuse_port);
+}
 
-	return m_master_thread->bind_socket(bind_addr, enable_reuse_port);
+//-------------------------------------------------------------------------------------
+bool TcpServer::stop_bind(const Address& addr)
+{
+	if (get_state() == State::kStopping)
+	{
+		//stopping, can't stop bind address
+		CY_LOG(L_ERROR, "server is stopping, can't stop bind address");
+		return false;
+	}
+	//send stop listen cmd to master thread
+	return m_master_thread->stop_bind(addr);
 }
 
 //-------------------------------------------------------------------------------------
@@ -89,26 +105,6 @@ bool TcpServer::start(int32_t work_thread_counts)
 	}
 
 	return true;
-}
-
-//-------------------------------------------------------------------------------------
-Address TcpServer::get_bind_address(size_t index)
-{
-	return m_master_thread->get_bind_address(index);
-}
-
-//-------------------------------------------------------------------------------------
-void TcpServer::stop_listen(size_t index)
-{
-	assert(get_state() == State::kRunning);
-	assert(m_master_thread);
-	assert(index<m_master_thread->get_bind_socket_size());
-	if (index >= m_master_thread->get_bind_socket_size()) return;
-
-	//send stop listen cmd to master thread
-	TcpServerMasterThread::StopListenCmd cmd;
-	cmd.index = index;
-	m_master_thread->send_thread_message(TcpServerMasterThread::StopListenCmd::ID, sizeof(cmd), (const char*)&cmd);
 }
 
 //-------------------------------------------------------------------------------------

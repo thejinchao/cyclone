@@ -55,9 +55,11 @@ public:
 	State get_state(void) const;
 
 public:
-	/// add a bind port, return false means too much port has been binded or bind failed
-	// NOT thread safe, and this function must be called before start the server
-	bool bind(const Address& bind_addr, bool enable_reuse_port=true);
+	/// add a bind port, return false means too much port has been binded or bind failed( thread safe)
+	bool bind(const Address& addr, bool enable_reuse_port=true);
+
+	/// stop listen binded address (thread safe)
+	bool stop_bind(const Address& addr);
 
 	/// start the server(start one accept thread and n work threads)
 	/// (thread safe, but you wouldn't want call it again...)
@@ -72,12 +74,6 @@ public:
 
 	/// shutdown one of connection(thread safe)
 	void shutdown_connection(TcpConnectionPtr conn);
-
-	/// get bind address, if index is invalid return default Address value
-	Address get_bind_address(size_t index);
-
-	/// stop listen binded port(thread safe, after start the server)
-	void stop_listen(size_t index);
 
 	/// send message to master thread(thread safe)
 	void send_master_message(uint16_t id, uint16_t size, const char* message);

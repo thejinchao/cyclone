@@ -12,12 +12,14 @@ TcpServerMasterThread::TcpServerMasterThread(TcpServer* server)
 	: m_server(server)
 {
 	assert(m_server);
+	m_acceptor_sockets_mutex = sys_api::mutex_create();
 }
 
 //-------------------------------------------------------------------------------------
 TcpServerMasterThread::~TcpServerMasterThread()
 {
 	assert(m_acceptor_sockets.empty());
+	sys_api::mutex_destroy(m_acceptor_sockets_mutex);
 }
 
 //-------------------------------------------------------------------------------------
@@ -43,12 +45,8 @@ void TcpServerMasterThread::send_thread_message(const Packet** message, int32_t 
 }
 
 //-------------------------------------------------------------------------------------
-bool TcpServerMasterThread::bind_socket(const Address& bind_addr, bool enable_reuse_port)
+bool TcpServerMasterThread::bind(const Address& bind_addr, bool enable_reuse_port)
 {
-	//must bind socket before run master thread
-	assert(!m_master_thread.is_running());
-	if (m_master_thread.is_running()) return false;
-
 	//create a non blocking socket
 	socket_t sfd = socket_api::create_socket();
 	if (sfd == INVALID_SOCKET) {
@@ -85,7 +83,21 @@ bool TcpServerMasterThread::bind_socket(const Address& bind_addr, bool enable_re
 	}
 
 	CY_LOG(L_DEBUG, "bind to address %s:%d ok", bind_addr.get_ip(), bind_addr.get_port());
-	m_acceptor_sockets.push_back(std::make_tuple(sfd, Looper::INVALID_EVENT_ID));
+
+	if (m_master_thread.is_running())
+	{
+		//is running, send bind cmd to master thread
+		TcpServerMasterThread::BindSocketCmd bindCmd;
+		bindCmd.sfd = sfd;
+		bindCmd.address = bind_addr;
+		m_master_thread.send_message(BindSocketCmd::ID, sizeof(bindCmd), (const char*)&bindCmd);
+	}
+	else
+	{
+		//not running, add to acceptor socket list directly
+		sys_api::auto_mutex lock(m_acceptor_sockets_mutex);
+		m_acceptor_sockets.push_back(std::make_tuple(sfd, Looper::INVALID_EVENT_ID, bind_addr));
+	}
 
 	return true;
 }
@@ -104,36 +116,77 @@ bool TcpServerMasterThread::start(void)
 }
 
 //-------------------------------------------------------------------------------------
-Address TcpServerMasterThread::get_bind_address(size_t index)
+bool TcpServerMasterThread::stop_bind(const Address& addr)
 {
-	Address address;
-	if (index >= m_acceptor_sockets.size()) return address;
+	if (m_master_thread.is_running())
+	{
+		//send stop bind cmd to master thread
+		TcpServerMasterThread::StopBindSocketCmd cmd;
+		cmd.address = addr;
+		m_master_thread.send_message(TcpServerMasterThread::StopBindSocketCmd::ID, sizeof(cmd), (const char*)&cmd);
+		return true;
+	}
 
-	sockaddr_in addr;
-	socket_api::getsockname(std::get<0>(m_acceptor_sockets[index]), addr);
+	//remove bind address directly
+	return remove_bind_address(addr);
+}
 
-	return Address(addr);
+//-------------------------------------------------------------------------------------
+bool TcpServerMasterThread::remove_bind_address(const Address & addr)
+{
+	sys_api::auto_mutex lock(m_acceptor_sockets_mutex);
+
+	Looper* looper = m_master_thread.get_looper();
+	for (auto it = m_acceptor_sockets.begin(); it != m_acceptor_sockets.end(); ++it)
+	{
+		socket_t sfd = std::get<0>(*it);
+		Looper::event_id_t& event_id = std::get<1>(*it);
+		Address& bind_addr = std::get<2>(*it);
+
+		if (bind_addr == addr)
+		{
+			//disable event
+			if (event_id != Looper::INVALID_EVENT_ID)
+			{
+				looper->delete_event(event_id);
+				event_id = Looper::INVALID_EVENT_ID;
+			}
+			if (sfd != INVALID_SOCKET)
+			{
+				socket_api::close_socket(sfd);
+				sfd = INVALID_SOCKET;
+			}
+
+			m_acceptor_sockets.erase(it);
+			return true;
+		}
+	}
+	//not found
+	return false;
 }
 
 //-------------------------------------------------------------------------------------
 bool TcpServerMasterThread::_on_thread_start(void)
 {
 	int32_t counts = 0;
-	for (auto& listen_socket : m_acceptor_sockets)
 	{
-		socket_t sfd = std::get<0>(listen_socket);
-		auto& event_id = std::get<1>(listen_socket);
+		sys_api::auto_mutex lock(m_acceptor_sockets_mutex);
+		for (auto& listen_socket : m_acceptor_sockets)
+		{
+			socket_t sfd = std::get<0>(listen_socket);
+			auto& event_id = std::get<1>(listen_socket);
 
-		//register accept event
-		event_id = m_master_thread.get_looper()->register_event(sfd,
-			Looper::kRead,
-			this,
-			std::bind(&TcpServerMasterThread::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-			nullptr);
+			//register accept event
+			event_id = m_master_thread.get_looper()->register_event(sfd,
+				Looper::kRead,
+				this,
+				std::bind(&TcpServerMasterThread::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+				nullptr);
 
-		//begin listen
-		socket_api::listen(sfd);
-		counts++;
+			//begin listen
+			socket_api::listen(sfd);
+			counts++;
+		}
 	}
 
 	CY_LOG(L_DEBUG, "tcp master thread run, listen %d port(s)", counts);
@@ -152,19 +205,24 @@ void TcpServerMasterThread::_on_thread_message(Packet* message)
 	assert(message);
 
 	uint16_t msg_id = message->get_packet_id();
-	if (msg_id == ShutdownCmd::ID) {
+	if (msg_id == ShutdownCmd::ID) 
+	{
+		sys_api::auto_mutex lock(m_acceptor_sockets_mutex);
 		Looper* looper = m_master_thread.get_looper();
 
 		//close all listen socket(s)
-		for (auto listen_socket : m_acceptor_sockets) {
+		for (auto listen_socket : m_acceptor_sockets) 
+		{
 			auto& sfd = std::get<0>(listen_socket);
 			auto& event_id = std::get<1>(listen_socket);
 
-			if (event_id != Looper::INVALID_EVENT_ID) {
+			if (event_id != Looper::INVALID_EVENT_ID) 
+			{
 				looper->delete_event(event_id);
 				event_id = Looper::INVALID_EVENT_ID;
 			}
-			if (sfd != INVALID_SOCKET) {
+			if (sfd != INVALID_SOCKET) 
+			{
 				socket_api::close_socket(sfd);
 				sfd = INVALID_SOCKET;
 			}
@@ -174,30 +232,41 @@ void TcpServerMasterThread::_on_thread_message(Packet* message)
 		//stop looper
 		looper->push_stop_request();
 	}
-	else if (msg_id == StopListenCmd::ID) {
-		assert(message->get_packet_size() == sizeof(StopListenCmd));
-		StopListenCmd stopListenCmd;
-		memcpy(&stopListenCmd, message->get_packet_content(), sizeof(stopListenCmd));
+	else if (msg_id == BindSocketCmd::ID)
+	{
+		assert(message->get_packet_size() == sizeof(BindSocketCmd));
+		BindSocketCmd bindSocketCmd;
+		memcpy(&bindSocketCmd, message->get_packet_content(), sizeof(bindSocketCmd));
 
-		Looper* looper = m_master_thread.get_looper();
-		auto& listen_socket = m_acceptor_sockets[stopListenCmd.index];
-		auto& sfd = std::get<0>(listen_socket);
-		auto& event_id = std::get<1>(listen_socket);
+		//register accept event
+		Looper::event_id_t event_id = m_master_thread.get_looper()->register_event(bindSocketCmd.sfd,
+			Looper::kRead,
+			this,
+			std::bind(&TcpServerMasterThread::_on_accept_event, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+			nullptr);
 
-		//disable event
-		if (event_id != Looper::INVALID_EVENT_ID) {
-			looper->delete_event(event_id);
-			event_id = Looper::INVALID_EVENT_ID;
-		}
-		//close socket
-		if (sfd != INVALID_SOCKET) {
-			socket_api::close_socket(sfd);
-			sfd = INVALID_SOCKET;
+		//begin listen
+		socket_api::listen(bindSocketCmd.sfd);
+
+		//add to acceptor socket list
+		{
+			sys_api::auto_mutex lock(m_acceptor_sockets_mutex);
+			m_acceptor_sockets.push_back(std::make_tuple(bindSocketCmd.sfd, event_id, bindSocketCmd.address));
 		}
 	}
-	else if (msg_id >= kCustomCmdID_Begin) {
+	else if (msg_id == StopBindSocketCmd::ID)
+	{
+		assert(message->get_packet_size() == sizeof(StopBindSocketCmd));
+		StopBindSocketCmd stopBindSocketCmd;
+		memcpy(&stopBindSocketCmd, message->get_packet_content(), sizeof(stopBindSocketCmd));
+
+		remove_bind_address(stopBindSocketCmd.address);
+	}
+	else if (msg_id >= kCustomCmdID_Begin) 
+	{
 		//extra message
-		if (m_server->m_listener.on_master_thread_command) {
+		if (m_server->m_listener.on_master_thread_command) 
+		{
 			m_server->m_listener.on_master_thread_command(m_server, message);
 		}
 	}
