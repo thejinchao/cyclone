@@ -26,12 +26,18 @@ public:
 		enum { ID = kBindSocketCmdID };
 		socket_t sfd;
 		Address address;
+
+		//trivial copy-assignment
+		BindSocketCmd& operator=(const BindSocketCmd& other) = default;
 	};
 
 	struct StopBindSocketCmd
 	{
 		enum { ID = kStopBindSocketCmdID };
 		Address address;
+
+		//trivial copy-assignment
+		StopBindSocketCmd& operator=(const StopBindSocketCmd& other) = default;
 	};
 
 	struct ShutdownCmd
