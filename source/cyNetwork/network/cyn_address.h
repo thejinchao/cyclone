@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright(C) thecodeway.com
 */
 #pragma once
@@ -36,7 +36,7 @@ public:
 	/// @param peer constructs the peer address of active socket
 	Address(bool peer, socket_t sfd);
 
-	Address(const Address& other);
+	Address(const Address& other) = default;
 	Address();
 
 public:
@@ -44,13 +44,19 @@ public:
 	{
 		return (m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr) && (m_address.sin_port == other.m_address.sin_port);
 	}
+	
+	bool operator!=(Address const& other) const
+	{
+		return (m_address.sin_addr.s_addr != other.m_address.sin_addr.s_addr) || (m_address.sin_port != other.m_address.sin_port);
+	}
 
 	bool operator<(Address const & other) const
 	{
-		return (m_address.sin_addr.s_addr < other.m_address.sin_addr.s_addr) || (m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr && m_address.sin_port < other.m_address.sin_port);
+		return (m_address.sin_addr.s_addr < other.m_address.sin_addr.s_addr) || 
+			(m_address.sin_addr.s_addr == other.m_address.sin_addr.s_addr && m_address.sin_port < other.m_address.sin_port);
 	}
 
-	Address& operator=(const Address& other);
+	Address& operator=(const Address& other) = default;
 
 public:
 	static uint32_t hash_value(const sockaddr_in& addr);

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright(C) thecodeway.com
 */
 #include <cy_core.h>
@@ -7,6 +7,10 @@ Copyright(C) thecodeway.com
 
 namespace cyclone
 {
+// std::is_trivially_copyable is available in GCC 5.0+, Clang 3.0+, MSVC 2015+
+#if (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5) || (defined(_MSC_VER) && _MSC_VER >= 1900) || defined(__clang__)
+static_assert(std::is_trivially_copyable<Address>::value, "Address should be trivially copyable");
+#endif
 
 //-------------------------------------------------------------------------------------
 Address::Address(uint16_t port, bool loopbackOnly)
@@ -35,21 +39,6 @@ Address::Address(const struct sockaddr_in& addr)
 	: m_address(addr)
 { 
 	socket_api::inet_ntop(m_address.sin_addr, m_ip_string, IP_ADDRESS_LEN);
-}
-
-//-------------------------------------------------------------------------------------
-Address::Address(const Address& other)
-{
-	memcpy(&m_address, &(other.m_address), sizeof(m_address));
-	memcpy(&m_ip_string, other.m_ip_string, IP_ADDRESS_LEN);
-}
-
-//-------------------------------------------------------------------------------------
-Address& Address::operator=(const Address& other)
-{
-	memcpy(&m_address, &(other.m_address), sizeof(m_address));
-	memcpy(&m_ip_string, other.m_ip_string, IP_ADDRESS_LEN);
-	return *this;
 }
 
 //-------------------------------------------------------------------------------------
@@ -92,13 +81,13 @@ uint32_t Address::hash_value(const sockaddr_in& addr)
 	//hash address
 	const uint8_t* v = (const uint8_t*)&(addr.sin_addr);
 	for (size_t i = 0; i < 4; i++) {
-		hash = hash ^ v[0];
+		hash = hash ^ v[i];
 		hash = hash * FNV_prime;
 	}
 	//hash port
 	v = (const uint8_t*)&(addr.sin_port);
 	for (size_t i = 0; i < 2; i++) {
-		hash = hash ^ v[0];
+		hash = hash ^ v[i];
 		hash = hash * FNV_prime;
 	}
 	return hash;

@@ -29,6 +29,7 @@ set(cyt_unit_sources
 	cyt_unit_packet.cpp
 	cyt_unit_statistics.cpp
 	cyt_unit_ring_queue.cpp
+	cyt_unit_address.cpp
 )
 
 add_executable(cyt_unit 
