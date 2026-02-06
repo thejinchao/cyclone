@@ -46,13 +46,22 @@ void onPeerMessage(TcpServer* server, int32_t thread_index, TcpConnectionPtr con
 		return;
 	}
 
-	if (strcmp(temp, "shutdown") == 0) {
+	else if (strcmp(temp, "shutdown") == 0) {
 		sys_api::thread_create_detached([server](void*) {
 			server->stop();
 		}, nullptr, nullptr);
 		return;
 	}
-
+	else if (strncmp(temp, "bind ", 5) == 0) {
+		uint16_t newPort = (uint16_t)atoi(&temp[5]);
+		Address newAddr(newPort, false);
+		server->bind(newAddr, true);
+	}
+	else if (strncmp(temp, "unbind ", 7) == 0) {
+		uint16_t port = (uint16_t)atoi(&temp[7]);
+		Address addr(port, false);
+		server->stop_bind(addr);
+	}
 	size_t len = strlen(temp);
 	for (size_t i = 0; i < len; i++) temp[i] = (char)toupper(temp[i]);
 
