@@ -11,8 +11,11 @@ namespace cyclone
 //-------------------------------------------------------------------------------------
 void* Packet::operator new(size_t size)
 {
-	void* p = CY_MALLOC(size);
-	return p;
+	if (void* p = CY_MALLOC(size))
+	{
+		return p;
+	}
+	throw std::bad_alloc();
 }
 
 //-------------------------------------------------------------------------------------
