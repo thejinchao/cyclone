@@ -100,6 +100,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		-Wno-exit-time-destructors -Wno-reserved-identifier
 		-Wno-extra-semi-stmt -Wno-unused-macros -Wno-switch-default -Wno-switch-enum
 		-Wno-weak-vtables -Wno-float-equal -Wno-old-style-cast
+		-Wno-thread-safety-analysis
 	)
 endif()
 
