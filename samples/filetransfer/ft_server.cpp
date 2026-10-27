@@ -267,7 +267,7 @@ private:
 		}
 	}
 
-	void _onClientClose(int32_t index, TcpConnectionPtr conn)
+	void _onClientClose(int32_t index, TcpConnectionPtr /*conn*/)
 	{
 		assert(index >= 0 && index < (int32_t)m_threadContext.size());
 		ThreadContext& ctx = *(m_threadContext[(size_t)index]);

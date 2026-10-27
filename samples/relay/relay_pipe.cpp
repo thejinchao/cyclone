@@ -214,7 +214,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onMessage(TcpClientPtr client, TcpConnectionPtr conn)
+	void onMessage(TcpClientPtr client, TcpConnectionPtr /*conn*/)
 	{
         if(!m_pipe) return;
         
@@ -321,7 +321,7 @@ private:
     }
     
     //-------------------------------------------------------------------------------------
-    void onMessageIn(TcpConnectionPtr conn)
+    void onMessageIn(TcpConnectionPtr /*conn*/)
     {
         if(m_pipe)
             m_pipe->forward1To2();
@@ -353,7 +353,7 @@ private:
     }
     
     //-------------------------------------------------------------------------------------
-    void onMessageOut(TcpClientPtr client, TcpConnectionPtr conn)
+    void onMessageOut(TcpClientPtr /*client*/, TcpConnectionPtr /*conn*/)
     {
         if(m_pipe) 
 			m_pipe->forward2To1();

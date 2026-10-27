@@ -92,7 +92,7 @@ public:
 
 		TcpClientPtr client = std::make_shared<TcpClient>(looper, nullptr);
 
-		client->m_listener.on_connected = [](TcpClientPtr _client, TcpConnectionPtr _conn, bool _success) -> uint32_t {
+		client->m_listener.on_connected = [](TcpClientPtr _client, TcpConnectionPtr /*_conn*/, bool _success) -> uint32_t {
 			if (!_success) {
 				uint32_t retry_time = 1000 * 5;
 				CY_LOG(L_INFO, "connect failed!, retry after %d milliseconds...", retry_time);

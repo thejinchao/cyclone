@@ -417,7 +417,7 @@ private:
 	}
 
 	//-------------------------------------------------------------------------------------
-	void onUpClose(TcpClientPtr client, TcpConnectionPtr conn)
+	void onUpClose(TcpClientPtr /*client*/, TcpConnectionPtr conn)
 	{
 		RelayPipe* pipe = m_relayPipes[(size_t)(conn->get_id())];
 		

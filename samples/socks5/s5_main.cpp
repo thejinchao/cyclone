@@ -60,7 +60,7 @@ public:
 			m_remoteConnection->disconnect();
 	}
 private:
-	uint32_t onServerConnected(TcpConnectionPtr conn, bool success) 
+	uint32_t onServerConnected(TcpConnectionPtr /*conn*/, bool success)
 	{
 		assert(get_state()== S5_CONNECTING);
 		RingBuf outputBuf;
